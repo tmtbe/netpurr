@@ -67,7 +67,7 @@ impl Model for CentralRequestModels {
 
     fn receive(&mut self, mail: MailEvent) {
         match mail {
-            MailEvent::HttpRecord(record) => {
+            MailEvent::AddHttpRecord(record) => {
                 self.requests.insert(0, CentralRequestModel {
                     rest: record,
                 });

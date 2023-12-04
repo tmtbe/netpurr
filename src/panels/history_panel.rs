@@ -44,7 +44,7 @@ impl View for DateGroupHistoryData {
         for history in self.history_list.clone() {
             if ui.button(RichText::new(history.rest.clone().request.method + &*history.rest.clone().request.url)
                 .color(ui.visuals().warn_fg_color)).clicked() {
-                mail_post.borrow_mut().send(CENTRAL_REQUEST_MODELS.to_string(), MailEvent::HttpRecord(history.rest.clone()))
+                mail_post.borrow_mut().send(CENTRAL_REQUEST_MODELS.to_string(), MailEvent::AddHttpRecord(history.rest.clone()))
             }
         }
     }
