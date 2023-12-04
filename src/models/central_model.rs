@@ -1,19 +1,34 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use egui::Key::S;
+use uuid::Uuid;
 
 use crate::events::{MailBox, MailPost};
 use crate::events::event::MailEvent;
 use crate::models::{CENTRAL_REQUEST_MODELS, Model, ModelStatus};
 use crate::models::http::{HttpRecord, Request, Response};
 
+#[derive(PartialEq,Clone)]
+pub enum Panel {
+    RequestId(String),
+}
+impl Default for Panel{
+    fn default() -> Self {
+        Panel::RequestId("".to_string())
+    }
+}
+
 #[derive(Default)]
 pub struct CentralRequestModels {
+    pub(crate) open_panel: Panel,
     mail_box: Rc<RefCell<MailBox>>,
     status: Rc<RefCell<ModelStatus<CentralRequestDataList>>>,
     requests: Vec<CentralRequestModel>,
 }
 
+#[derive(PartialEq,Eq)]
 struct CentralRequestModel {
+    id: String,
     rest: HttpRecord,
 }
 
@@ -22,14 +37,16 @@ pub struct CentralRequestDataList {
     pub data_list: Vec<CentralRequestData>,
 }
 
-#[derive(Clone)]
+#[derive(Default,Clone,PartialEq,Eq)]
 pub struct CentralRequestData {
+    pub id: String,
     pub rest: HttpRecord,
 }
 
 impl CentralRequestModels {
     pub fn add_new(&mut self) {
-        self.requests.insert(0, CentralRequestModel {
+        let cr = CentralRequestModel {
+            id: "new".to_string(),
             rest: HttpRecord {
                 request: Request {
                     method: "Get".to_string(),
@@ -37,8 +54,12 @@ impl CentralRequestModels {
                 },
                 response: Response {},
             },
-        });
-        self.refresh()
+        };
+        if !self.requests.contains(&cr) {
+            self.requests.insert(0, cr);
+            self.refresh()
+        }
+        self.open_panel = Panel::RequestId("new".to_string())
     }
 }
 
@@ -52,6 +73,7 @@ impl Model for CentralRequestModels {
         return CentralRequestDataList {
             data_list: self.requests.iter().map(|c| {
                 CentralRequestData {
+                    id:c.id.clone(),
                     rest: c.rest.clone(),
                 }
             }).collect()
@@ -68,9 +90,14 @@ impl Model for CentralRequestModels {
     fn receive(&mut self, mail: MailEvent) {
         match mail {
             MailEvent::AddHttpRecord(record) => {
-                self.requests.insert(0, CentralRequestModel {
-                    rest: record,
-                });
+                let cr = CentralRequestModel {
+                    id: record.id.clone(),
+                    rest: record.rest,
+                };
+                if !self.requests.contains(&cr){
+                    self.requests.insert(0,cr)
+                }
+                self.open_panel = Panel::RequestId(record.id.clone());
                 self.refresh()
             }
             _ =>{}

@@ -4,24 +4,16 @@ use std::rc::Rc;
 use egui::Ui;
 
 use crate::events::MailPost;
-use crate::models::central_model::CentralRequestModels;
+use crate::models::central_model::{CentralRequestData, CentralRequestModels, Panel};
+use crate::models::http::HttpRecord;
 use crate::models::Model;
+use crate::panels::editor_panel::EditorPanel;
 use crate::panels::View;
 
-#[derive(PartialEq, Eq)]
-enum Panel {
-    Request,
-}
-
-impl Default for Panel {
-    fn default() -> Self {
-        Self::Request
-    }
-}
 
 #[derive(Default)]
 pub struct MyCentralPanel {
-    open_panel: Panel,
+    editor_panel:EditorPanel,
     model: CentralRequestModels,
 }
 
@@ -33,12 +25,23 @@ impl View for MyCentralPanel {
     fn render(&mut self, ui: &mut Ui, mail_post: Rc<RefCell<MailPost>>) {
         ui.horizontal(|ui| {
             for request_data in self.model.get_data().data_list {
-                ui.selectable_value(&mut self.open_panel, Panel::Request, request_data.rest.request.method + &*request_data.rest.request.url);
+                ui.selectable_value(&mut self.model.open_panel, Panel::RequestId(request_data.id),
+                                    request_data.rest.request.method + &*request_data.rest.request.url);
             }
             if ui.button("+").clicked() {
                 self.model.add_new()
             }
             if ui.button("...").clicked() {}
         });
+        match self.model.open_panel.clone() {
+            Panel::RequestId(request_id) => {
+                self.model.get_data().data_list.iter().find(|c| {
+                    c.id == request_id
+                }).map(|c|{
+                    self.editor_panel.set(c.to_owned());
+                    self.editor_panel.render(ui, mail_post);
+                });
+            }
+        }
     }
 }

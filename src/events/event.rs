@@ -1,7 +1,6 @@
-use crate::models::http::HttpRecord;
+use crate::models::history_model::HistoryRestData;
 
-#[derive(Debug)]
 pub enum MailEvent {
     String(String),
-    AddHttpRecord(HttpRecord)
+    AddHttpRecord(HistoryRestData)
 }

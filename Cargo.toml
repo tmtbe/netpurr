@@ -22,7 +22,7 @@ serde = { version = "1", features = ["derive"] }
 chrono = "0.4"
 strum = "0.25.0"
 strum_macros = "0.25.3"
-lazy_static = "1.4.0"
+uuid = { version = "1.6.1" ,features = ["v4"]}
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.10"

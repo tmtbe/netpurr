@@ -7,6 +7,7 @@ pub mod history_panel;
 pub mod left_panel;
 pub mod collections_panel;
 pub mod central_panel;
+pub mod editor_panel;
 
 
 pub const HORIZONTAL_GAP: f32 = 8.0;

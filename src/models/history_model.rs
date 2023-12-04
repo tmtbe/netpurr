@@ -15,7 +15,7 @@ pub struct HistoryModels {
 }
 
 pub struct HistoryModel {
-    id: i32,
+    id: String,
     record_date: DateTime<Utc>,
     rest: HttpRecord,
 }
@@ -33,7 +33,7 @@ pub struct DateGroupHistoryData {
 
 #[derive(Clone)]
 pub struct HistoryRestData {
-    pub id: i32,
+    pub id: String,
     pub record_date: DateTime<Utc>,
     pub rest: HttpRecord,
 }
@@ -46,7 +46,7 @@ impl Model for HistoryModels {
     fn refresh_data(&mut self) -> Self::DataType {
         self.models = vec![
             HistoryModel {
-                id: 0,
+                id: "11111".to_string(),
                 record_date: Default::default(),
                 rest: HttpRecord {
                     request: Request {
@@ -63,7 +63,7 @@ impl Model for HistoryModels {
                     date: "November 28".to_string(),
                     history_list: vec![
                         HistoryRestData {
-                            id: 0,
+                            id: "11111".to_string(),
                             record_date: Default::default(),
                             rest: HttpRecord {
                                 request: Request {
