@@ -1,10 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+
 use egui::Ui;
 
+use crate::events::MailPost;
 use crate::panels::collections::CollectionsPanel;
 use crate::panels::history::HistoryPanel;
-use crate::{MailPost, View};
+use crate::panels::View;
 
 #[derive(PartialEq, Eq)]
 enum Panel {
@@ -32,7 +34,7 @@ impl View for MyLeftPanel {
         self.collections_panel.init(mail_post.clone());
     }
 
-    fn render(&mut self, ui: &mut Ui,mail_post: Rc<RefCell<MailPost>>) {
+    fn render(&mut self, ui: &mut Ui, mail_post: Rc<RefCell<MailPost>>) {
         ui.horizontal(|ui| {
             ui.label("Filter:");
             ui.add(egui::TextEdit::singleline(&mut self.filter).desired_width(120.0));
@@ -47,10 +49,10 @@ impl View for MyLeftPanel {
 
         match self.open_panel {
             Panel::History => {
-                self.history_panel.render(ui,mail_post);
+                self.history_panel.render(ui, mail_post);
             }
             Panel::Collections => {
-                self.collections_panel.render(ui,mail_post);
+                self.collections_panel.render(ui, mail_post);
             }
         }
     }

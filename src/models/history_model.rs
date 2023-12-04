@@ -1,12 +1,15 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+
 use chrono::{DateTime, Utc};
-use crate::{MailBox, MailPost, Model, ModelStatus};
+
+use crate::events::{MailBox, MailPost};
+use crate::models::{Model, ModelStatus};
 use crate::models::http::{HttpRecord, Request, Response};
 
 #[derive(Default)]
 pub(crate) struct HistoryModels {
-    mail_box:Rc<RefCell<MailBox>>,
+    mail_box: Rc<RefCell<MailBox>>,
     status: Rc<RefCell<ModelStatus<HistoryData>>>,
     models: Vec<HistoryModel>,
 }
@@ -17,7 +20,7 @@ pub(crate) struct HistoryModel {
     rest: HttpRecord,
 }
 
-#[derive(Default,Clone)]
+#[derive(Default, Clone)]
 pub(crate) struct HistoryData {
     pub(crate) date_group_list: Vec<DateGroupHistoryData>,
 }
@@ -27,18 +30,18 @@ pub(crate) struct DateGroupHistoryData {
     pub(crate) date: String,
     pub(crate) history_list: Vec<HistoryRestData>,
 }
+
 #[derive(Clone)]
 pub(crate) struct HistoryRestData {
     pub(crate) id: i32,
     pub(crate) record_date: DateTime<Utc>,
     pub(crate) rest: HttpRecord,
 }
+
 impl Model for HistoryModels {
     type DataType = HistoryData;
 
-    fn init(&mut self, mail_post: Rc<RefCell<MailPost>>) {
-
-    }
+    fn init(&mut self, mail_post: Rc<RefCell<MailPost>>) {}
 
     fn refresh_data(&mut self) -> Self::DataType {
         self.models = vec![
@@ -54,12 +57,12 @@ impl Model for HistoryModels {
                 },
             }
         ];
-        return HistoryData{
+        return HistoryData {
             date_group_list: vec![
-                DateGroupHistoryData{
+                DateGroupHistoryData {
                     date: "November 28".to_string(),
                     history_list: vec![
-                        HistoryRestData{
+                        HistoryRestData {
                             id: 0,
                             record_date: Default::default(),
                             rest: HttpRecord {
@@ -67,14 +70,13 @@ impl Model for HistoryModels {
                                     method: "Post".to_string(),
                                     url: "{{xxx}}/execute".to_string(),
                                 },
-                                response: Response {
-
-                                } },
+                                response: Response {},
+                            },
                         }
                     ],
                 }
             ],
-        }
+        };
     }
 
     fn get_status(&self) -> Rc<RefCell<ModelStatus<Self::DataType>>> {

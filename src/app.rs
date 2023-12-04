@@ -1,8 +1,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use egui::{CentralPanel, Ui};
 
-use crate::{HORIZONTAL_GAP, MailBox, MailPost, VERTICAL_GAP, View};
+use egui::Ui;
+
+use crate::events::MailPost;
+use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP, View};
 use crate::panels::central::MyCentralPanel;
 use crate::panels::left::MyLeftPanel;
 
@@ -10,7 +12,7 @@ use crate::panels::left::MyLeftPanel;
 pub struct App {
     left_panel: MyLeftPanel,
     central_panel: MyCentralPanel,
-    mail_post:Rc<RefCell<MailPost>>
+    mail_post: Rc<RefCell<MailPost>>,
 }
 
 impl App {
@@ -29,7 +31,7 @@ impl View for App {
         self.central_panel.init(mail_post.clone());
     }
 
-    fn render(&mut self, ui: &mut Ui,mail_post: Rc<RefCell<MailPost>>) {}
+    fn render(&mut self, ui: &mut Ui, mail_post: Rc<RefCell<MailPost>>) {}
 }
 
 impl eframe::App for App {
@@ -64,11 +66,11 @@ impl eframe::App for App {
             ui.add_space(HORIZONTAL_GAP);
         });
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
-            self.left_panel.render(ui,self.mail_post.clone());
+            self.left_panel.render(ui, self.mail_post.clone());
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.central_panel.render(ui,self.mail_post.clone());
+            self.central_panel.render(ui, self.mail_post.clone());
         });
     }
 }
