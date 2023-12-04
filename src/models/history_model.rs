@@ -8,34 +8,34 @@ use crate::models::{Model, ModelStatus};
 use crate::models::http::{HttpRecord, Request, Response};
 
 #[derive(Default)]
-pub(crate) struct HistoryModels {
+pub struct HistoryModels {
     mail_box: Rc<RefCell<MailBox>>,
     status: Rc<RefCell<ModelStatus<HistoryData>>>,
     models: Vec<HistoryModel>,
 }
 
-pub(crate) struct HistoryModel {
+pub struct HistoryModel {
     id: i32,
     record_date: DateTime<Utc>,
     rest: HttpRecord,
 }
 
 #[derive(Default, Clone)]
-pub(crate) struct HistoryData {
-    pub(crate) date_group_list: Vec<DateGroupHistoryData>,
+pub struct HistoryData {
+    pub date_group_list: Vec<DateGroupHistoryData>,
 }
 
 #[derive(Clone)]
-pub(crate) struct DateGroupHistoryData {
-    pub(crate) date: String,
-    pub(crate) history_list: Vec<HistoryRestData>,
+pub struct DateGroupHistoryData {
+    pub date: String,
+    pub history_list: Vec<HistoryRestData>,
 }
 
 #[derive(Clone)]
-pub(crate) struct HistoryRestData {
-    pub(crate) id: i32,
-    pub(crate) record_date: DateTime<Utc>,
-    pub(crate) rest: HttpRecord,
+pub struct HistoryRestData {
+    pub id: i32,
+    pub record_date: DateTime<Utc>,
+    pub rest: HttpRecord,
 }
 
 impl Model for HistoryModels {

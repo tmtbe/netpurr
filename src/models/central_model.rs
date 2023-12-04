@@ -7,7 +7,7 @@ use crate::models::{CENTRAL_REQUEST_MODELS, Model, ModelStatus};
 use crate::models::http::{HttpRecord, Request, Response};
 
 #[derive(Default)]
-pub(crate) struct CentralRequestModels {
+pub struct CentralRequestModels {
     mail_box: Rc<RefCell<MailBox>>,
     status: Rc<RefCell<ModelStatus<CentralRequestDataList>>>,
     requests: Vec<CentralRequestModel>,
@@ -18,17 +18,17 @@ struct CentralRequestModel {
 }
 
 #[derive(Default, Clone)]
-pub(crate) struct CentralRequestDataList {
-    pub(crate) data_list: Vec<CentralRequestData>,
+pub struct CentralRequestDataList {
+    pub data_list: Vec<CentralRequestData>,
 }
 
 #[derive(Clone)]
-pub(crate) struct CentralRequestData {
-    pub(crate) rest: HttpRecord,
+pub struct CentralRequestData {
+    pub rest: HttpRecord,
 }
 
 impl CentralRequestModels {
-    pub(crate) fn add_new(&mut self) {
+    pub fn add_new(&mut self) {
         self.requests.insert(0, CentralRequestModel {
             rest: HttpRecord {
                 request: Request {
@@ -66,6 +66,14 @@ impl Model for CentralRequestModels {
     }
 
     fn receive(&mut self, mail: MailEvent) {
-        println!("{:?}", mail)
+        match mail {
+            MailEvent::HttpRecord(record) => {
+                self.requests.insert(0, CentralRequestModel {
+                    rest: record,
+                });
+                self.refresh()
+            }
+            _ =>{}
+        }
     }
 }

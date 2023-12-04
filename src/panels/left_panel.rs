@@ -4,8 +4,8 @@ use std::rc::Rc;
 use egui::Ui;
 
 use crate::events::MailPost;
-use crate::panels::collections::CollectionsPanel;
-use crate::panels::history::HistoryPanel;
+use crate::panels::collections_panel::CollectionsPanel;
+use crate::panels::history_panel::HistoryPanel;
 use crate::panels::View;
 
 #[derive(PartialEq, Eq)]

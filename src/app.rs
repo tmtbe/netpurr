@@ -5,8 +5,8 @@ use egui::Ui;
 
 use crate::events::MailPost;
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP, View};
-use crate::panels::central::MyCentralPanel;
-use crate::panels::left::MyLeftPanel;
+use crate::panels::central_panel::MyCentralPanel;
+use crate::panels::left_panel::MyLeftPanel;
 
 #[derive(Default)]
 pub struct App {
