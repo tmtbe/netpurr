@@ -1,15 +1,19 @@
 use egui::Ui;
+use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, Method};
-use crate::panels::{DataView, HORIZONTAL_GAP};
+use crate::data::{AppData, Method, Response};
 use crate::panels::params_panel::ParamsPanel;
+use crate::panels::reponse_panel::ResponsePanel;
+use crate::panels::{DataView, HORIZONTAL_GAP};
 
 #[derive(Default)]
 pub struct EditorPanel {
     open_request_panel_enum: RequestPanelEnum,
     params_panel: ParamsPanel,
+    response_panel: ResponsePanel,
+    send_promise: Option<Promise<ehttp::Result<ehttp::Response>>>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -28,9 +32,13 @@ impl Default for RequestPanelEnum {
 
 impl DataView for EditorPanel {
     type CursorType = String;
-    fn set_and_render(&mut self,app_data: &mut AppData, cursor: Self::CursorType, ui: &mut egui::Ui){
+    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
         {
-            let data = app_data.central_request_data_list.data_map.get_mut(cursor.as_str()).unwrap();
+            let data = app_data
+                .central_request_data_list
+                .data_map
+                .get_mut(cursor.as_str())
+                .unwrap();
 
             ui.vertical(|ui| {
                 ui.label(data.rest.request.url.clone());
@@ -43,34 +51,79 @@ impl DataView for EditorPanel {
                             ui.style_mut().wrap = Some(false);
                             ui.set_min_width(60.0);
                             for x in Method::iter() {
-                                ui.selectable_value(&mut data.rest.request.method, x.clone(), x.to_string());
+                                ui.selectable_value(
+                                    &mut data.rest.request.method,
+                                    x.clone(),
+                                    x.to_string(),
+                                );
                             }
                         });
-                    if ui.button("Send").clicked() {}
+                    if self.send_promise.is_some() {
+                        ui.button("send").enabled = false
+                    } else {
+                        if ui.button("Send").clicked() {
+                            self.send_promise = Some(app_data.rest_sender.send(&mut data.rest));
+                            app_data.history_data_list.record(data.rest.clone())
+                        }
+                    }
                     if ui.button("Save").clicked() {}
                     ui.centered_and_justified(|ui| {
-                        ui.text_edit_singleline(&mut data.rest.request.url.clone())
+                        ui.text_edit_singleline(&mut data.rest.request.url)
                     });
                 });
                 ui.separator();
                 ui.add_space(HORIZONTAL_GAP);
                 ui.horizontal(|ui| {
                     for x in RequestPanelEnum::iter() {
-                        ui.selectable_value(&mut self.open_request_panel_enum, x.clone(), x.to_string());
+                        ui.selectable_value(
+                            &mut self.open_request_panel_enum,
+                            x.clone(),
+                            x.to_string(),
+                        );
                     }
                 });
                 ui.separator();
                 ui.add_space(HORIZONTAL_GAP);
             });
         }
+        if let Some(promise) = &self.send_promise {
+            if let Some(result) = promise.ready() {
+                let id = app_data
+                    .central_request_data_list
+                    .select_id
+                    .clone()
+                    .unwrap();
+                match result {
+                    Ok(r) => {
+                        app_data
+                            .central_request_data_list
+                            .data_map
+                            .get_mut(id.as_str())
+                            .unwrap()
+                            .rest
+                            .response = Response {
+                            body: r.bytes.clone(),
+                        };
+                        self.response_panel.ready()
+                    }
+                    Err(_) => self.response_panel.error(),
+                }
+                self.send_promise = None;
+            } else {
+                self.response_panel.pending()
+            }
+        }
         match self.open_request_panel_enum {
             RequestPanelEnum::Params => {
-                self.params_panel.set_and_render(app_data,cursor,ui)
+                self.params_panel
+                    .set_and_render(app_data, cursor.clone(), ui)
             }
             RequestPanelEnum::Authorization => {}
             RequestPanelEnum::Headers => {}
             RequestPanelEnum::Body => {}
         }
         ui.separator();
+        self.response_panel
+            .set_and_render(app_data, cursor.clone(), ui)
     }
 }

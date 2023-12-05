@@ -9,7 +9,5 @@ pub struct CollectionsPanel {}
 impl DataView for CollectionsPanel {
     type CursorType = i32;
 
-    fn set_and_render(&mut self,app_data: &mut AppData, cursor: Self::CursorType, ui: &mut egui::Ui){
-
-    }
+    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {}
 }

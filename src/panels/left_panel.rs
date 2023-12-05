@@ -2,8 +2,8 @@ use egui::Ui;
 
 use crate::data::AppData;
 use crate::panels::collections_panel::CollectionsPanel;
-use crate::panels::DataView;
 use crate::panels::history_panel::HistoryPanel;
+use crate::panels::DataView;
 
 #[derive(PartialEq, Eq)]
 enum Panel {
@@ -27,7 +27,7 @@ pub struct MyLeftPanel {
 
 impl DataView for MyLeftPanel {
     type CursorType = i32;
-    fn set_and_render(&mut self,app_data: &mut AppData, cursor: Self::CursorType, ui: &mut egui::Ui){
+    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.label("Filter:");
             ui.add(egui::TextEdit::singleline(&mut self.filter).desired_width(120.0));
@@ -42,10 +42,10 @@ impl DataView for MyLeftPanel {
 
         match self.open_panel {
             Panel::History => {
-                self.history_panel.set_and_render(app_data,0, ui);
+                self.history_panel.set_and_render(app_data, 0, ui);
             }
             Panel::Collections => {
-                self.collections_panel.set_and_render(app_data,0, ui);
+                self.collections_panel.set_and_render(app_data, 0, ui);
             }
         }
     }
