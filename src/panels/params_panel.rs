@@ -1,3 +1,4 @@
+use eframe::emath::Align;
 use egui::{Direction, Layout, Ui};
 use egui_extras::{Column, TableBuilder};
 
@@ -21,7 +22,7 @@ impl DataView for ParamsPanel {
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
             .resizable(false)
-            .cell_layout(Layout::centered_and_justified(Direction::TopDown))
+            .cell_layout(Layout::left_to_right(Align::Center))
             .column(Column::auto())
             .column(Column::exact(20.0))
             .column(Column::initial(200.0).range(40.0..=300.0))

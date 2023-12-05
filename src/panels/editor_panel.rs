@@ -39,38 +39,48 @@ impl DataView for EditorPanel {
                 .data_map
                 .get_mut(cursor.as_str())
                 .unwrap();
-
             ui.vertical(|ui| {
                 ui.label(data.rest.request.url.clone());
                 ui.separator();
-                ui.add_space(HORIZONTAL_GAP);
                 ui.horizontal(|ui| {
-                    egui::ComboBox::from_id_source("method")
-                        .selected_text(data.rest.request.method.clone().to_string())
-                        .show_ui(ui, |ui| {
-                            ui.style_mut().wrap = Some(false);
-                            ui.set_min_width(60.0);
-                            for x in Method::iter() {
-                                ui.selectable_value(
-                                    &mut data.rest.request.method,
-                                    x.clone(),
-                                    x.to_string(),
-                                );
-                            }
+                    egui::SidePanel::right("right_panel")
+                        .resizable(false)
+                        .show_inside(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                if self.send_promise.is_some() {
+                                    ui.button("send").enabled = false
+                                } else {
+                                    if ui.button("Send").clicked() {
+                                        self.send_promise =
+                                            Some(app_data.rest_sender.send(&mut data.rest));
+                                        app_data.history_data_list.record(data.rest.clone())
+                                    }
+                                }
+                                if ui.button("Save").clicked() {}
+                            });
                         });
-                    if self.send_promise.is_some() {
-                        ui.button("send").enabled = false
-                    } else {
-                        if ui.button("Send").clicked() {
-                            self.send_promise = Some(app_data.rest_sender.send(&mut data.rest));
-                            app_data.history_data_list.record(data.rest.clone())
-                        }
-                    }
-                    if ui.button("Save").clicked() {}
-                    ui.centered_and_justified(|ui| {
-                        ui.text_edit_singleline(&mut data.rest.request.url)
+                    egui::CentralPanel::default().show_inside(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            egui::ComboBox::from_id_source("method")
+                                .selected_text(data.rest.request.method.clone().to_string())
+                                .show_ui(ui, |ui| {
+                                    ui.style_mut().wrap = Some(false);
+                                    ui.set_min_width(60.0);
+                                    for x in Method::iter() {
+                                        ui.selectable_value(
+                                            &mut data.rest.request.method,
+                                            x.clone(),
+                                            x.to_string(),
+                                        );
+                                    }
+                                });
+                            ui.centered_and_justified(|ui| {
+                                ui.text_edit_singleline(&mut data.rest.request.url)
+                            });
+                        });
                     });
                 });
+                ui.add_space(HORIZONTAL_GAP);
                 ui.separator();
                 ui.add_space(HORIZONTAL_GAP);
                 ui.horizontal(|ui| {
