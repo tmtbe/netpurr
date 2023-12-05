@@ -6,7 +6,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 use crate::data::{AppData, Method, Response};
 use crate::panels::params_panel::ParamsPanel;
 use crate::panels::reponse_panel::ResponsePanel;
-use crate::panels::{DataView, HORIZONTAL_GAP};
+use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 
 #[derive(Default)]
 pub struct EditorPanel {
@@ -42,8 +42,9 @@ impl DataView for EditorPanel {
             ui.vertical(|ui| {
                 ui.label(data.rest.request.url.clone());
                 ui.separator();
+                ui.add_space(VERTICAL_GAP);
                 ui.horizontal(|ui| {
-                    egui::SidePanel::right("right_panel")
+                    egui::SidePanel::right("editor_right_panel")
                         .resizable(false)
                         .show_inside(ui, |ui| {
                             ui.horizontal(|ui| {
@@ -59,26 +60,30 @@ impl DataView for EditorPanel {
                                 if ui.button("Save").clicked() {}
                             });
                         });
-                    egui::CentralPanel::default().show_inside(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            egui::ComboBox::from_id_source("method")
-                                .selected_text(data.rest.request.method.clone().to_string())
-                                .show_ui(ui, |ui| {
-                                    ui.style_mut().wrap = Some(false);
-                                    ui.set_min_width(60.0);
-                                    for x in Method::iter() {
-                                        ui.selectable_value(
-                                            &mut data.rest.request.method,
-                                            x.clone(),
-                                            x.to_string(),
-                                        );
-                                    }
+                    egui::SidePanel::left("editor_left_panel")
+                        .min_width(ui.available_width() - HORIZONTAL_GAP)
+                        .show_separator_line(false)
+                        .resizable(false)
+                        .show_inside(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                egui::ComboBox::from_id_source("method")
+                                    .selected_text(data.rest.request.method.clone().to_string())
+                                    .show_ui(ui, |ui| {
+                                        ui.style_mut().wrap = Some(false);
+                                        ui.set_min_width(60.0);
+                                        for x in Method::iter() {
+                                            ui.selectable_value(
+                                                &mut data.rest.request.method,
+                                                x.clone(),
+                                                x.to_string(),
+                                            );
+                                        }
+                                    });
+                                ui.centered_and_justified(|ui| {
+                                    ui.text_edit_singleline(&mut data.rest.request.url)
                                 });
-                            ui.centered_and_justified(|ui| {
-                                ui.text_edit_singleline(&mut data.rest.request.url)
                             });
                         });
-                    });
                 });
                 ui.add_space(HORIZONTAL_GAP);
                 ui.separator();

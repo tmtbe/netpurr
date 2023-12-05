@@ -1,5 +1,5 @@
 use eframe::emath::Align;
-use egui::{Direction, Layout, Ui};
+use egui::{Button, Checkbox, Direction, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, QueryParam};
@@ -65,15 +65,19 @@ impl DataView for ParamsPanel {
                             ui.text_edit_singleline(&mut param.value);
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut param.desc);
+                            TextEdit::singleline(&mut param.desc)
+                                .desired_width(f32::INFINITY)
+                                .ui(ui);
                         });
                     });
                 }
                 body.row(18.0, |mut row| {
                     row.col(|ui| {
-                        ui.checkbox(&mut self.new_param.enable, "");
+                        ui.add_enabled(false, Checkbox::new(&mut self.new_param.enable, ""));
                     });
-                    row.col(|ui| ui.button("x").enabled = false);
+                    row.col(|ui| {
+                        ui.add_enabled(false, Button::new("x"));
+                    });
                     row.col(|ui| {
                         ui.text_edit_singleline(&mut self.new_param.key);
                     });
@@ -81,7 +85,9 @@ impl DataView for ParamsPanel {
                         ui.text_edit_singleline(&mut self.new_param.value);
                     });
                     row.col(|ui| {
-                        ui.text_edit_singleline(&mut self.new_param.desc);
+                        TextEdit::singleline(&mut self.new_param.desc)
+                            .desired_width(f32::INFINITY)
+                            .ui(ui);
                     });
                 });
             });
