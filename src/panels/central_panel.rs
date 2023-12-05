@@ -1,47 +1,45 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use egui::Ui;
-
-use crate::events::MailPost;
-use crate::models::central_model::{CentralRequestData, CentralRequestModels, Panel};
-use crate::models::http::HttpRecord;
-use crate::models::Model;
+use crate::data::AppData;
+use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::panels::editor_panel::EditorPanel;
-use crate::panels::View;
-
 
 #[derive(Default)]
 pub struct MyCentralPanel {
-    editor_panel:EditorPanel,
-    model: CentralRequestModels,
+    editor_panel: EditorPanel,
 }
 
-impl View for MyCentralPanel {
-    fn init(&mut self, mail_post: Rc<RefCell<MailPost>>) {
-        self.model.init(mail_post)
+#[derive(PartialEq,Eq,Clone)]
+enum PanelEnum{
+    RequestId(Option<String>)
+}
+impl Default for PanelEnum{
+    fn default() -> Self {
+        PanelEnum::RequestId(None)
     }
+}
 
-    fn render(&mut self, ui: &mut Ui, mail_post: Rc<RefCell<MailPost>>) {
+impl DataView for MyCentralPanel {
+    type CursorType = i32;
+    fn set_and_render(&mut self,app_data: &mut AppData, cursor: Self::CursorType, ui: &mut egui::Ui){
         ui.horizontal(|ui| {
-            for request_data in self.model.get_data().data_list {
-                ui.selectable_value(&mut self.model.open_panel, Panel::RequestId(request_data.id),
-                                    request_data.rest.request.method + &*request_data.rest.request.url);
+            for request_data in &app_data.central_request_data_list.data_list {
+                let mut head_text = request_data.rest.request.method.to_string() +" "+ &*request_data.rest.request.url;
+                if request_data.rest.request.url==""{
+                    head_text = head_text + "Untitled Request";
+                }
+                ui.selectable_value(&mut app_data.central_request_data_list.select_id, Some(request_data.id.clone()),head_text);
             }
             if ui.button("+").clicked() {
-                self.model.add_new()
+                app_data.central_request_data_list.add_new()
             }
             if ui.button("...").clicked() {}
         });
-        match self.model.open_panel.clone() {
-            Panel::RequestId(request_id) => {
-                self.model.get_data().data_list.iter().find(|c| {
-                    c.id == request_id
-                }).map(|c|{
-                    self.editor_panel.set(c.to_owned());
-                    self.editor_panel.render(ui, mail_post);
-                });
+        ui.separator();
+        ui.add_space(HORIZONTAL_GAP);
+        match &app_data.central_request_data_list.select_id {
+            Some(request_id) => {
+                self.editor_panel.set_and_render(app_data, request_id.clone(), ui);
             }
+            _ => {}
         }
     }
 }

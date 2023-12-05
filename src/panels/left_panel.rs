@@ -1,12 +1,9 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use egui::Ui;
 
-use crate::events::MailPost;
+use crate::data::AppData;
 use crate::panels::collections_panel::CollectionsPanel;
+use crate::panels::DataView;
 use crate::panels::history_panel::HistoryPanel;
-use crate::panels::View;
 
 #[derive(PartialEq, Eq)]
 enum Panel {
@@ -28,13 +25,9 @@ pub struct MyLeftPanel {
     filter: String,
 }
 
-impl View for MyLeftPanel {
-    fn init(&mut self, mail_post: Rc<RefCell<MailPost>>) {
-        self.history_panel.init(mail_post.clone());
-        self.collections_panel.init(mail_post.clone());
-    }
-
-    fn render(&mut self, ui: &mut Ui, mail_post: Rc<RefCell<MailPost>>) {
+impl DataView for MyLeftPanel {
+    type CursorType = i32;
+    fn set_and_render(&mut self,app_data: &mut AppData, cursor: Self::CursorType, ui: &mut egui::Ui){
         ui.horizontal(|ui| {
             ui.label("Filter:");
             ui.add(egui::TextEdit::singleline(&mut self.filter).desired_width(120.0));
@@ -49,10 +42,10 @@ impl View for MyLeftPanel {
 
         match self.open_panel {
             Panel::History => {
-                self.history_panel.render(ui, mail_post);
+                self.history_panel.set_and_render(app_data,0, ui);
             }
             Panel::Collections => {
-                self.collections_panel.render(ui, mail_post);
+                self.collections_panel.set_and_render(app_data,0, ui);
             }
         }
     }
