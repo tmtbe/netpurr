@@ -1,13 +1,14 @@
-use egui::Ui;
+use egui::{Button, Ui};
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, Header, Method, Response};
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::data::{AppData, Header, Method, Request, Response};
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::response_panel::ResponsePanel;
+use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::utils;
 
 #[derive(Default)]
 pub struct RestPanel {
@@ -31,6 +32,16 @@ impl Default for RequestPanelEnum {
         RequestPanelEnum::Params
     }
 }
+impl RestPanel {
+    fn get_count(request: &Request, panel_enum: RequestPanelEnum) -> usize {
+        match panel_enum {
+            RequestPanelEnum::Params => request.params.iter().filter(|i| i.enable).count(),
+            RequestPanelEnum::Authorization => 0,
+            RequestPanelEnum::Headers => request.headers.iter().filter(|i| i.enable).count(),
+            RequestPanelEnum::Body => 0,
+        }
+    }
+}
 
 impl DataView for RestPanel {
     type CursorType = String;
@@ -51,7 +62,7 @@ impl DataView for RestPanel {
                         .show_inside(ui, |ui| {
                             ui.horizontal(|ui| {
                                 if self.send_promise.is_some() {
-                                    ui.button("send").enabled = false
+                                    ui.add_enabled(false, Button::new("Send"));
                                 } else {
                                     if ui.button("Send").clicked() {
                                         self.send_promise =
@@ -95,7 +106,11 @@ impl DataView for RestPanel {
                         ui.selectable_value(
                             &mut self.open_request_panel_enum,
                             x.clone(),
-                            x.to_string(),
+                            utils::build_with_count_ui_header(
+                                x.to_string(),
+                                RestPanel::get_count(&data.rest.request, x),
+                                ui,
+                            ),
                         );
                     }
                 });
@@ -120,7 +135,7 @@ impl DataView for RestPanel {
                             .rest
                             .response = Response {
                             body: r.bytes.clone(),
-                            headers: Header::new_from_btree(r.headers.clone()),
+                            headers: Header::new_from_tuple(r.headers.clone()),
                             url: r.url.clone(),
                             ok: r.ok.clone(),
                             status: r.status.clone(),

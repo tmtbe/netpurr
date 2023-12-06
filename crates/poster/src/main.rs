@@ -15,7 +15,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "eframe template",
         native_options,
-        Box::new(|cc| Box::new(gui::App::new(cc))),
+        Box::new(|cc| Box::new(poster::App::new(cc))),
     )
 }
 

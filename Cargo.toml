@@ -1,87 +1,33 @@
-[package]
-name = "gui"
-version = "0.1.0"
-authors = ["Emil Ernerfeldt <emil.ernerfeldt@gmail.com>"]
+[workspace]
+resolver = "2"
+members = [
+    "crates/poster",
+    "crates/ehttp"
+]
+
+[workspace.package]
 edition = "2021"
 rust-version = "1.72"
+version = "0.1.0"
 
-[package.metadata.docs.rs]
-all-features = true
-
-[features]
-default = ["glow", "persistence","http"]
-# image_viewer adds about 0.9 MB of WASM
-web_app = ["http", "persistence"]
-http = ["ehttp", "image", "poll-promise", "egui_extras/image"]
-image_viewer = ["image", "egui_extras/all_loaders", "rfd"]
-persistence = ["eframe/persistence", "egui/persistence", "serde"]
-puffin = ["eframe/puffin", "dep:puffin", "dep:puffin_http"]
-glow = ["eframe/glow"]
-wgpu = ["eframe/wgpu", "bytemuck"]
-serde = ["dep:serde", "egui/serde"]
-
-[dependencies]
-egui = { version = "0.24.1",features = [
-    "callstack",
-    "extra_debug_asserts",
-    "log",
-]}
-egui_extras = { version = "0.24.1",features = ["image"] }
-egui_plot = {version = "0.24.1"}
-eframe = { version = "0.24.1", default-features = false, features = [
-    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
-    "default_fonts", # Embed the default egui fonts.
-    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
-    "persistence",   # Enable restoring app state when restarting the app.
-] }
-log = { version = "0.4", features = ["std"] }
-
-# Optional dependencies:
-bytemuck = { version = "1.7.1", optional = true }
-puffin = { version = "0.18", optional = true }
-puffin_http = { version = "0.15", optional = true }
-
-# feature "http":
-ehttp = { version = "0.3.1", optional = true }
-image = { version = "0.24.7", optional = true, default-features = false, features = [
-    "jpeg",
-    "png",
-] }
-poll-promise = { version = "0.3", optional = true, default-features = false }
-
-# feature "persistence":
-serde = { version = "1", optional = true, features = ["derive"] }
-
-strum = "0.25.0"
-strum_macros = "0.25.3"
-uuid = { version = "1.6.1" ,features = ["v4"]}
-chrono = { version = "0.4"}
-
-# native:
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-env_logger = "0.10"
-rfd = { version = "0.11", optional = true }
-
-# web:
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "=0.2.89"
-wasm-bindgen-futures = "0.4"
-web-sys = "0.3"
 
 [profile.release]
-opt-level = 2 # fast and small wasm
+# lto = true # VERY slightly smaller wasm
+# opt-level = 's' # 10-20% smaller wasm compared to `opt-level = 3`
+# opt-level = 1 # very slow and big wasm. Don't do this.
+opt-level = 2 # fast and small wasm, basically same as `opt-level = 's'`
+# opt-level = 3 # unnecessarily large wasm for no performance gain
 
-# Optimize all dependencies even in debug builds:
+# debug = true # include debug symbols, useful when profiling wasm
+
+
+[profile.dev]
+# Can't leave this on by default, because it breaks the Windows build. Related: https://github.com/rust-lang/cargo/issues/4897
+# split-debuginfo = "unpacked" # faster debug builds on mac
+# opt-level = 1                # Make debug builds run faster
+
+# Optimize all dependencies even in debug builds (does not affect workspace packages):
 [profile.dev.package."*"]
 opt-level = 2
 
-
-[patch.crates-io]
-
-# If you want to use the bleeding edge version of egui and eframe:
-# egui = { git = "https://github.com/emilk/egui", branch = "master" }
-# eframe = { git = "https://github.com/emilk/egui", branch = "master" }
-
-# If you fork https://github.com/emilk/egui you can test with:
-# egui = { path = "../egui/crates/egui" }
-# eframe = { path = "../egui/crates/eframe" }
+[workspace.dependencies]

@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use chrono::{DateTime, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
+use egui::TextBuffer;
 use poll_promise::Promise;
 use strum_macros::{Display, EnumIter, EnumString};
 use uuid::Uuid;
@@ -43,6 +44,11 @@ pub struct RestSender {}
 impl RestSender {
     pub fn send(&mut self, rest: &mut HttpRecord) -> Promise<ehttp::Result<ehttp::Response>> {
         let (sender, promise) = Promise::new();
+        if !rest.request.base_url.starts_with("http://")
+            && !rest.request.base_url.starts_with("https://")
+        {
+            rest.request.base_url = "http://".to_string() + rest.request.base_url.as_str();
+        }
         let request = ehttp::Request {
             method: rest.request.method.to_string(),
             url: rest.request.base_url.to_string(),
@@ -162,7 +168,7 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn new_from_btree(headers: BTreeMap<String, String>) -> Vec<Header> {
+    pub fn new_from_tuple(headers: Vec<(String, String)>) -> Vec<Header> {
         let mut result = vec![];
         for (key, value) in headers {
             result.push(Header {
@@ -184,6 +190,54 @@ pub struct Response {
     pub ok: bool,
     pub status: u16,
     pub status_text: String,
+}
+pub struct Cookie {
+    pub name: String,
+    pub value: String,
+    pub domain: String,
+    pub path: String,
+    pub expires: String,
+    pub max_age: String,
+    pub http_only: bool,
+    pub secure: bool,
+}
+impl Response {
+    //BAIDUID=67147D03A8E2F75F66619A1CFADFAAF2:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com
+    pub fn get_cookies(&self) -> Vec<Cookie> {
+        self.headers
+            .iter()
+            .filter(|h| h.key.starts_with("set-cookie"))
+            .map(|h| {
+                let mut cookie = Cookie {
+                    name: "".to_string(),
+                    value: "".to_string(),
+                    domain: "".to_string(),
+                    path: "".to_string(),
+                    expires: "".to_string(),
+                    max_age: "".to_string(),
+                    http_only: false,
+                    secure: false,
+                };
+                let s = h.value.split(";");
+                for x in s {
+                    let one: Vec<&str> = x.splitn(2, "=").collect();
+                    match one[0].trim() {
+                        "expires" => cookie.expires = one[1].to_string(),
+                        "path" => cookie.path = one[1].to_string(),
+                        "domain" => cookie.domain = one[1].to_string(),
+                        "max-age" => cookie.max_age = one[1].to_string(),
+                        "secure" => cookie.secure = true,
+                        "httponly" => cookie.http_only = true,
+                        _ => {
+                            cookie.value = one[1].to_string();
+                            cookie.name = one[0].to_string()
+                        }
+                    }
+                }
+                cookie
+            })
+            .collect()
+    }
 }
 
 #[derive(Debug, Display, PartialEq, EnumString, EnumIter, Clone, Eq)]
