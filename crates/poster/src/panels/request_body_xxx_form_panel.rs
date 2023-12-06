@@ -1,10 +1,9 @@
 use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
-use strum::IntoEnumIterator;
 
-use crate::data::{AppData, BodyRawType, BodyType, FormData, QueryParam};
-use crate::panels::{DataView, VERTICAL_GAP};
+use crate::data::{AppData, FormData};
+use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct RequestBodyXXXFormPanel {

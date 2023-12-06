@@ -1,11 +1,10 @@
 use egui::{TextBuffer, Ui};
 use strum::IntoEnumIterator;
 
-use crate::data::{AppData, BodyRawType, BodyType, Request};
+use crate::data::{AppData, BodyRawType, BodyType};
+use crate::panels::{DataView, VERTICAL_GAP};
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
-use crate::panels::{DataView, VERTICAL_GAP};
-use crate::utils;
 
 #[derive(Default)]
 pub struct RequestBodyPanel {
