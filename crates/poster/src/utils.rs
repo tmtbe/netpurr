@@ -23,6 +23,7 @@ pub fn build_rest_ui_header(request: Request, ui: &Ui) -> LayoutJob {
     }
     lb
 }
+
 pub fn build_with_count_ui_header(name: String, count: usize, ui: &Ui) -> LayoutJob {
     let mut lb = LayoutJob::default();
     let style = Style::default();

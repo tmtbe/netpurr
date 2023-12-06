@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use chrono::{DateTime, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
@@ -29,6 +27,11 @@ impl AppData {
                             params: vec![],
                             headers: Default::default(),
                             body: vec![],
+                            body_str: "".to_string(),
+                            body_type: Default::default(),
+                            body_raw_type: Default::default(),
+                            body_form_data: vec![],
+                            body_xxx_form: vec![],
                         },
                         response: Default::default(),
                     },
@@ -149,10 +152,95 @@ pub struct Request {
     pub params: Vec<QueryParam>,
     pub headers: Vec<Header>,
     pub body: Vec<u8>,
+    pub body_str: String,
+    pub body_type: BodyType,
+    pub body_raw_type: BodyRawType,
+    pub body_form_data: Vec<FormData>,
+    pub body_xxx_form: Vec<FormData>,
+}
+
+impl HttpRecord {
+    pub fn sync(&mut self) {
+        match self.request.body_type {
+            BodyType::NONE => {}
+            BodyType::FROM_DATA => {}
+            BodyType::X_WWW_FROM_URLENCODED => {}
+            BodyType::RAW => match self.request.body_raw_type {
+                BodyRawType::TEXT => self.set_content_type("text/plain".to_string()),
+                BodyRawType::JSON => self.set_content_type("application/json".to_string()),
+                BodyRawType::HTML => self.set_content_type("text/html".to_string()),
+                BodyRawType::XML => self.set_content_type("application/xml".to_string()),
+                BodyRawType::JavaScript => {
+                    self.set_content_type("application/javascript".to_string())
+                }
+            },
+            BodyType::BINARY => {}
+        }
+    }
+
+    pub fn set_content_type(&mut self, value: String) {
+        let mut need_add = false;
+        let mut find = false;
+        for (index, header) in self.request.headers.clone().iter().enumerate() {
+            if header.key == "content-type" {
+                find = true;
+                if !header.value.contains(value.as_str()) {
+                    need_add = true;
+                    self.request.headers.remove(index);
+                }
+            }
+        }
+        if !find || need_add {
+            self.request.headers.push(Header {
+                key: "content-type".to_string(),
+                value,
+                desc: "".to_string(),
+                enable: true,
+            });
+        }
+    }
+}
+
+#[derive(Clone, EnumIter, EnumString, Display, PartialEq, Eq, Debug)]
+pub enum BodyRawType {
+    TEXT,
+    JSON,
+    HTML,
+    XML,
+    JavaScript,
+}
+
+impl Default for BodyRawType {
+    fn default() -> Self {
+        BodyRawType::JSON
+    }
+}
+
+#[derive(Clone, EnumIter, EnumString, Display, PartialEq, Eq, Debug)]
+pub enum BodyType {
+    NONE,
+    FROM_DATA,
+    X_WWW_FROM_URLENCODED,
+    RAW,
+    BINARY,
+}
+
+impl Default for BodyType {
+    fn default() -> Self {
+        BodyType::NONE
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct QueryParam {
+    pub key: String,
+    pub value: String,
+    pub desc: String,
+    pub enable: bool,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
+pub struct FormData {
     pub key: String,
     pub value: String,
     pub desc: String,
@@ -191,6 +279,7 @@ pub struct Response {
     pub status: u16,
     pub status_text: String,
 }
+
 pub struct Cookie {
     pub name: String,
     pub value: String,
@@ -201,6 +290,7 @@ pub struct Cookie {
     pub http_only: bool,
     pub secure: bool,
 }
+
 impl Response {
     //BAIDUID=67147D03A8E2F75F66619A1CFADFAAF2:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com
     pub fn get_cookies(&self) -> Vec<Cookie> {

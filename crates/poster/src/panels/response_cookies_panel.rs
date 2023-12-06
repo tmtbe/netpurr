@@ -1,5 +1,5 @@
 use eframe::emath::Align;
-use egui::{Checkbox, Layout, TextEdit, Ui, Widget};
+use egui::{Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::AppData;

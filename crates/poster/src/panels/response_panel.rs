@@ -3,10 +3,10 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{AppData, Response};
+use crate::panels::DataView;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
 use crate::panels::response_headers_panel::ResponseHeadersPanel;
-use crate::panels::DataView;
 use crate::utils;
 
 #[derive(Default)]

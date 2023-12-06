@@ -1,7 +1,7 @@
 use crate::data::AppData;
+use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 
 #[derive(Default)]
 pub struct App {

@@ -4,10 +4,11 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{AppData, Header, Method, Request, Response};
+use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::response_panel::ResponsePanel;
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 
 #[derive(Default)]
@@ -15,6 +16,7 @@ pub struct RestPanel {
     open_request_panel_enum: RequestPanelEnum,
     request_params_panel: RequestParamsPanel,
     request_headers_panel: RequestHeadersPanel,
+    request_body_panel: RequestBodyPanel,
     response_panel: ResponsePanel,
     send_promise: Option<Promise<ehttp::Result<ehttp::Response>>>,
 }
@@ -32,6 +34,7 @@ impl Default for RequestPanelEnum {
         RequestPanelEnum::Params
     }
 }
+
 impl RestPanel {
     fn get_count(request: &Request, panel_enum: RequestPanelEnum) -> usize {
         match panel_enum {
@@ -52,6 +55,7 @@ impl DataView for RestPanel {
                 .data_map
                 .get_mut(cursor.as_str())
                 .unwrap();
+            data.rest.sync();
             ui.vertical(|ui| {
                 ui.label(data.rest.request.base_url.clone());
                 ui.separator();
@@ -160,7 +164,10 @@ impl DataView for RestPanel {
                 self.request_headers_panel
                     .set_and_render(app_data, cursor.clone(), ui)
             }
-            RequestPanelEnum::Body => {}
+            RequestPanelEnum::Body => {
+                self.request_body_panel
+                    .set_and_render(app_data, cursor.clone(), ui)
+            }
         }
         ui.separator();
         self.response_panel
