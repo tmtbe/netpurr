@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use egui::{Button, Ui};
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
@@ -19,6 +21,7 @@ pub struct RestPanel {
     request_body_panel: RequestBodyPanel,
     response_panel: ResponsePanel,
     send_promise: Option<Promise<ehttp::Result<ehttp::Response>>>,
+    send_instant: Option<Instant>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -69,8 +72,10 @@ impl DataView for RestPanel {
                                     ui.add_enabled(false, Button::new("Send"));
                                 } else {
                                     if ui.button("Send").clicked() {
-                                        self.send_promise =
-                                            Some(app_data.rest_sender.send(&mut data.rest));
+                                        let send_response =
+                                            app_data.rest_sender.send(&mut data.rest);
+                                        self.send_promise = Some(send_response.0);
+                                        self.send_instant = Some(send_response.1);
                                         app_data.history_data_list.record(data.rest.clone())
                                     }
                                 }
@@ -121,37 +126,28 @@ impl DataView for RestPanel {
                 ui.separator();
                 ui.add_space(HORIZONTAL_GAP);
             });
-        }
-        if let Some(promise) = &self.send_promise {
-            if let Some(result) = promise.ready() {
-                let id = app_data
-                    .central_request_data_list
-                    .select_id
-                    .clone()
-                    .unwrap();
-                match result {
-                    Ok(r) => {
-                        app_data
-                            .central_request_data_list
-                            .data_map
-                            .get_mut(id.as_str())
-                            .unwrap()
-                            .rest
-                            .response = Response {
-                            body: r.bytes.clone(),
-                            headers: Header::new_from_tuple(r.headers.clone()),
-                            url: r.url.clone(),
-                            ok: r.ok.clone(),
-                            status: r.status.clone(),
-                            status_text: r.status_text.clone(),
-                        };
-                        self.response_panel.ready()
+
+            if let Some(promise) = &self.send_promise {
+                if let Some(result) = promise.ready() {
+                    data.rest.elapsed_time = Some(self.send_instant.unwrap().elapsed().as_millis());
+                    match result {
+                        Ok(r) => {
+                            data.rest.response = Response {
+                                body: r.bytes.clone(),
+                                headers: Header::new_from_tuple(r.headers.clone()),
+                                url: r.url.clone(),
+                                ok: r.ok.clone(),
+                                status: r.status.clone(),
+                                status_text: r.status_text.clone(),
+                            };
+                            data.rest.ready()
+                        }
+                        Err(_) => data.rest.error(),
                     }
-                    Err(_) => self.response_panel.error(),
+                    self.send_promise = None;
+                } else {
+                    data.rest.pending()
                 }
-                self.send_promise = None;
-            } else {
-                self.response_panel.pending()
             }
         }
         match self.open_request_panel_enum {

@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use chrono::{DateTime, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
@@ -34,6 +36,8 @@ impl AppData {
                             body_xxx_form: vec![],
                         },
                         response: Default::default(),
+                        status: Default::default(),
+                        elapsed_time: None,
                     },
                 }],
             },
@@ -45,7 +49,10 @@ impl AppData {
 pub struct RestSender {}
 
 impl RestSender {
-    pub fn send(&mut self, rest: &mut HttpRecord) -> Promise<ehttp::Result<ehttp::Response>> {
+    pub fn send(
+        &mut self,
+        rest: &mut HttpRecord,
+    ) -> (Promise<ehttp::Result<ehttp::Response>>, Instant) {
         let (sender, promise) = Promise::new();
         if !rest.request.base_url.starts_with("http://")
             && !rest.request.base_url.starts_with("https://")
@@ -55,13 +62,19 @@ impl RestSender {
         let request = ehttp::Request {
             method: rest.request.method.to_string(),
             url: rest.request.base_url.to_string(),
-            body: vec![],
-            headers: Default::default(),
+            body: rest.request.body.clone(),
+            headers: rest
+                .request
+                .headers
+                .iter()
+                .map(|h| (h.key.clone(), h.value.clone()))
+                .collect(),
         };
+
         ehttp::fetch(request, move |response| {
             sender.send(response);
         });
-        return promise;
+        return (promise, Instant::now());
     }
 }
 
@@ -143,6 +156,37 @@ pub struct HistoryRestItem {
 pub struct HttpRecord {
     pub request: Request,
     pub response: Response,
+    pub status: ResponseStatus,
+    pub elapsed_time: Option<u128>,
+}
+
+impl HttpRecord {
+    pub(crate) fn pending(&mut self) {
+        self.status = ResponseStatus::Pending;
+    }
+    pub(crate) fn ready(&mut self) {
+        self.status = ResponseStatus::Ready;
+    }
+    pub(crate) fn none(&mut self) {
+        self.status = ResponseStatus::None;
+    }
+    pub(crate) fn error(&mut self) {
+        self.status = ResponseStatus::Error;
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum ResponseStatus {
+    None,
+    Pending,
+    Ready,
+    Error,
+}
+
+impl Default for ResponseStatus {
+    fn default() -> Self {
+        ResponseStatus::None
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -165,15 +209,18 @@ impl HttpRecord {
             BodyType::NONE => {}
             BodyType::FROM_DATA => {}
             BodyType::X_WWW_FROM_URLENCODED => {}
-            BodyType::RAW => match self.request.body_raw_type {
-                BodyRawType::TEXT => self.set_content_type("text/plain".to_string()),
-                BodyRawType::JSON => self.set_content_type("application/json".to_string()),
-                BodyRawType::HTML => self.set_content_type("text/html".to_string()),
-                BodyRawType::XML => self.set_content_type("application/xml".to_string()),
-                BodyRawType::JavaScript => {
-                    self.set_content_type("application/javascript".to_string())
+            BodyType::RAW => {
+                self.request.body = self.request.body_str.as_bytes().to_vec();
+                match self.request.body_raw_type {
+                    BodyRawType::TEXT => self.set_content_type("text/plain".to_string()),
+                    BodyRawType::JSON => self.set_content_type("application/json".to_string()),
+                    BodyRawType::HTML => self.set_content_type("text/html".to_string()),
+                    BodyRawType::XML => self.set_content_type("application/xml".to_string()),
+                    BodyRawType::JavaScript => {
+                        self.set_content_type("application/javascript".to_string())
+                    }
                 }
-            },
+            }
             BodyType::BINARY => {}
         }
     }

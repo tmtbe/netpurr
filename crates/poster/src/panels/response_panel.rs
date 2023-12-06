@@ -1,8 +1,8 @@
-use egui::Ui;
+use egui::{RichText, Ui};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, Response};
+use crate::data::{AppData, Response, ResponseStatus};
 use crate::panels::DataView;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
@@ -11,7 +11,6 @@ use crate::utils;
 
 #[derive(Default)]
 pub struct ResponsePanel {
-    status: ResponseStatus,
     open_panel_enum: ResponsePanelEnum,
     response_body_panel: ResponseBodyPanel,
     response_headers_panel: ResponseHeadersPanel,
@@ -31,33 +30,7 @@ impl Default for ResponsePanelEnum {
     }
 }
 
-#[derive(PartialEq, Eq)]
-enum ResponseStatus {
-    None,
-    Pending,
-    Ready,
-    Error,
-}
-
-impl Default for ResponseStatus {
-    fn default() -> Self {
-        ResponseStatus::None
-    }
-}
-
 impl ResponsePanel {
-    pub(crate) fn pending(&mut self) {
-        self.status = ResponseStatus::Pending;
-    }
-    pub(crate) fn ready(&mut self) {
-        self.status = ResponseStatus::Ready;
-    }
-    pub(crate) fn none(&mut self) {
-        self.status = ResponseStatus::None;
-    }
-    pub(crate) fn error(&mut self) {
-        self.status = ResponseStatus::Error;
-    }
     fn get_count(response: &Response, panel_enum: ResponsePanelEnum) -> usize {
         match panel_enum {
             ResponsePanelEnum::Body => 0,
@@ -80,7 +53,7 @@ impl DataView for ResponsePanel {
             .data_map
             .get(cursor.as_str())
             .unwrap();
-        match self.status {
+        match data.rest.status {
             ResponseStatus::None => {
                 ui.strong("Response");
                 ui.separator();
@@ -105,6 +78,20 @@ impl DataView for ResponsePanel {
                                 ResponsePanel::get_count(&data.rest.response, x),
                                 ui,
                             ),
+                        );
+                    }
+                    ui.label("Status:");
+                    ui.label(
+                        RichText::new(data.rest.response.status.to_string())
+                            .color(ui.visuals().warn_fg_color)
+                            .strong(),
+                    );
+                    if data.rest.elapsed_time.is_some() {
+                        ui.label("Time:");
+                        ui.label(
+                            RichText::new(data.rest.elapsed_time.unwrap().to_string() + "ms")
+                                .color(ui.visuals().warn_fg_color)
+                                .strong(),
                         );
                     }
                 });
