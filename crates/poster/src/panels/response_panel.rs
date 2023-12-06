@@ -3,10 +3,10 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{AppData, Response, ResponseStatus};
-use crate::panels::DataView;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
 use crate::panels::response_headers_panel::ResponseHeadersPanel;
+use crate::panels::DataView;
 use crate::utils;
 
 #[derive(Default)]
@@ -94,6 +94,12 @@ impl DataView for ResponsePanel {
                                 .strong(),
                         );
                     }
+                    ui.label("Size:");
+                    ui.label(
+                        RichText::new(ResponsePanel::get_byte_size(data.rest.response.body.len()))
+                            .color(ui.visuals().warn_fg_color)
+                            .strong(),
+                    );
                 });
                 ui.separator();
                 match self.open_panel_enum {
@@ -116,6 +122,18 @@ impl DataView for ResponsePanel {
                     ui.label("Could not get any response");
                 });
             }
+        }
+    }
+}
+
+impl ResponsePanel {
+    fn get_byte_size(size: usize) -> String {
+        if size > 1000000 {
+            return (size / 1000000).to_string() + " MB";
+        } else if size > 1000 {
+            return (size / 1000).to_string() + " KB";
+        } else {
+            return size.to_string() + " B";
         }
     }
 }
