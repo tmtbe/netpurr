@@ -2,12 +2,14 @@ use crate::data::AppData;
 
 pub mod central_panel;
 pub mod collections_panel;
-pub mod editor_panel;
 pub mod history_panel;
 pub mod left_panel;
-pub mod params_panel;
-mod reponse_panel;
-mod body_panel;
+mod request_headers_panel;
+pub mod request_params_panel;
+mod response_body_panel;
+mod response_headers_panel;
+mod response_panel;
+pub mod rest_panel;
 
 pub const HORIZONTAL_GAP: f32 = 8.0;
 pub const VERTICAL_GAP: f32 = 8.0;

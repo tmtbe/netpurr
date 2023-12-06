@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use chrono::{DateTime, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use poll_promise::Promise;
@@ -10,6 +12,7 @@ pub struct AppData {
     pub central_request_data_list: CentralRequestDataList,
     pub history_data_list: HistoryDataList,
 }
+
 impl AppData {
     pub fn fake(&mut self) {
         self.history_data_list.date_group.insert(
@@ -21,8 +24,10 @@ impl AppData {
                     rest: HttpRecord {
                         request: Request {
                             method: Default::default(),
-                            url: "http://www.baidu.com".to_string(),
+                            base_url: "http://www.baidu.com".to_string(),
                             params: vec![],
+                            headers: Default::default(),
+                            body: vec![],
                         },
                         response: Default::default(),
                     },
@@ -31,14 +36,16 @@ impl AppData {
         );
     }
 }
+
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct RestSender {}
+
 impl RestSender {
     pub fn send(&mut self, rest: &mut HttpRecord) -> Promise<ehttp::Result<ehttp::Response>> {
         let (sender, promise) = Promise::new();
         let request = ehttp::Request {
             method: rest.request.method.to_string(),
-            url: rest.request.url.to_string(),
+            url: rest.request.base_url.to_string(),
             body: vec![],
             headers: Default::default(),
         };
@@ -55,6 +62,7 @@ pub struct CentralRequestDataList {
     pub data_list: Vec<CentralRequestItem>,
     pub data_map: HashMap<String, CentralRequestItem>,
 }
+
 impl CentralRequestDataList {
     pub fn add_new(&mut self) {
         let crt = CentralRequestItem {
@@ -75,6 +83,7 @@ impl CentralRequestDataList {
         self.select(crt.id.clone())
     }
 }
+
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct CentralRequestItem {
     pub id: String,
@@ -108,6 +117,7 @@ impl HistoryDataList {
             });
     }
 }
+
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct DateGroupHistoryList {
     pub history_list: Vec<HistoryRestItem>,
@@ -129,8 +139,10 @@ pub struct HttpRecord {
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct Request {
     pub method: Method,
-    pub url: String,
+    pub base_url: String,
     pub params: Vec<QueryParam>,
+    pub headers: Vec<Header>,
+    pub body: Vec<u8>,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -142,31 +154,59 @@ pub struct QueryParam {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
+pub struct Header {
+    pub key: String,
+    pub value: String,
+    pub desc: String,
+    pub enable: bool,
+}
+
+impl Header {
+    pub fn new_from_btree(headers: BTreeMap<String, String>) -> Vec<Header> {
+        let mut result = vec![];
+        for (key, value) in headers {
+            result.push(Header {
+                key,
+                value,
+                desc: "".to_string(),
+                enable: true,
+            })
+        }
+        result
+    }
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct Response {
     pub body: Vec<u8>,
+    pub headers: Vec<Header>,
+    pub url: String,
+    pub ok: bool,
+    pub status: u16,
+    pub status_text: String,
 }
 
 #[derive(Debug, Display, PartialEq, EnumString, EnumIter, Clone, Eq)]
 pub enum Method {
-    Post,
-    Get,
-    Put,
-    Patch,
-    Delete,
-    Copy,
-    Head,
-    Options,
-    Link,
-    UnLink,
-    Purge,
-    Lock,
-    UnLock,
-    Propfind,
-    View,
+    POST,
+    GET,
+    PUT,
+    PATCH,
+    DELETE,
+    COPY,
+    HEAD,
+    OPTIONS,
+    LINK,
+    UNLINK,
+    PURGE,
+    LOCK,
+    UNLOCK,
+    PROPFIND,
+    VIEW,
 }
 
 impl Default for Method {
     fn default() -> Self {
-        Method::Get
+        Method::GET
     }
 }

@@ -1,27 +1,33 @@
-use crate::data::AppData;
-use crate::panels::body_panel::BodyPanel;
-use crate::panels::DataView;
 use egui::Ui;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
+
+use crate::data::AppData;
+use crate::panels::response_body_panel::ResponseBodyPanel;
+use crate::panels::response_headers_panel::ResponseHeadersPanel;
+use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct ResponsePanel {
     status: ResponseStatus,
     open_panel_enum: PanelEnum,
-    body_panel: BodyPanel,
+    response_body_panel: ResponseBodyPanel,
+    response_headers_panel: ResponseHeadersPanel,
 }
+
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
 enum PanelEnum {
     Body,
     Cookies,
     Headers,
 }
+
 impl Default for PanelEnum {
     fn default() -> Self {
         PanelEnum::Body
     }
 }
+
 #[derive(PartialEq, Eq)]
 enum ResponseStatus {
     None,
@@ -29,11 +35,13 @@ enum ResponseStatus {
     Ready,
     Error,
 }
+
 impl Default for ResponseStatus {
     fn default() -> Self {
         ResponseStatus::None
     }
 }
+
 impl ResponsePanel {
     pub(crate) fn pending(&mut self) {
         self.status = ResponseStatus::Pending;
@@ -63,7 +71,7 @@ impl DataView for ResponsePanel {
             }
             ResponseStatus::Pending => {
                 ui.centered_and_justified(|ui| {
-                    ui.label("Loading");
+                    ui.label("Loading...");
                 });
             }
             ResponseStatus::Ready => {
@@ -75,10 +83,14 @@ impl DataView for ResponsePanel {
                 ui.separator();
                 match self.open_panel_enum {
                     PanelEnum::Body => {
-                        self.body_panel.set_and_render(app_data, cursor, ui);
+                        self.response_body_panel
+                            .set_and_render(app_data, cursor, ui);
                     }
                     PanelEnum::Cookies => {}
-                    PanelEnum::Headers => {}
+                    PanelEnum::Headers => {
+                        self.response_headers_panel
+                            .set_and_render(app_data, cursor, ui);
+                    }
                 }
             }
             ResponseStatus::Error => {

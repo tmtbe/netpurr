@@ -1,10 +1,12 @@
-use crate::data::AppData;
-use crate::panels::DataView;
 use egui::{TextBuffer, Ui};
 
+use crate::data::AppData;
+use crate::panels::DataView;
+
 #[derive(Default)]
-pub struct BodyPanel {}
-impl DataView for BodyPanel {
+pub struct ResponseBodyPanel {}
+
+impl DataView for ResponseBodyPanel {
     type CursorType = String;
 
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {

@@ -3,15 +3,17 @@ use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, Method, Response};
-use crate::panels::params_panel::ParamsPanel;
-use crate::panels::reponse_panel::ResponsePanel;
+use crate::data::{AppData, Header, Method, Response};
 use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::panels::request_headers_panel::RequestHeadersPanel;
+use crate::panels::request_params_panel::RequestParamsPanel;
+use crate::panels::response_panel::ResponsePanel;
 
 #[derive(Default)]
-pub struct EditorPanel {
+pub struct RestPanel {
     open_request_panel_enum: RequestPanelEnum,
-    params_panel: ParamsPanel,
+    request_params_panel: RequestParamsPanel,
+    request_headers_panel: RequestHeadersPanel,
     response_panel: ResponsePanel,
     send_promise: Option<Promise<ehttp::Result<ehttp::Response>>>,
 }
@@ -30,7 +32,7 @@ impl Default for RequestPanelEnum {
     }
 }
 
-impl DataView for EditorPanel {
+impl DataView for RestPanel {
     type CursorType = String;
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
         {
@@ -40,7 +42,7 @@ impl DataView for EditorPanel {
                 .get_mut(cursor.as_str())
                 .unwrap();
             ui.vertical(|ui| {
-                ui.label(data.rest.request.url.clone());
+                ui.label(data.rest.request.base_url.clone());
                 ui.separator();
                 ui.add_space(VERTICAL_GAP);
                 ui.horizontal(|ui| {
@@ -80,7 +82,7 @@ impl DataView for EditorPanel {
                                         }
                                     });
                                 ui.centered_and_justified(|ui| {
-                                    ui.text_edit_singleline(&mut data.rest.request.url)
+                                    ui.text_edit_singleline(&mut data.rest.request.base_url)
                                 });
                             });
                         });
@@ -118,6 +120,11 @@ impl DataView for EditorPanel {
                             .rest
                             .response = Response {
                             body: r.bytes.clone(),
+                            headers: Header::new_from_btree(r.headers.clone()),
+                            url: r.url.clone(),
+                            ok: r.ok.clone(),
+                            status: r.status.clone(),
+                            status_text: r.status_text.clone(),
                         };
                         self.response_panel.ready()
                     }
@@ -130,11 +137,14 @@ impl DataView for EditorPanel {
         }
         match self.open_request_panel_enum {
             RequestPanelEnum::Params => {
-                self.params_panel
+                self.request_params_panel
                     .set_and_render(app_data, cursor.clone(), ui)
             }
             RequestPanelEnum::Authorization => {}
-            RequestPanelEnum::Headers => {}
+            RequestPanelEnum::Headers => {
+                self.request_headers_panel
+                    .set_and_render(app_data, cursor.clone(), ui)
+            }
             RequestPanelEnum::Body => {}
         }
         ui.separator();

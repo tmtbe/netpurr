@@ -2,8 +2,8 @@ use egui::Ui;
 
 use crate::data::AppData;
 use crate::panels::collections_panel::CollectionsPanel;
-use crate::panels::history_panel::HistoryPanel;
 use crate::panels::DataView;
+use crate::panels::history_panel::HistoryPanel;
 
 #[derive(PartialEq, Eq)]
 enum Panel {

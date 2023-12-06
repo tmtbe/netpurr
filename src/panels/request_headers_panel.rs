@@ -1,16 +1,16 @@
 use eframe::emath::Align;
-use egui::{Button, Checkbox, Direction, Layout, TextEdit, Ui, Widget};
+use egui::{Button, Checkbox, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
-use crate::data::{AppData, QueryParam};
+use crate::data::{AppData, Header};
 use crate::panels::DataView;
 
 #[derive(Default)]
-pub struct ParamsPanel {
-    new_param: QueryParam,
+pub struct RequestHeadersPanel {
+    new_header: Header,
 }
 
-impl DataView for ParamsPanel {
+impl DataView for RequestHeadersPanel {
     type CursorType = String;
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
         let data = app_data
@@ -18,7 +18,7 @@ impl DataView for ParamsPanel {
             .data_map
             .get_mut(cursor.as_str())
             .unwrap();
-        ui.label("Query Params");
+        ui.label("Headers");
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
             .resizable(false)
@@ -28,7 +28,7 @@ impl DataView for ParamsPanel {
             .column(Column::initial(200.0).range(40.0..=300.0))
             .column(Column::initial(200.0).range(40.0..=300.0))
             .column(Column::remainder())
-            .min_scrolled_height(0.0);
+            .min_scrolled_height(200.0);
         table
             .header(20.0, |mut header| {
                 header.col(|ui| {
@@ -48,10 +48,10 @@ impl DataView for ParamsPanel {
                 });
             })
             .body(|mut body| {
-                for (index, param) in data.rest.request.params.iter_mut().enumerate() {
+                for (index, header) in data.rest.request.headers.iter_mut().enumerate() {
                     body.row(18.0, |mut row| {
                         row.col(|ui| {
-                            ui.checkbox(&mut param.enable, "");
+                            ui.checkbox(&mut header.enable, "");
                         });
                         row.col(|ui| {
                             if ui.button("x").clicked() {
@@ -59,13 +59,13 @@ impl DataView for ParamsPanel {
                             }
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut param.key);
+                            ui.text_edit_singleline(&mut header.key);
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut param.value);
+                            ui.text_edit_singleline(&mut header.value);
                         });
                         row.col(|ui| {
-                            TextEdit::singleline(&mut param.desc)
+                            TextEdit::singleline(&mut header.desc)
                                 .desired_width(f32::INFINITY)
                                 .ui(ui);
                         });
@@ -73,33 +73,34 @@ impl DataView for ParamsPanel {
                 }
                 body.row(18.0, |mut row| {
                     row.col(|ui| {
-                        ui.add_enabled(false, Checkbox::new(&mut self.new_param.enable, ""));
+                        ui.add_enabled(false, Checkbox::new(&mut self.new_header.enable, ""));
                     });
                     row.col(|ui| {
                         ui.add_enabled(false, Button::new("x"));
                     });
                     row.col(|ui| {
-                        ui.text_edit_singleline(&mut self.new_param.key);
+                        ui.text_edit_singleline(&mut self.new_header.key);
                     });
                     row.col(|ui| {
-                        ui.text_edit_singleline(&mut self.new_param.value);
+                        ui.text_edit_singleline(&mut self.new_header.value);
                     });
                     row.col(|ui| {
-                        TextEdit::singleline(&mut self.new_param.desc)
+                        TextEdit::singleline(&mut self.new_header.desc)
                             .desired_width(f32::INFINITY)
                             .ui(ui);
                     });
                 });
             });
         if delete_index.is_some() {
-            data.rest.request.params.remove(delete_index.unwrap());
+            data.rest.request.headers.remove(delete_index.unwrap());
         }
-        if self.new_param.key != "" || self.new_param.value != "" || self.new_param.desc != "" {
-            data.rest.request.params.push(self.new_param.clone());
-            self.new_param.key = "".to_string();
-            self.new_param.value = "".to_string();
-            self.new_param.desc = "".to_string();
-            self.new_param.enable = false;
+        if self.new_header.key != "" || self.new_header.value != "" || self.new_header.desc != "" {
+            self.new_header.enable = true;
+            data.rest.request.headers.push(self.new_header.clone());
+            self.new_header.key = "".to_string();
+            self.new_header.value = "".to_string();
+            self.new_header.desc = "".to_string();
+            self.new_header.enable = false;
         }
     }
 }

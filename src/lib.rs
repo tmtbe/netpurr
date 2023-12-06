@@ -3,5 +3,6 @@
 pub use app::App;
 
 mod app;
-mod panels;
 mod data;
+mod panels;
+mod utils;

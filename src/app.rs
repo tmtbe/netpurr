@@ -1,7 +1,7 @@
 use crate::data::AppData;
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
+use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 
 #[derive(Default)]
 pub struct App {
@@ -50,11 +50,11 @@ impl eframe::App for App {
             ui.add_space(HORIZONTAL_GAP);
         });
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
-            self.left_panel.set_and_render(&mut self.app_data,0, ui);
+            self.left_panel.set_and_render(&mut self.app_data, 0, ui);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.central_panel.set_and_render(&mut self.app_data,0, ui);
+            self.central_panel.set_and_render(&mut self.app_data, 0, ui);
         });
     }
 }

@@ -1,7 +1,8 @@
-use egui::{CollapsingHeader, RichText, Ui};
+use egui::{CollapsingHeader, Ui};
 
 use crate::data::{AppData, CentralRequestItem};
 use crate::panels::DataView;
+use crate::utils;
 
 #[derive(Default)]
 pub struct HistoryPanel {}
@@ -14,16 +15,9 @@ impl DataView for HistoryPanel {
                 .default_open(false)
                 .show(ui, |ui| {
                     for history_rest_item in date_history_data.history_list.iter() {
-                        if ui
-                            .button(
-                                RichText::new(
-                                    history_rest_item.rest.clone().request.method.to_string()
-                                        + &*history_rest_item.rest.clone().request.url,
-                                )
-                                .color(ui.visuals().warn_fg_color),
-                            )
-                            .clicked()
-                        {
+                        let lb =
+                            utils::build_rest_ui_header(history_rest_item.rest.request.clone(), ui);
+                        if ui.button(lb).clicked() {
                             app_data
                                 .central_request_data_list
                                 .add_crt(CentralRequestItem {
