@@ -101,6 +101,15 @@ pub struct CentralRequestDataList {
 }
 
 impl CentralRequestDataList {
+    pub fn remove(&mut self, id: String) {
+        self.data_map.remove(id.as_str());
+        self.data_list
+            .clone()
+            .iter()
+            .enumerate()
+            .find(|(_, c)| c.id == id)
+            .map(|(index, _)| self.data_list.remove(index));
+    }
     pub fn add_new(&mut self) {
         let crt = CentralRequestItem {
             id: Uuid::new_v4().to_string(),

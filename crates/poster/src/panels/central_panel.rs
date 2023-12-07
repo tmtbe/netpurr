@@ -1,6 +1,6 @@
 use crate::data::AppData;
-use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::panels::rest_panel::RestPanel;
+use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::utils;
 
 #[derive(Default)]
@@ -28,13 +28,31 @@ impl DataView for MyCentralPanel {
         ui: &mut egui::Ui,
     ) {
         ui.horizontal(|ui| {
-            for request_data in &app_data.central_request_data_list.data_list {
+            for request_data in app_data.central_request_data_list.data_list.clone().iter() {
                 let lb = utils::build_rest_ui_header(request_data.rest.request.clone(), ui);
-                ui.selectable_value(
+                if utils::selectable_label_with_close_button(
+                    ui,
                     &mut app_data.central_request_data_list.select_id,
                     Some(request_data.id.clone()),
                     lb,
-                );
+                )
+                .closed()
+                {
+                    app_data
+                        .central_request_data_list
+                        .remove(request_data.id.clone());
+                    if app_data.central_request_data_list.select_id.is_some() {
+                        if app_data
+                            .central_request_data_list
+                            .select_id
+                            .clone()
+                            .unwrap()
+                            == request_data.id
+                        {
+                            app_data.central_request_data_list.select_id = None;
+                        }
+                    }
+                }
             }
             if ui.button("+").clicked() {
                 app_data.central_request_data_list.add_new()

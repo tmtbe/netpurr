@@ -60,7 +60,11 @@ impl DataView for RestPanel {
                 .unwrap();
             data.rest.sync();
             ui.vertical(|ui| {
-                ui.label(data.rest.request.base_url.clone());
+                if data.rest.request.base_url == "" {
+                    ui.label("Untitled Request");
+                } else {
+                    ui.label(data.rest.request.base_url.clone());
+                }
                 ui.separator();
                 ui.add_space(VERTICAL_GAP);
                 ui.horizontal(|ui| {

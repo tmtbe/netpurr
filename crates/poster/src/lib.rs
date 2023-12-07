@@ -6,3 +6,4 @@ mod app;
 mod data;
 mod panels;
 mod utils;
+mod widgets;
