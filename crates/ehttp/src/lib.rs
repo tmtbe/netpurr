@@ -21,6 +21,12 @@
 #![doc = document_features::document_features!()]
 //!
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use native::fetch_blocking;
+pub use types::{Error, PartialResponse, Request, Response, Result};
+#[cfg(target_arch = "wasm32")]
+pub use web::spawn_future;
+
 /// Performs an HTTP request and calls the given callback when done.
 ///
 /// `Ok` is returned if we get a response, even if it's a 404.
@@ -72,21 +78,15 @@ pub async fn fetch_async(request: Request) -> Result<Response> {
     return web::fetch_async(&request).await;
 }
 
-mod types;
-pub use types::{Error, PartialResponse, Request, Response, Result};
-
+#[cfg(feature = "multipart")]
+pub mod multipart;
 #[cfg(not(target_arch = "wasm32"))]
 mod native;
-#[cfg(not(target_arch = "wasm32"))]
-pub use native::fetch_blocking;
-
-#[cfg(target_arch = "wasm32")]
-mod web;
-#[cfg(target_arch = "wasm32")]
-pub use web::spawn_future;
-
 #[cfg(feature = "streaming")]
 pub mod streaming;
+mod types;
+#[cfg(target_arch = "wasm32")]
+mod web;
 
 /// Helper for constructing [`Request::headers`].
 /// ```

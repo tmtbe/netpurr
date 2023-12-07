@@ -1,4 +1,5 @@
-use std::collections::BTreeMap;
+#[cfg(feature = "multipart")]
+use crate::multipart::MultipartBuilder;
 
 /// A simple HTTP request.
 #[derive(Clone, Debug)]
@@ -25,6 +26,50 @@ impl Request {
             url: url.to_string(),
             body: vec![],
             headers: crate::headers(&[("Accept", "*/*")]),
+        }
+    }
+
+    /// Get `Header` list from request with the given key.
+    pub fn get_header(&self, key: String) -> Vec<String> {
+        self.headers
+            .iter()
+            .filter(|h| h.0 == key)
+            .map(|h| h.1.clone())
+            .collect()
+    }
+
+    /// Add a `Header` for request.
+    pub fn add_header(&mut self, key: String, value: String) {
+        self.headers.push((key, value))
+    }
+
+    /// Multipart HTTP for both native and WASM.
+    ///
+    /// Requires the `multipart` feature to be enabled.
+    ///
+    /// Example:
+    /// ```
+    /// use std::io::Cursor;
+    /// use ehttp::multipart::MultipartBuilder;
+    /// let url = "https://www.example.com";
+    /// let request = ehttp::Request::multipart(url, MultipartBuilder::new()
+    ///     .add_file("image", "/home/user/image.png")
+    ///     .add_text("label", "lorem ipsum")
+    ///     .add_stream(&mut Cursor::new(vec![0,0,0,0]),
+    ///         "4_empty_bytes",
+    ///         Some("4_empty_bytes.png"),
+    ///         None));
+    /// ehttp::fetch(request, |result| {
+    ///
+    /// });
+    #[cfg(feature = "multipart")]
+    pub fn multipart(url: impl ToString, builder: MultipartBuilder) -> Self {
+        let (content_type, data) = builder.build();
+        Self {
+            method: "POST".to_string(),
+            url: url.to_string(),
+            body: data,
+            headers: crate::headers(&[("Accept", "*/*"), ("Content-Type", &*content_type)]),
         }
     }
 
@@ -75,6 +120,15 @@ impl Response {
             .iter()
             .find(|s| s.0 == "content-type")
             .map(|s| s.1.as_str())
+    }
+
+    /// Get `Header` list from response with the given key.
+    pub fn get_header(&self, key: String) -> Vec<String> {
+        self.headers
+            .iter()
+            .filter(|h| h.0 == key)
+            .map(|h| h.1.clone())
+            .collect()
     }
 }
 

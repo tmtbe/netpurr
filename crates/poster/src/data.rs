@@ -5,6 +5,7 @@ use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
 use poll_promise::Promise;
 use strum_macros::{Display, EnumIter, EnumString};
+use urlencoding::encode;
 use uuid::Uuid;
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -25,7 +26,7 @@ impl AppData {
                     rest: HttpRecord {
                         request: Request {
                             method: Default::default(),
-                            base_url: "http://www.baidu.com".to_string(),
+                            base_url: "https://httpbin.org".to_string(),
                             params: vec![],
                             headers: Default::default(),
                             body: vec![],
@@ -61,7 +62,7 @@ impl RestSender {
         }
         let request = ehttp::Request {
             method: rest.request.method.to_string(),
-            url: rest.request.base_url.to_string(),
+            url: self.build_url(rest),
             body: rest.request.body.clone(),
             headers: rest
                 .request
@@ -75,6 +76,17 @@ impl RestSender {
             sender.send(response);
         });
         return (promise, Instant::now());
+    }
+    fn build_url(&self, rest: &HttpRecord) -> String {
+        let url = rest.request.base_url.clone();
+        let params: Vec<String> = rest
+            .request
+            .params
+            .iter()
+            .filter(|p| p.enable)
+            .map(|p| format!("{}={}", encode(p.key.as_str()), encode(p.value.as_str())))
+            .collect();
+        url + "?" + params.join("&").as_str()
     }
 }
 
@@ -208,7 +220,9 @@ impl HttpRecord {
         match self.request.body_type {
             BodyType::NONE => {}
             BodyType::FROM_DATA => {}
-            BodyType::X_WWW_FROM_URLENCODED => {}
+            BodyType::X_WWW_FROM_URLENCODED => {
+                self.set_content_type("application/x-www-form-urlencoded".to_string())
+            }
             BodyType::RAW => {
                 self.request.body = self.request.body_str.as_bytes().to_vec();
                 match self.request.body_raw_type {

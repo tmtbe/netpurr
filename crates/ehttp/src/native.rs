@@ -1,9 +1,7 @@
-use std::collections::BTreeMap;
-
-use crate::{Request, Response};
-
 #[cfg(feature = "native-async")]
 use async_channel::{Receiver, Sender};
+
+use crate::{Request, Response};
 
 /// Performs a  HTTP request and blocks the thread until it is done.
 ///
