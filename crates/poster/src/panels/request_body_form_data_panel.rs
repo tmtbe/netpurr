@@ -1,13 +1,14 @@
 use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
+use strum::IntoEnumIterator;
 
-use crate::data::{AppData, FormData};
+use crate::data::{AppData, MultipartData, MultipartDataType};
 use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct RequestBodyFormDataPanel {
-    new_form: FormData,
+    new_form: MultipartData,
 }
 
 impl DataView for RequestBodyFormDataPanel {
@@ -18,13 +19,13 @@ impl DataView for RequestBodyFormDataPanel {
             .data_map
             .get_mut(cursor.as_str())
             .unwrap();
-        ui.label("Query Params");
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
             .resizable(false)
             .cell_layout(Layout::left_to_right(Align::Center))
             .column(Column::auto())
             .column(Column::exact(20.0))
+            .column(Column::exact(100.0))
             .column(Column::initial(200.0).range(40.0..=300.0))
             .column(Column::initial(200.0).range(40.0..=300.0))
             .column(Column::remainder())
@@ -36,6 +37,9 @@ impl DataView for RequestBodyFormDataPanel {
                 });
                 header.col(|ui| {
                     ui.strong("");
+                });
+                header.col(|ui| {
+                    ui.strong("TYPE");
                 });
                 header.col(|ui| {
                     ui.strong("KEY");
@@ -59,10 +63,31 @@ impl DataView for RequestBodyFormDataPanel {
                             }
                         });
                         row.col(|ui| {
+                            egui::ComboBox::from_id_source(
+                                "form_data_type_".to_string() + index.to_string().as_str(),
+                            )
+                            .selected_text(param.data_type.to_string())
+                            .show_ui(ui, |ui| {
+                                ui.style_mut().wrap = Some(false);
+                                ui.set_min_width(60.0);
+                                for x in MultipartDataType::iter() {
+                                    ui.selectable_value(
+                                        &mut param.data_type,
+                                        x.clone(),
+                                        x.to_string(),
+                                    );
+                                }
+                            });
+                        });
+                        row.col(|ui| {
                             ui.text_edit_singleline(&mut param.key);
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut param.value);
+                            if param.data_type == MultipartDataType::Text {
+                                ui.text_edit_singleline(&mut param.value);
+                            } else {
+                                ui.button("Select File");
+                            }
                         });
                         row.col(|ui| {
                             TextEdit::singleline(&mut param.desc)
@@ -79,10 +104,29 @@ impl DataView for RequestBodyFormDataPanel {
                         ui.add_enabled(false, Button::new("x"));
                     });
                     row.col(|ui| {
+                        egui::ComboBox::from_id_source("form_data_type")
+                            .selected_text(self.new_form.data_type.to_string())
+                            .show_ui(ui, |ui| {
+                                ui.style_mut().wrap = Some(false);
+                                ui.set_min_width(60.0);
+                                for x in MultipartDataType::iter() {
+                                    ui.selectable_value(
+                                        &mut self.new_form.data_type,
+                                        x.clone(),
+                                        x.to_string(),
+                                    );
+                                }
+                            });
+                    });
+                    row.col(|ui| {
                         ui.text_edit_singleline(&mut self.new_form.key);
                     });
                     row.col(|ui| {
-                        ui.text_edit_singleline(&mut self.new_form.value);
+                        if self.new_form.data_type == MultipartDataType::Text {
+                            ui.text_edit_singleline(&mut self.new_form.value);
+                        } else {
+                            ui.button("Select File");
+                        }
                     });
                     row.col(|ui| {
                         TextEdit::singleline(&mut self.new_form.desc)

@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::time::Instant;
 
 use chrono::{DateTime, NaiveDate, Utc};
@@ -7,6 +8,8 @@ use poll_promise::Promise;
 use strum_macros::{Display, EnumIter, EnumString};
 use urlencoding::encode;
 use uuid::Uuid;
+
+use ehttp::multipart::MultipartBuilder;
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct AppData {
@@ -211,19 +214,45 @@ pub struct Request {
     pub body_str: String,
     pub body_type: BodyType,
     pub body_raw_type: BodyRawType,
-    pub body_form_data: Vec<FormData>,
-    pub body_xxx_form: Vec<FormData>,
+    pub body_form_data: Vec<MultipartData>,
+    pub body_xxx_form: Vec<MultipartData>,
 }
 
 impl HttpRecord {
     pub fn sync(&mut self) {
         match self.request.body_type {
             BodyType::NONE => {}
-            BodyType::FROM_DATA => {}
+            BodyType::FROM_DATA => {
+                self.request.method = Method::POST;
+                let mut multipart = MultipartBuilder::new();
+                for x in self.request.body_form_data.iter_mut() {
+                    if !x.enable {
+                        continue;
+                    }
+                    match x.data_type {
+                        MultipartDataType::File => {
+                            let file = PathBuf::from(x.value.as_str());
+                            if !file.is_file() {
+                                x.enable = false;
+                                continue;
+                            }
+                            multipart = multipart.add_file(x.key.as_str(), file);
+                        }
+                        MultipartDataType::Text => {
+                            multipart = multipart.add_text(x.key.as_str(), x.value.as_str());
+                        }
+                    }
+                }
+                let (content_type, data) = multipart.build();
+                self.set_content_type(content_type);
+                self.request.body = data
+            }
             BodyType::X_WWW_FROM_URLENCODED => {
+                self.request.method = Method::POST;
                 self.set_content_type("application/x-www-form-urlencoded".to_string())
             }
             BodyType::RAW => {
+                self.request.method = Method::POST;
                 self.request.body = self.request.body_str.as_bytes().to_vec();
                 match self.request.body_raw_type {
                     BodyRawType::TEXT => self.set_content_type("text/plain".to_string()),
@@ -301,11 +330,24 @@ pub struct QueryParam {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
-pub struct FormData {
+pub struct MultipartData {
+    pub data_type: MultipartDataType,
     pub key: String,
     pub value: String,
     pub desc: String,
     pub enable: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Display, EnumIter, EnumString)]
+pub enum MultipartDataType {
+    File,
+    Text,
+}
+
+impl Default for MultipartDataType {
+    fn default() -> Self {
+        MultipartDataType::Text
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]

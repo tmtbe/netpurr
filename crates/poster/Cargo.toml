@@ -43,7 +43,7 @@ puffin = { version = "0.18", optional = true }
 puffin_http = { version = "0.15", optional = true }
 
 # feature "http":
-ehttp = { version = "0.3.0",path = "../ehttp", optional = true }
+ehttp = { version = "0.3.0", path = "../ehttp", optional = true, features = ["multipart"] }
 image = { version = "0.24.7", optional = true, default-features = false, features = [
     "jpeg",
     "png",

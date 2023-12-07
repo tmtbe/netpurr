@@ -6,11 +6,11 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{AppData, Header, Method, Request, Response};
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::response_panel::ResponsePanel;
+use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 
 #[derive(Default)]
@@ -68,6 +68,7 @@ impl DataView for RestPanel {
                         .resizable(false)
                         .show_inside(ui, |ui| {
                             ui.horizontal(|ui| {
+                                ui.add_space(HORIZONTAL_GAP);
                                 if self.send_promise.is_some() {
                                     ui.add_enabled(false, Button::new("Send"));
                                 } else {

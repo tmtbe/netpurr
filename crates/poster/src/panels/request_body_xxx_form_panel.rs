@@ -2,12 +2,12 @@ use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
-use crate::data::{AppData, FormData};
+use crate::data::{AppData, MultipartData};
 use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct RequestBodyXXXFormPanel {
-    new_form: FormData,
+    new_form: MultipartData,
 }
 
 impl DataView for RequestBodyXXXFormPanel {
@@ -18,7 +18,6 @@ impl DataView for RequestBodyXXXFormPanel {
             .data_map
             .get_mut(cursor.as_str())
             .unwrap();
-        ui.label("Query Params");
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
             .resizable(false)
