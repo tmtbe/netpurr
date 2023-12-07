@@ -249,7 +249,15 @@ impl HttpRecord {
             }
             BodyType::X_WWW_FROM_URLENCODED => {
                 self.request.method = Method::POST;
-                self.set_content_type("application/x-www-form-urlencoded".to_string())
+                self.set_content_type("application/x-www-form-urlencoded".to_string());
+                let body_part: Vec<String> = self
+                    .request
+                    .body_xxx_form
+                    .iter()
+                    .filter(|x| x.enable)
+                    .map(|x| format!("{}={}", encode(x.key.as_str()), encode(x.value.as_str())))
+                    .collect();
+                self.request.body = body_part.join("&").as_bytes().to_vec();
             }
             BodyType::RAW => {
                 self.request.method = Method::POST;
