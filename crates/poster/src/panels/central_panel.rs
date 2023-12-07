@@ -27,16 +27,17 @@ impl DataView for MyCentralPanel {
         cursor: Self::CursorType,
         ui: &mut egui::Ui,
     ) {
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             for request_data in app_data.central_request_data_list.data_list.clone().iter() {
                 let lb = utils::build_rest_ui_header(request_data.rest.request.clone(), ui);
-                if utils::selectable_label_with_close_button(
-                    ui,
-                    &mut app_data.central_request_data_list.select_id,
-                    Some(request_data.id.clone()),
-                    lb,
-                )
-                .closed()
+                if ui
+                    .selectable_value(
+                        // ui,
+                        &mut app_data.central_request_data_list.select_id,
+                        Some(request_data.id.clone()),
+                        lb,
+                    )
+                    .double_clicked()
                 {
                     app_data
                         .central_request_data_list
