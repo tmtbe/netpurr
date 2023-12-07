@@ -32,7 +32,6 @@ impl DataView for MyCentralPanel {
                 let lb = utils::build_rest_ui_header(request_data.rest.request.clone(), ui);
                 if ui
                     .selectable_value(
-                        // ui,
                         &mut app_data.central_request_data_list.select_id,
                         Some(request_data.id.clone()),
                         lb,
