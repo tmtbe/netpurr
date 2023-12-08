@@ -17,7 +17,8 @@ version = "0.1.0"
 # opt-level = 1 # very slow and big wasm. Don't do this.
 opt-level = 2 # fast and small wasm, basically same as `opt-level = 's'`
 # opt-level = 3 # unnecessarily large wasm for no performance gain
-
+strip = true
+lto = true
 # debug = true # include debug symbols, useful when profiling wasm
 
 

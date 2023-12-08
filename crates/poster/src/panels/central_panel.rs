@@ -1,4 +1,5 @@
 use crate::data::AppData;
+use crate::panels::environment_windows::EnvironmentWindows;
 use crate::panels::rest_panel::RestPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::utils;
@@ -6,6 +7,7 @@ use crate::utils;
 #[derive(Default)]
 pub struct MyCentralPanel {
     editor_panel: RestPanel,
+    environment_windows: EnvironmentWindows,
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -93,7 +95,9 @@ impl DataView for MyCentralPanel {
                                 );
                             }
                         });
-                    if ui.button("⚙").clicked() {}
+                    if ui.button("⚙").clicked() {
+                        self.environment_windows.open()
+                    }
                 });
             },
         );
@@ -107,5 +111,7 @@ impl DataView for MyCentralPanel {
             }
             _ => {}
         }
+        self.environment_windows
+            .set_and_render(app_data, cursor, ui);
     }
 }

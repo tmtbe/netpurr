@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Instant;
@@ -29,14 +30,34 @@ impl AppData {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Environment {
     pub select: Option<String>,
-    pub data: HashMap<String, EnvironmentConfig>,
+    pub data: BTreeMap<String, EnvironmentConfig>,
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        let mut e = Environment {
+            select: None,
+            data: Default::default(),
+        };
+        e.data
+            .insert("test".to_string(), EnvironmentConfig::default());
+        return e;
+    }
+}
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
+pub struct EnvironmentConfig {
+    pub items: Vec<EnvironmentItem>,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
-pub struct EnvironmentConfig {}
+pub struct EnvironmentItem {
+    pub enable: bool,
+    pub key: String,
+    pub value: String,
+}
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct RestSender {}
 
