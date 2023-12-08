@@ -20,6 +20,7 @@ pub struct AppData {
     pub rest_sender: RestSender,
     pub central_request_data_list: CentralRequestDataList,
     pub history_data_list: HistoryDataList,
+    pub environment: Environment,
 }
 
 impl AppData {
@@ -28,6 +29,14 @@ impl AppData {
     }
 }
 
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
+pub struct Environment {
+    pub select: Option<String>,
+    pub data: HashMap<String, EnvironmentConfig>,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
+pub struct EnvironmentConfig {}
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct RestSender {}
 
@@ -128,7 +137,6 @@ impl HistoryDataList {
             .load_list(Path::new("history").to_path_buf())
             .iter()
         {
-            println!("{:?}", date_dir);
             if let Some(date) = date_dir.file_name() {
                 if let Some(date_name) = date.to_str() {
                     if let Ok(naive_date) = NaiveDate::from_str(date_name) {

@@ -1,8 +1,9 @@
 use eframe::emath::Align;
 use eframe::epaint::text::LayoutJob;
-use egui::{FontSelection, RichText, Style, Ui, Widget, WidgetText};
+use egui::{FontSelection, Id, InnerResponse, RichText, Style, Ui, Widget, WidgetText};
 
 use crate::data::Request;
+use crate::panels::HORIZONTAL_GAP;
 use crate::widgets::selectable_value_with_close_button::{
     ExResponse, SelectableLabelWithCloseButton,
 };
@@ -65,4 +66,27 @@ pub fn build_with_count_ui_header(name: String, count: usize, ui: &Ui) -> Layout
             .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
     }
     lb
+}
+
+pub fn left_right_panel(
+    ui: &mut Ui,
+    left_id: impl Into<Id>,
+    left: impl FnOnce(&mut Ui),
+    right_id: impl Into<Id>,
+    right: impl FnOnce(&mut Ui),
+) -> InnerResponse<()> {
+    ui.horizontal(|ui| {
+        egui::SidePanel::right(right_id)
+            .resizable(true)
+            .show_separator_line(false)
+            .show_inside(ui, |ui| {
+                right(ui);
+            });
+        egui::SidePanel::left(left_id)
+            .resizable(true)
+            .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
+            .show_inside(ui, |ui| {
+                left(ui);
+            });
+    })
 }
