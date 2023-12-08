@@ -5,6 +5,7 @@ use strum::IntoEnumIterator;
 
 use crate::data::{AppData, MultipartData, MultipartDataType};
 use crate::panels::DataView;
+use crate::utils;
 
 #[derive(Default)]
 pub struct RequestBodyFormDataPanel {
@@ -86,7 +87,23 @@ impl DataView for RequestBodyFormDataPanel {
                             if param.data_type == MultipartDataType::Text {
                                 ui.text_edit_singleline(&mut param.value);
                             } else {
-                                ui.button("Select File");
+                                let mut button_name = utils::build_with_count_ui_header(
+                                    "Select File".to_string(),
+                                    0,
+                                    ui,
+                                );
+                                if param.value != "" {
+                                    button_name = utils::build_with_count_ui_header(
+                                        "Select File".to_string(),
+                                        1,
+                                        ui,
+                                    );
+                                }
+                                if ui.button(button_name).clicked() {
+                                    if let Some(path) = rfd::FileDialog::new().pick_file() {
+                                        param.value = path.display().to_string();
+                                    }
+                                }
                             }
                         });
                         row.col(|ui| {
@@ -125,7 +142,11 @@ impl DataView for RequestBodyFormDataPanel {
                         if self.new_form.data_type == MultipartDataType::Text {
                             ui.text_edit_singleline(&mut self.new_form.value);
                         } else {
-                            ui.button("Select File");
+                            if ui.button("Select File").clicked() {
+                                if let Some(path) = rfd::FileDialog::new().pick_file() {
+                                    self.new_form.value = path.display().to_string()
+                                }
+                            }
                         }
                     });
                     row.col(|ui| {

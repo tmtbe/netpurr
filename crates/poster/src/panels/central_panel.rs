@@ -93,6 +93,7 @@ impl DataView for MyCentralPanel {
                                 );
                             }
                         });
+                    if ui.button("⚙").clicked() {}
                 });
             },
         );
