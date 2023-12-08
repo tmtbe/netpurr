@@ -1,15 +1,19 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::time::Instant;
 
 use chrono::{DateTime, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
 use poll_promise::Promise;
+use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 use urlencoding::encode;
 use uuid::Uuid;
 
 use ehttp::multipart::MultipartBuilder;
+
+use crate::save::{Persistence, PersistenceItem};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct AppData {
@@ -19,33 +23,8 @@ pub struct AppData {
 }
 
 impl AppData {
-    pub fn fake(&mut self) {
-        self.history_data_list.date_group.insert(
-            NaiveDate::default(),
-            DateGroupHistoryList {
-                history_list: vec![HistoryRestItem {
-                    id: Uuid::new_v4().to_string(),
-                    record_date: Default::default(),
-                    rest: HttpRecord {
-                        request: Request {
-                            method: Default::default(),
-                            base_url: "https://httpbin.org".to_string(),
-                            params: vec![],
-                            headers: Default::default(),
-                            body: vec![],
-                            body_str: "".to_string(),
-                            body_type: Default::default(),
-                            body_raw_type: Default::default(),
-                            body_form_data: vec![],
-                            body_xxx_form: vec![],
-                        },
-                        response: Default::default(),
-                        status: Default::default(),
-                        elapsed_time: None,
-                    },
-                }],
-            },
-        );
+    pub fn load_all(&mut self) {
+        self.history_data_list.load_all();
     }
 }
 
@@ -138,10 +117,37 @@ pub struct CentralRequestItem {
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct HistoryDataList {
-    pub date_group: HashMap<NaiveDate, DateGroupHistoryList>,
+    persistence: Persistence,
+    date_group: HashMap<NaiveDate, DateGroupHistoryList>,
 }
 
 impl HistoryDataList {
+    pub fn load_all(&mut self) {
+        for date_dir in self
+            .persistence
+            .load_list(Path::new("history").to_path_buf())
+            .iter()
+        {
+            println!("{:?}", date_dir);
+            if let Some(date) = date_dir.file_name() {
+                if let Some(date_name) = date.to_str() {
+                    if let Ok(naive_date) = NaiveDate::from_str(date_name) {
+                        let mut date_group_history_list = DateGroupHistoryList::default();
+                        for item_path in self.persistence.load_list(date_dir.clone()).iter() {
+                            if let Ok(history_rest_item) = self.persistence.load(item_path.clone())
+                            {
+                                date_group_history_list.history_list.push(history_rest_item);
+                            }
+                        }
+                        self.date_group.insert(naive_date, date_group_history_list);
+                    }
+                }
+            }
+        }
+    }
+    pub fn get_group(&self) -> &HashMap<NaiveDate, DateGroupHistoryList> {
+        &self.date_group
+    }
     pub fn record(&mut self, rest: HttpRecord) {
         let today = chrono::Local::now().naive_local().date();
         if !self.date_group.contains_key(&today) {
@@ -152,15 +158,21 @@ impl HistoryDataList {
                 },
             );
         }
+        let hrt = HistoryRestItem {
+            id: Uuid::new_v4().to_string(),
+            record_date: chrono::Local::now().with_timezone(&Utc),
+            rest,
+        };
         self.date_group
             .get_mut(&today)
             .unwrap()
             .history_list
-            .push(HistoryRestItem {
-                id: Uuid::new_v4().to_string(),
-                record_date: chrono::Local::now().with_timezone(&Utc),
-                rest,
-            });
+            .push(hrt.clone());
+        self.persistence.save(
+            Path::new("history").join(today.to_string()),
+            hrt.id.clone(),
+            &hrt,
+        );
     }
 }
 
@@ -169,14 +181,14 @@ pub struct DateGroupHistoryList {
     pub history_list: Vec<HistoryRestItem>,
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct HistoryRestItem {
     pub id: String,
     pub record_date: DateTime<Utc>,
     pub rest: HttpRecord,
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct HttpRecord {
     pub request: Request,
     pub response: Response,
@@ -199,7 +211,7 @@ impl HttpRecord {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum ResponseStatus {
     None,
     Pending,
@@ -213,7 +225,7 @@ impl Default for ResponseStatus {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Request {
     pub method: Method,
     pub base_url: String,
@@ -308,7 +320,7 @@ impl HttpRecord {
     }
 }
 
-#[derive(Clone, EnumIter, EnumString, Display, PartialEq, Eq, Debug)]
+#[derive(Clone, EnumIter, EnumString, Display, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum BodyRawType {
     TEXT,
     JSON,
@@ -323,7 +335,7 @@ impl Default for BodyRawType {
     }
 }
 
-#[derive(Clone, EnumIter, EnumString, Display, PartialEq, Eq, Debug)]
+#[derive(Clone, EnumIter, EnumString, Display, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum BodyType {
     NONE,
     FROM_DATA,
@@ -338,7 +350,7 @@ impl Default for BodyType {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct QueryParam {
     pub key: String,
     pub value: String,
@@ -346,7 +358,7 @@ pub struct QueryParam {
     pub enable: bool,
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct MultipartData {
     pub data_type: MultipartDataType,
     pub key: String,
@@ -355,7 +367,7 @@ pub struct MultipartData {
     pub enable: bool,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Display, EnumIter, EnumString)]
+#[derive(Clone, PartialEq, Eq, Debug, Display, EnumIter, EnumString, Serialize, Deserialize)]
 pub enum MultipartDataType {
     File,
     Text,
@@ -367,7 +379,7 @@ impl Default for MultipartDataType {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Header {
     pub key: String,
     pub value: String,
@@ -390,7 +402,7 @@ impl Header {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Response {
     pub body: Vec<u8>,
     pub headers: Vec<Header>,
@@ -450,7 +462,7 @@ impl Response {
     }
 }
 
-#[derive(Debug, Display, PartialEq, EnumString, EnumIter, Clone, Eq)]
+#[derive(Debug, Display, PartialEq, EnumString, EnumIter, Clone, Eq, Serialize, Deserialize)]
 pub enum Method {
     POST,
     GET,

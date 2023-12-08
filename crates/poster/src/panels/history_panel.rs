@@ -10,7 +10,7 @@ pub struct HistoryPanel {}
 impl DataView for HistoryPanel {
     type CursorType = i32;
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        for (date, date_history_data) in app_data.history_data_list.date_group.iter_mut() {
+        for (date, date_history_data) in app_data.history_data_list.get_group().iter() {
             CollapsingHeader::new(date.to_string())
                 .default_open(false)
                 .show(ui, |ui| {

@@ -1,7 +1,7 @@
 use crate::data::AppData;
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
+use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 
 #[derive(Default)]
 pub struct App {
@@ -13,7 +13,7 @@ pub struct App {
 impl App {
     pub fn new(_: &eframe::CreationContext<'_>) -> Self {
         let mut app = App::default();
-        app.app_data.fake();
+        app.app_data.load_all();
         app
     }
 }
