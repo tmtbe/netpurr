@@ -61,6 +61,7 @@ chrono = { version = "0.4", features = ["serde"] }
 urlencoding = "2.1.3"
 dirs = "5.0.1"
 rfd = "0.11"
+regex = "1.10.2"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

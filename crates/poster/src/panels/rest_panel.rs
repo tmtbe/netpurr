@@ -77,8 +77,10 @@ impl DataView for RestPanel {
                                     ui.add_enabled(false, Button::new("Send"));
                                 } else {
                                     if ui.button("Send").clicked() {
-                                        let send_response =
-                                            app_data.rest_sender.send(&mut data.rest);
+                                        let send_response = app_data.rest_sender.send(
+                                            &mut data.rest,
+                                            app_data.environment.get_variable_hash_map(),
+                                        );
                                         self.send_promise = Some(send_response.0);
                                         self.send_instant = Some(send_response.1);
                                         app_data.history_data_list.record(data.rest.clone())

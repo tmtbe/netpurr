@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Instant;
@@ -7,6 +8,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
 use poll_promise::Promise;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 use urlencoding::encode;
@@ -34,6 +36,22 @@ impl AppData {
 pub struct Environment {
     pub select: Option<String>,
     pub data: BTreeMap<String, EnvironmentConfig>,
+}
+
+impl Environment {
+    pub fn get_variable_hash_map(&self) -> HashMap<String, String> {
+        self.select.clone().map_or_else(HashMap::default, |s| {
+            self.data
+                .get(s.as_str())
+                .map_or_else(HashMap::default, |e| {
+                    let mut result = HashMap::default();
+                    for x in e.items.iter().filter(|i| i.enable) {
+                        result.insert(x.key.clone(), x.value.clone());
+                    }
+                    result
+                })
+        })
+    }
 }
 
 impl Default for Environment {
@@ -65,6 +83,7 @@ impl RestSender {
     pub fn send(
         &mut self,
         rest: &mut HttpRecord,
+        envs: HashMap<String, String>,
     ) -> (Promise<ehttp::Result<ehttp::Response>>, Instant) {
         let (sender, promise) = Promise::new();
         if !rest.request.base_url.starts_with("http://")
@@ -72,14 +91,76 @@ impl RestSender {
         {
             rest.request.base_url = "http://".to_string() + rest.request.base_url.as_str();
         }
+        match rest.request.body_type {
+            BodyType::NONE => {}
+            BodyType::FROM_DATA => {
+                let mut multipart = MultipartBuilder::new();
+                for x in rest.request.body_form_data.iter_mut() {
+                    if !x.enable {
+                        continue;
+                    }
+                    match x.data_type {
+                        MultipartDataType::File => {
+                            let file = PathBuf::from(x.value.as_str());
+                            if !file.is_file() {
+                                x.enable = false;
+                                continue;
+                            }
+                            multipart = multipart.add_file(x.key.as_str(), file);
+                        }
+                        MultipartDataType::Text => {
+                            multipart = multipart.add_text(
+                                x.key.as_str(),
+                                self.replace_variable(x.value.clone(), envs.clone())
+                                    .as_str(),
+                            );
+                        }
+                    }
+                }
+                let (content_type, data) = multipart.build();
+                rest.set_content_type(content_type);
+                rest.request.body = data
+            }
+            BodyType::X_WWW_FROM_URLENCODED => {
+                let body_part: Vec<String> = rest
+                    .request
+                    .body_xxx_form
+                    .iter()
+                    .filter(|x| x.enable)
+                    .map(|x| MultipartData {
+                        data_type: x.data_type.clone(),
+                        key: x.key.clone(),
+                        value: self.replace_variable(x.value.clone(), envs.clone()),
+                        desc: x.desc.clone(),
+                        enable: x.enable,
+                    })
+                    .map(|x| format!("{}={}", encode(x.key.as_str()), encode(x.value.as_str())))
+                    .collect();
+                rest.request.body = body_part.join("&").as_bytes().to_vec();
+            }
+            BodyType::RAW => {
+                rest.request.body = self
+                    .replace_variable(rest.request.body_str.clone(), envs.clone())
+                    .as_bytes()
+                    .to_vec();
+            }
+            BodyType::BINARY => {}
+        }
         let request = ehttp::Request {
             method: rest.request.method.to_string(),
-            url: self.build_url(rest),
+            url: self.build_url(rest, envs.clone()),
             body: rest.request.body.clone(),
             headers: rest
                 .request
                 .headers
                 .iter()
+                .filter(|h| h.enable)
+                .map(|h| Header {
+                    key: h.key.clone(),
+                    value: self.replace_variable(h.value.clone(), envs.clone()),
+                    desc: h.desc.clone(),
+                    enable: h.enable,
+                })
                 .map(|h| (h.key.clone(), h.value.clone()))
                 .collect(),
         };
@@ -89,16 +170,53 @@ impl RestSender {
         });
         return (promise, Instant::now());
     }
-    fn build_url(&self, rest: &HttpRecord) -> String {
-        let url = rest.request.base_url.clone();
+    fn build_url(&self, rest: &HttpRecord, envs: HashMap<String, String>) -> String {
+        let url = self.replace_variable(rest.request.base_url.clone(), envs.clone());
         let params: Vec<String> = rest
             .request
             .params
             .iter()
             .filter(|p| p.enable)
+            .map(|p| QueryParam {
+                key: p.key.clone(),
+                value: self.replace_variable(p.value.clone(), envs.clone()),
+                desc: p.desc.clone(),
+                enable: p.enable,
+            })
             .map(|p| format!("{}={}", encode(p.key.as_str()), encode(p.value.as_str())))
             .collect();
         url + "?" + params.join("&").as_str()
+    }
+
+    pub fn find_variable(&self, content: String) -> Vec<Range<usize>> {
+        let re = Regex::new(r"\{\{.*?}}").unwrap();
+        re.find_iter(content.as_str())
+            .map(|it| it.range())
+            .collect()
+    }
+    pub fn replace_variable(&self, content: String, envs: HashMap<String, String>) -> String {
+        let re = Regex::new(r"\{\{.*?}}").unwrap();
+        let mut result = content.clone();
+        loop {
+            let temp = result.clone();
+            let find = re.find_iter(temp.as_str()).next();
+            if find.is_some() {
+                let key = find
+                    .unwrap()
+                    .as_str()
+                    .trim_start_matches("{{")
+                    .trim_end_matches("}}");
+                let v = envs.get(key);
+                if v.is_some() {
+                    result.replace_range(find.unwrap().range(), v.unwrap())
+                } else {
+                    result.replace_range(find.unwrap().range(), "{UNKNOWN}")
+                }
+            } else {
+                break;
+            }
+        }
+        result
     }
 }
 
@@ -274,44 +392,13 @@ impl HttpRecord {
             BodyType::NONE => {}
             BodyType::FROM_DATA => {
                 self.request.method = Method::POST;
-                let mut multipart = MultipartBuilder::new();
-                for x in self.request.body_form_data.iter_mut() {
-                    if !x.enable {
-                        continue;
-                    }
-                    match x.data_type {
-                        MultipartDataType::File => {
-                            let file = PathBuf::from(x.value.as_str());
-                            if !file.is_file() {
-                                x.enable = false;
-                                continue;
-                            }
-                            multipart = multipart.add_file(x.key.as_str(), file);
-                        }
-                        MultipartDataType::Text => {
-                            multipart = multipart.add_text(x.key.as_str(), x.value.as_str());
-                        }
-                    }
-                }
-                let (content_type, data) = multipart.build();
-                self.set_content_type(content_type);
-                self.request.body = data
             }
             BodyType::X_WWW_FROM_URLENCODED => {
                 self.request.method = Method::POST;
                 self.set_content_type("application/x-www-form-urlencoded".to_string());
-                let body_part: Vec<String> = self
-                    .request
-                    .body_xxx_form
-                    .iter()
-                    .filter(|x| x.enable)
-                    .map(|x| format!("{}={}", encode(x.key.as_str()), encode(x.value.as_str())))
-                    .collect();
-                self.request.body = body_part.join("&").as_bytes().to_vec();
             }
             BodyType::RAW => {
                 self.request.method = Method::POST;
-                self.request.body = self.request.body_str.as_bytes().to_vec();
                 match self.request.body_raw_type {
                     BodyRawType::TEXT => self.set_content_type("text/plain".to_string()),
                     BodyRawType::JSON => self.set_content_type("application/json".to_string()),
