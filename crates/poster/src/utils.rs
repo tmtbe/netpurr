@@ -2,9 +2,9 @@ use eframe::emath::Align;
 use eframe::epaint::text::LayoutJob;
 use egui::ahash::HashMap;
 use egui::{
-    FontSelection, Id, InnerResponse, Response, RichText, Style, TextBuffer, TextEdit, Ui, Widget,
-    WidgetText,
+    FontSelection, Id, InnerResponse, RichText, Style, TextBuffer, TextEdit, Ui, Widget, WidgetText,
 };
+use regex::Regex;
 
 use crate::data::Request;
 use crate::panels::HORIZONTAL_GAP;
@@ -99,10 +99,39 @@ pub fn highlight_template_singleline(
     ui: &mut Ui,
     content: &mut dyn TextBuffer,
     envs: HashMap<String, String>,
-) -> Response {
+) {
     let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
         let layout_job = crate::widgets::highlight::highlight_template(string, ui, envs.clone());
         ui.fonts(|f| f.layout_job(layout_job))
     };
-    TextEdit::singleline(content).layouter(&mut layouter).ui(ui)
+    let response = TextEdit::singleline(content).layouter(&mut layouter).ui(ui);
+    let text = replace_variable(content.as_str().to_string(), envs);
+    if response.hovered() && text.len() > 0 && text != content.as_str() {
+        response.on_hover_text(text);
+    }
+}
+
+pub fn replace_variable(content: String, envs: HashMap<String, String>) -> String {
+    let re = Regex::new(r"\{\{.*?}}").unwrap();
+    let mut result = content.clone();
+    loop {
+        let temp = result.clone();
+        let find = re.find_iter(temp.as_str()).next();
+        if find.is_some() {
+            let key = find
+                .unwrap()
+                .as_str()
+                .trim_start_matches("{{")
+                .trim_end_matches("}}");
+            let v = envs.get(key);
+            if v.is_some() {
+                result.replace_range(find.unwrap().range(), v.unwrap())
+            } else {
+                result.replace_range(find.unwrap().range(), "{UNKNOWN}")
+            }
+        } else {
+            break;
+        }
+    }
+    result
 }

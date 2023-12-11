@@ -87,7 +87,7 @@ impl DataView for MyCentralPanel {
                                 None,
                                 "No Environment",
                             );
-                            for (name, _) in &app_data.environment.data {
+                            for (name, _) in &app_data.environment.get_data() {
                                 ui.selectable_value(
                                     &mut app_data.environment.select,
                                     Some(name.clone()),

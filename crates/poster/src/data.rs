@@ -7,7 +7,6 @@ use chrono::{DateTime, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
 use poll_promise::Promise;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 use urlencoding::encode;
@@ -16,6 +15,7 @@ use uuid::Uuid;
 use ehttp::multipart::MultipartBuilder;
 
 use crate::save::{Persistence, PersistenceItem};
+use crate::utils;
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct AppData {
@@ -28,13 +28,15 @@ pub struct AppData {
 impl AppData {
     pub fn load_all(&mut self) {
         self.history_data_list.load_all();
+        self.environment.load_all()
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct Environment {
+    persistence: Persistence,
     pub select: Option<String>,
-    pub data: BTreeMap<String, EnvironmentConfig>,
+    data: BTreeMap<String, EnvironmentConfig>,
 }
 
 impl Environment {
@@ -51,25 +53,47 @@ impl Environment {
                 })
         })
     }
-}
 
-impl Default for Environment {
-    fn default() -> Self {
-        let mut e = Environment {
-            select: None,
-            data: Default::default(),
-        };
-        e.data
-            .insert("test".to_string(), EnvironmentConfig::default());
-        return e;
+    pub fn load_all(&mut self) {
+        for key in self
+            .persistence
+            .load_list(Path::new("environment").to_path_buf())
+            .iter()
+        {
+            if let Some(key_os) = key.file_name() {
+                if let Some(key_name) = key_os.to_str() {
+                    if let Ok(environment_config) = self.persistence.load(key.clone()) {
+                        self.data.insert(
+                            key_name.trim_end_matches(".json").to_string(),
+                            environment_config,
+                        );
+                    }
+                }
+            }
+        }
+    }
+    pub fn get_data(&self) -> BTreeMap<String, EnvironmentConfig> {
+        self.data.clone()
+    }
+    pub fn insert(&mut self, key: String, value: EnvironmentConfig) {
+        self.data.insert(key.clone(), value.clone());
+        self.persistence
+            .save(Path::new("environment").to_path_buf(), key.clone(), &value);
+    }
+
+    pub fn remove(&mut self, key: String) {
+        self.data.remove(key.as_str());
+        self.persistence
+            .remove(Path::new("environment").to_path_buf(), key.clone())
     }
 }
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct EnvironmentConfig {
     pub items: Vec<EnvironmentItem>,
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct EnvironmentItem {
     pub enable: bool,
     pub key: String,
@@ -110,8 +134,7 @@ impl RestSender {
                         MultipartDataType::Text => {
                             multipart = multipart.add_text(
                                 x.key.as_str(),
-                                self.replace_variable(x.value.clone(), envs.clone())
-                                    .as_str(),
+                                utils::replace_variable(x.value.clone(), envs.clone()).as_str(),
                             );
                         }
                     }
@@ -129,7 +152,7 @@ impl RestSender {
                     .map(|x| MultipartData {
                         data_type: x.data_type.clone(),
                         key: x.key.clone(),
-                        value: self.replace_variable(x.value.clone(), envs.clone()),
+                        value: utils::replace_variable(x.value.clone(), envs.clone()),
                         desc: x.desc.clone(),
                         enable: x.enable,
                     })
@@ -138,10 +161,10 @@ impl RestSender {
                 rest.request.body = body_part.join("&").as_bytes().to_vec();
             }
             BodyType::RAW => {
-                rest.request.body = self
-                    .replace_variable(rest.request.body_str.clone(), envs.clone())
-                    .as_bytes()
-                    .to_vec();
+                rest.request.body =
+                    utils::replace_variable(rest.request.body_str.clone(), envs.clone())
+                        .as_bytes()
+                        .to_vec();
             }
             BodyType::BINARY => {}
         }
@@ -156,7 +179,7 @@ impl RestSender {
                 .filter(|h| h.enable)
                 .map(|h| Header {
                     key: h.key.clone(),
-                    value: self.replace_variable(h.value.clone(), envs.clone()),
+                    value: utils::replace_variable(h.value.clone(), envs.clone()),
                     desc: h.desc.clone(),
                     enable: h.enable,
                 })
@@ -170,7 +193,7 @@ impl RestSender {
         return (promise, Instant::now());
     }
     fn build_url(&self, rest: &HttpRecord, envs: HashMap<String, String>) -> String {
-        let url = self.replace_variable(rest.request.base_url.clone(), envs.clone());
+        let url = utils::replace_variable(rest.request.base_url.clone(), envs.clone());
         let params: Vec<String> = rest
             .request
             .params
@@ -178,38 +201,13 @@ impl RestSender {
             .filter(|p| p.enable)
             .map(|p| QueryParam {
                 key: p.key.clone(),
-                value: self.replace_variable(p.value.clone(), envs.clone()),
+                value: utils::replace_variable(p.value.clone(), envs.clone()),
                 desc: p.desc.clone(),
                 enable: p.enable,
             })
             .map(|p| format!("{}={}", encode(p.key.as_str()), encode(p.value.as_str())))
             .collect();
         url + "?" + params.join("&").as_str()
-    }
-
-    pub fn replace_variable(&self, content: String, envs: HashMap<String, String>) -> String {
-        let re = Regex::new(r"\{\{.*?}}").unwrap();
-        let mut result = content.clone();
-        loop {
-            let temp = result.clone();
-            let find = re.find_iter(temp.as_str()).next();
-            if find.is_some() {
-                let key = find
-                    .unwrap()
-                    .as_str()
-                    .trim_start_matches("{{")
-                    .trim_end_matches("}}");
-                let v = envs.get(key);
-                if v.is_some() {
-                    result.replace_range(find.unwrap().range(), v.unwrap())
-                } else {
-                    result.replace_range(find.unwrap().range(), "{UNKNOWN}")
-                }
-            } else {
-                break;
-            }
-        }
-        result
     }
 }
 

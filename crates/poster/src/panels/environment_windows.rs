@@ -37,7 +37,7 @@ impl DataView for EnvironmentWindows {
                     ui.add_space(VERTICAL_GAP * 2.0);
                     ScrollArea::vertical()
                         .show(ui, |ui| {
-                            for (name, e) in app_data.environment.data.clone().iter() {
+                            for (name, e) in app_data.environment.get_data().iter() {
                                 ui.horizontal(|ui| {
                                     ui.add_space(HORIZONTAL_GAP * 3.0);
                                     utils::left_right_panel(ui, "env_".to_string() + name + "_left", |ui| {
@@ -49,11 +49,11 @@ impl DataView for EnvironmentWindows {
                                     }, "env_".to_string() + name + "_right", |ui| {
                                         ui.horizontal(|ui| {
                                             if ui.button("📋").clicked() {
-                                                app_data.environment.data.insert(name.to_string() + " Copy", e.clone());
+                                                app_data.environment.insert(name.to_string() + " Copy", e.clone());
                                             };
                                             ui.button("⬇");
                                             if ui.button("🗑").clicked() {
-                                                app_data.environment.data.remove(name);
+                                                app_data.environment.remove(name.to_string());
                                             }
                                         });
                                     });
@@ -158,8 +158,8 @@ impl DataView for EnvironmentWindows {
                             } else {
                                 if ui.button("Update").clicked() {
                                     if self.select_env_name != "" {
-                                        app_data.environment.data.remove(self.select_env.clone().unwrap().as_str());
-                                        app_data.environment.data.insert(self.select_env_name.clone(), self.select_env_config.clone());
+                                        app_data.environment.remove(self.select_env.clone().unwrap());
+                                        app_data.environment.insert(self.select_env_name.clone(), self.select_env_config.clone());
                                         self.select_env = None;
                                     }
                                 }

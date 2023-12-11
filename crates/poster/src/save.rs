@@ -12,6 +12,7 @@ pub trait PersistenceItem {
 
     fn load<T: DeserializeOwned>(&self, path: PathBuf) -> Result<T, Error>;
     fn load_list(&self, path: PathBuf) -> Vec<PathBuf>;
+    fn remove(&self, path: PathBuf, key: String);
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -43,6 +44,15 @@ impl PersistenceItem for Persistence {
             file.write_all(json.as_bytes())?;
         }
         Ok(())
+    }
+
+    fn remove(&self, path: PathBuf, key: String) {
+        if let Some(home_path) = self.root.clone() {
+            let dir_path = home_path.join("Poster").join(path);
+            let mut json_path = dir_path.join(key.clone());
+            json_path.set_extension("json");
+            fs::remove_file(json_path);
+        }
     }
 
     fn load<T: DeserializeOwned>(&self, path: PathBuf) -> Result<T, Error> {
