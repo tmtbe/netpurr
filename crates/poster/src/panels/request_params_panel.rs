@@ -60,10 +60,18 @@ impl DataView for RequestParamsPanel {
                             }
                         });
                         row.col(|ui| {
-                            utils::highlight(ui, &mut param.key);
+                            utils::highlight_template(
+                                ui,
+                                &mut param.key,
+                                app_data.environment.get_variable_hash_map(),
+                            );
                         });
                         row.col(|ui| {
-                            utils::highlight(ui, &mut param.value);
+                            utils::highlight_template(
+                                ui,
+                                &mut param.value,
+                                app_data.environment.get_variable_hash_map(),
+                            );
                         });
                         row.col(|ui| {
                             TextEdit::singleline(&mut param.desc)
@@ -80,10 +88,18 @@ impl DataView for RequestParamsPanel {
                         ui.add_enabled(false, Button::new("x"));
                     });
                     row.col(|ui| {
-                        utils::highlight(ui, &mut self.new_param.key);
+                        utils::highlight_template(
+                            ui,
+                            &mut self.new_param.key,
+                            app_data.environment.get_variable_hash_map(),
+                        );
                     });
                     row.col(|ui| {
-                        utils::highlight(ui, &mut self.new_param.value);
+                        utils::highlight_template(
+                            ui,
+                            &mut self.new_param.value,
+                            app_data.environment.get_variable_hash_map(),
+                        );
                     });
                     row.col(|ui| {
                         TextEdit::singleline(&mut self.new_param.desc)

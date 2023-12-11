@@ -109,7 +109,11 @@ impl DataView for RestPanel {
                                         }
                                     });
                                 ui.centered_and_justified(|ui| {
-                                    utils::highlight(ui, &mut data.rest.request.base_url);
+                                    utils::highlight_template(
+                                        ui,
+                                        &mut data.rest.request.base_url,
+                                        app_data.environment.get_variable_hash_map(),
+                                    );
                                 });
                             });
                         });

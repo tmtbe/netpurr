@@ -1,17 +1,39 @@
+use eframe::epaint::ahash::HashMap;
 use eframe::epaint::text::{LayoutJob, TextFormat};
 use egui::{Color32, Ui};
 use regex::Regex;
 
-pub fn highlight_impl(mut text: &str, ui: &Ui) -> LayoutJob {
+pub fn highlight_template(mut text: &str, ui: &Ui, envs: HashMap<String, String>) -> LayoutJob {
     let re = Regex::new(r"\{\{.*?}}").unwrap();
     let mut job = LayoutJob::default();
     let font_id = egui::FontId::monospace(10.0);
-    let format = TextFormat::simple(font_id.clone(), Color32::from_rgb(255, 100, 100));
+    let not_found_format;
+    let found_format;
     let normal_format = TextFormat::simple(font_id.clone(), ui.visuals().text_color().clone());
+    if ui.visuals().dark_mode {
+        not_found_format = TextFormat::simple(font_id.clone(), Color32::RED);
+        found_format = TextFormat::simple(font_id.clone(), Color32::GREEN);
+    } else {
+        not_found_format = TextFormat::simple(font_id.clone(), Color32::DARK_RED);
+        found_format = TextFormat::simple(font_id.clone(), Color32::BLUE);
+    }
     let mut start = 0;
     for x in re.find_iter(text) {
         job.append(&text[start..x.range().start], 0.0, normal_format.clone());
-        job.append(&text[x.range().start..x.range().end], 0.0, format.clone());
+        let key = x.as_str().trim_start_matches("{{").trim_end_matches("}}");
+        if envs.contains_key(key) {
+            job.append(
+                &text[x.range().start..x.range().end],
+                0.0,
+                found_format.clone(),
+            );
+        } else {
+            job.append(
+                &text[x.range().start..x.range().end],
+                0.0,
+                not_found_format.clone(),
+            );
+        }
         start = x.range().end
     }
     job.append(&text[start..text.len()], 0.0, normal_format.clone());

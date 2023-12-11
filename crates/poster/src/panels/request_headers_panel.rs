@@ -61,10 +61,18 @@ impl DataView for RequestHeadersPanel {
                                 }
                             });
                             row.col(|ui| {
-                                utils::highlight(ui, &mut header.key);
+                                utils::highlight_template(
+                                    ui,
+                                    &mut header.key,
+                                    app_data.environment.get_variable_hash_map(),
+                                );
                             });
                             row.col(|ui| {
-                                utils::highlight(ui, &mut header.value);
+                                utils::highlight_template(
+                                    ui,
+                                    &mut header.value,
+                                    app_data.environment.get_variable_hash_map(),
+                                );
                             });
                             row.col(|ui| {
                                 TextEdit::singleline(&mut header.desc)
@@ -81,10 +89,18 @@ impl DataView for RequestHeadersPanel {
                             ui.add_enabled(false, Button::new("x"));
                         });
                         row.col(|ui| {
-                            utils::highlight(ui, &mut self.new_header.key);
+                            utils::highlight_template(
+                                ui,
+                                &mut self.new_header.key,
+                                app_data.environment.get_variable_hash_map(),
+                            );
                         });
                         row.col(|ui| {
-                            utils::highlight(ui, &mut self.new_header.value);
+                            utils::highlight_template(
+                                ui,
+                                &mut self.new_header.value,
+                                app_data.environment.get_variable_hash_map(),
+                            );
                         });
                         row.col(|ui| {
                             TextEdit::singleline(&mut self.new_header.desc)

@@ -1,5 +1,6 @@
 use eframe::emath::Align;
 use eframe::epaint::text::LayoutJob;
+use egui::ahash::HashMap;
 use egui::{
     FontSelection, Id, InnerResponse, RichText, Style, TextBuffer, TextEdit, Ui, Widget, WidgetText,
 };
@@ -93,9 +94,14 @@ pub fn left_right_panel(
     })
 }
 
-pub fn highlight(ui: &mut Ui, content: &mut dyn TextBuffer) {
+pub fn highlight_template(
+    ui: &mut Ui,
+    content: &mut dyn TextBuffer,
+    envs: HashMap<String, String>,
+) {
     let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
-        let mut layout_job = crate::widgets::highlight::highlight_impl(string, ui);
+        let mut layout_job =
+            crate::widgets::highlight::highlight_template(string, ui, envs.clone());
         layout_job.wrap.max_width = wrap_width;
         ui.fonts(|f| f.layout_job(layout_job))
     };
