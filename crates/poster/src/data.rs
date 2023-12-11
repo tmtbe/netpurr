@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Instant;
@@ -188,12 +187,6 @@ impl RestSender {
         url + "?" + params.join("&").as_str()
     }
 
-    pub fn find_variable(&self, content: String) -> Vec<Range<usize>> {
-        let re = Regex::new(r"\{\{.*?}}").unwrap();
-        re.find_iter(content.as_str())
-            .map(|it| it.range())
-            .collect()
-    }
     pub fn replace_variable(&self, content: String, envs: HashMap<String, String>) -> String {
         let re = Regex::new(r"\{\{.*?}}").unwrap();
         let mut result = content.clone();

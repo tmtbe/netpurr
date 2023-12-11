@@ -1,6 +1,8 @@
 use eframe::emath::Align;
 use eframe::epaint::text::LayoutJob;
-use egui::{FontSelection, Id, InnerResponse, RichText, Style, Ui, Widget, WidgetText};
+use egui::{
+    FontSelection, Id, InnerResponse, RichText, Style, TextBuffer, TextEdit, Ui, Widget, WidgetText,
+};
 
 use crate::data::Request;
 use crate::panels::HORIZONTAL_GAP;
@@ -89,4 +91,13 @@ pub fn left_right_panel(
                 left(ui);
             });
     })
+}
+
+pub fn highlight(ui: &mut Ui, content: &mut dyn TextBuffer) {
+    let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
+        let mut layout_job = crate::widgets::highlight::highlight_impl(string, ui);
+        layout_job.wrap.max_width = wrap_width;
+        ui.fonts(|f| f.layout_job(layout_job))
+    };
+    TextEdit::singleline(content).layouter(&mut layouter).ui(ui);
 }

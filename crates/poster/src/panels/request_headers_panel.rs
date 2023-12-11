@@ -4,6 +4,7 @@ use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, Header};
 use crate::panels::DataView;
+use crate::utils;
 
 #[derive(Default)]
 pub struct RequestHeadersPanel {
@@ -60,10 +61,10 @@ impl DataView for RequestHeadersPanel {
                                 }
                             });
                             row.col(|ui| {
-                                ui.text_edit_singleline(&mut header.key);
+                                utils::highlight(ui, &mut header.key);
                             });
                             row.col(|ui| {
-                                ui.text_edit_singleline(&mut header.value);
+                                utils::highlight(ui, &mut header.value);
                             });
                             row.col(|ui| {
                                 TextEdit::singleline(&mut header.desc)
@@ -80,10 +81,10 @@ impl DataView for RequestHeadersPanel {
                             ui.add_enabled(false, Button::new("x"));
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut self.new_header.key);
+                            utils::highlight(ui, &mut self.new_header.key);
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut self.new_header.value);
+                            utils::highlight(ui, &mut self.new_header.value);
                         });
                         row.col(|ui| {
                             TextEdit::singleline(&mut self.new_header.desc)

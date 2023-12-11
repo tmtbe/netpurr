@@ -4,6 +4,7 @@ use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, MultipartData};
 use crate::panels::DataView;
+use crate::utils;
 
 #[derive(Default)]
 pub struct RequestBodyXXXFormPanel {
@@ -58,10 +59,10 @@ impl DataView for RequestBodyXXXFormPanel {
                             }
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut param.key);
+                            utils::highlight(ui, &mut param.key);
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut param.value);
+                            utils::highlight(ui, &mut param.value);
                         });
                         row.col(|ui| {
                             TextEdit::singleline(&mut param.desc)
@@ -78,10 +79,10 @@ impl DataView for RequestBodyXXXFormPanel {
                         ui.add_enabled(false, Button::new("x"));
                     });
                     row.col(|ui| {
-                        ui.text_edit_singleline(&mut self.new_form.key);
+                        utils::highlight(ui, &mut self.new_form.key);
                     });
                     row.col(|ui| {
-                        ui.text_edit_singleline(&mut self.new_form.value);
+                        utils::highlight(ui, &mut self.new_form.value);
                     });
                     row.col(|ui| {
                         TextEdit::singleline(&mut self.new_form.desc)

@@ -4,6 +4,7 @@ use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, QueryParam};
 use crate::panels::DataView;
+use crate::utils;
 
 #[derive(Default)]
 pub struct RequestParamsPanel {
@@ -59,10 +60,10 @@ impl DataView for RequestParamsPanel {
                             }
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut param.key);
+                            utils::highlight(ui, &mut param.key);
                         });
                         row.col(|ui| {
-                            ui.text_edit_singleline(&mut param.value);
+                            utils::highlight(ui, &mut param.value);
                         });
                         row.col(|ui| {
                             TextEdit::singleline(&mut param.desc)
@@ -79,10 +80,10 @@ impl DataView for RequestParamsPanel {
                         ui.add_enabled(false, Button::new("x"));
                     });
                     row.col(|ui| {
-                        ui.text_edit_singleline(&mut self.new_param.key);
+                        utils::highlight(ui, &mut self.new_param.key);
                     });
                     row.col(|ui| {
-                        ui.text_edit_singleline(&mut self.new_param.value);
+                        utils::highlight(ui, &mut self.new_param.value);
                     });
                     row.col(|ui| {
                         TextEdit::singleline(&mut self.new_param.desc)
