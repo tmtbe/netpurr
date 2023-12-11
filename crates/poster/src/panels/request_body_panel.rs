@@ -2,9 +2,9 @@ use egui::{TextBuffer, Ui};
 use strum::IntoEnumIterator;
 
 use crate::data::{AppData, BodyRawType, BodyType};
-use crate::panels::{DataView, VERTICAL_GAP};
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
+use crate::panels::{DataView, VERTICAL_GAP};
 
 #[derive(Default)]
 pub struct RequestBodyPanel {
@@ -42,11 +42,12 @@ impl DataView for RequestBodyPanel {
             }
         });
         ui.add_space(VERTICAL_GAP);
-        let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
-        let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
-            let mut layout_job =
-                egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, "rs");
-            layout_job.wrap.max_width = wrap_width;
+        let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
+            let layout_job = crate::widgets::highlight::highlight_template(
+                string,
+                ui,
+                app_data.environment.get_variable_hash_map(),
+            );
             ui.fonts(|f| f.layout_job(layout_job))
         };
         match data.rest.request.body_type {

@@ -60,14 +60,14 @@ impl DataView for RequestParamsPanel {
                             }
                         });
                         row.col(|ui| {
-                            utils::highlight_template(
+                            utils::highlight_template_singleline(
                                 ui,
                                 &mut param.key,
                                 app_data.environment.get_variable_hash_map(),
                             );
                         });
                         row.col(|ui| {
-                            utils::highlight_template(
+                            utils::highlight_template_singleline(
                                 ui,
                                 &mut param.value,
                                 app_data.environment.get_variable_hash_map(),
@@ -88,14 +88,14 @@ impl DataView for RequestParamsPanel {
                         ui.add_enabled(false, Button::new("x"));
                     });
                     row.col(|ui| {
-                        utils::highlight_template(
+                        utils::highlight_template_singleline(
                             ui,
                             &mut self.new_param.key,
                             app_data.environment.get_variable_hash_map(),
                         );
                     });
                     row.col(|ui| {
-                        utils::highlight_template(
+                        utils::highlight_template_singleline(
                             ui,
                             &mut self.new_param.value,
                             app_data.environment.get_variable_hash_map(),
