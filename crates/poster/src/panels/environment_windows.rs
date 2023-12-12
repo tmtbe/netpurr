@@ -161,7 +161,7 @@ impl DataView for EnvironmentWindows {
                                     self.select_env_name = "".to_string();
                                 }
                                 ui.button("Import");
-                                if ui.button(ENVIRONMENT_GLOBALS).clicked() {
+                                if ui.button("Globals").clicked() {
                                     let data = app_data.environment.get(ENVIRONMENT_GLOBALS.to_string());
                                     self.select_env = Some(ENVIRONMENT_GLOBALS.to_string());
                                     self.select_env_config = data.unwrap_or(EnvironmentConfig::default());
