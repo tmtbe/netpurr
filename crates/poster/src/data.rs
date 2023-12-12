@@ -39,18 +39,22 @@ pub struct Environment {
     data: BTreeMap<String, EnvironmentConfig>,
 }
 
+pub const ENVIRONMENT_GLOBALS: &str = "__Globals__";
 impl Environment {
     pub fn get_variable_hash_map(&self) -> HashMap<String, String> {
         self.select.clone().map_or_else(HashMap::default, |s| {
-            self.data
-                .get(s.as_str())
-                .map_or_else(HashMap::default, |e| {
-                    let mut result = HashMap::default();
-                    for x in e.items.iter().filter(|i| i.enable) {
-                        result.insert(x.key.clone(), x.value.clone());
-                    }
-                    result
-                })
+            let mut result = HashMap::default();
+            self.get(ENVIRONMENT_GLOBALS.to_string()).map(|e| {
+                for x in e.items.iter().filter(|i| i.enable) {
+                    result.insert(x.key.clone(), x.value.clone());
+                }
+            });
+            self.get(s).map(|e| {
+                for x in e.items.iter().filter(|i| i.enable) {
+                    result.insert(x.key.clone(), x.value.clone());
+                }
+            });
+            result
         })
     }
 
@@ -71,6 +75,9 @@ impl Environment {
                 }
             }
         }
+    }
+    pub fn get(&self, key: String) -> Option<EnvironmentConfig> {
+        self.data.get(key.as_str()).cloned()
     }
     pub fn get_data(&self) -> BTreeMap<String, EnvironmentConfig> {
         self.data.clone()

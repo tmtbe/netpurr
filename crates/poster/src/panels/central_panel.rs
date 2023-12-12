@@ -1,4 +1,4 @@
-use crate::data::AppData;
+use crate::data::{AppData, ENVIRONMENT_GLOBALS};
 use crate::panels::environment_windows::EnvironmentWindows;
 use crate::panels::rest_panel::RestPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
@@ -88,6 +88,9 @@ impl DataView for MyCentralPanel {
                                 "No Environment",
                             );
                             for (name, _) in &app_data.environment.get_data() {
+                                if name == ENVIRONMENT_GLOBALS {
+                                    continue;
+                                }
                                 ui.selectable_value(
                                     &mut app_data.environment.select,
                                     Some(name.clone()),

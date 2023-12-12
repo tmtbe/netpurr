@@ -1,7 +1,7 @@
 use egui::{Align, Button, Checkbox, Layout, ScrollArea, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
-use crate::data::{AppData, EnvironmentConfig, EnvironmentItem};
+use crate::data::{AppData, EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
 use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 
@@ -38,6 +38,9 @@ impl DataView for EnvironmentWindows {
                     ScrollArea::vertical()
                         .show(ui, |ui| {
                             for (name, e) in app_data.environment.get_data().iter() {
+                                if name == ENVIRONMENT_GLOBALS {
+                                    continue;
+                                }
                                 ui.horizontal(|ui| {
                                     ui.add_space(HORIZONTAL_GAP * 3.0);
                                     utils::left_right_panel(ui, "env_".to_string() + name + "_left", |ui| {
@@ -61,10 +64,14 @@ impl DataView for EnvironmentWindows {
                             }
                         });
                 } else {
-                    ui.strong("Environment Name");
-                    TextEdit::singleline(&mut self.select_env_name)
-                        .desired_width(f32::INFINITY)
-                        .ui(ui);
+                    if self.select_env_name == ENVIRONMENT_GLOBALS {
+                        ui.label("Global variables for a workspace are a set of variables that are always available within the scope of that workspace. They can be viewed and edited by anyone in that workspace.");
+                    } else {
+                        ui.strong("Environment Name");
+                        TextEdit::singleline(&mut self.select_env_name)
+                            .desired_width(f32::INFINITY)
+                            .ui(ui);
+                    }
                     ui.add_space(VERTICAL_GAP * 2.0);
                     let mut delete_index = None;
                     ui.push_id("environment_table", |ui| {
@@ -154,7 +161,12 @@ impl DataView for EnvironmentWindows {
                                     self.select_env_name = "".to_string();
                                 }
                                 ui.button("Import");
-                                ui.button("Globals");
+                                if ui.button(ENVIRONMENT_GLOBALS).clicked() {
+                                    let data = app_data.environment.get(ENVIRONMENT_GLOBALS.to_string());
+                                    self.select_env = Some(ENVIRONMENT_GLOBALS.to_string());
+                                    self.select_env_config = data.unwrap_or(EnvironmentConfig::default());
+                                    self.select_env_name = ENVIRONMENT_GLOBALS.to_string();
+                                };
                             } else {
                                 if ui.button("Update").clicked() {
                                     if self.select_env_name != "" {
