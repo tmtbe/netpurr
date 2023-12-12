@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Instant;
 
+use base64::engine::general_purpose;
+use base64::Engine;
 use chrono::{DateTime, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
@@ -189,6 +191,7 @@ impl RestSender {
                     value: utils::replace_variable(h.value.clone(), envs.clone()),
                     desc: h.desc.clone(),
                     enable: h.enable,
+                    lock: h.lock,
                 })
                 .map(|h| (h.key.clone(), h.value.clone()))
                 .collect(),
@@ -382,10 +385,60 @@ pub struct Request {
     pub body_raw_type: BodyRawType,
     pub body_form_data: Vec<MultipartData>,
     pub body_xxx_form: Vec<MultipartData>,
+    pub auth: Auth,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Default)]
+pub struct Auth {
+    pub auth_type: AuthType,
+    pub basic_username: String,
+    pub basic_password: String,
+    pub bearer_token: String,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, EnumIter, EnumString, Display)]
+pub enum AuthType {
+    NoAuth,
+    BearerToken,
+    BasicAuth,
+}
+
+impl Auth {
+    pub fn build_head(&self, headers: &mut Vec<Header>) {
+        let mut header = Header {
+            key: "Authorization".to_string(),
+            value: "".to_string(),
+            desc: "auto gen".to_string(),
+            enable: true,
+            lock: true,
+        };
+        match self.auth_type {
+            AuthType::NoAuth => {}
+            AuthType::BearerToken => {
+                headers.retain(|h| h.key.to_lowercase() != "authorization");
+                header.value = "Bearer ".to_string() + self.bearer_token.as_str();
+                headers.push(header)
+            }
+            AuthType::BasicAuth => {
+                headers.retain(|h| h.key.to_lowercase() != "authorization");
+                let encoded_credentials = general_purpose::STANDARD
+                    .encode(format!("{}:{}", self.basic_username, self.basic_password));
+                header.value = "Bearer ".to_string() + encoded_credentials.as_str();
+                headers.push(header)
+            }
+        }
+    }
+}
+
+impl Default for AuthType {
+    fn default() -> Self {
+        AuthType::NoAuth
+    }
 }
 
 impl HttpRecord {
     pub fn sync(&mut self) {
+        self.request.auth.build_head(&mut self.request.headers);
         match self.request.body_type {
             BodyType::NONE => {}
             BodyType::FROM_DATA => {
@@ -429,6 +482,7 @@ impl HttpRecord {
                 value,
                 desc: "".to_string(),
                 enable: true,
+                lock: false,
             });
         }
     }
@@ -499,6 +553,7 @@ pub struct Header {
     pub value: String,
     pub desc: String,
     pub enable: bool,
+    pub lock: bool,
 }
 
 impl Header {
@@ -510,6 +565,7 @@ impl Header {
                 value,
                 desc: "".to_string(),
                 enable: true,
+                lock: false,
             })
         }
         result

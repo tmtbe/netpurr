@@ -97,6 +97,7 @@ pub fn left_right_panel(
 
 pub fn highlight_template_singleline(
     ui: &mut Ui,
+    enable: bool,
     content: &mut dyn TextBuffer,
     envs: HashMap<String, String>,
 ) {
@@ -104,7 +105,10 @@ pub fn highlight_template_singleline(
         let layout_job = crate::widgets::highlight::highlight_template(string, ui, envs.clone());
         ui.fonts(|f| f.layout_job(layout_job))
     };
-    let response = TextEdit::singleline(content).layouter(&mut layouter).ui(ui);
+    let response = ui.add_enabled(
+        enable,
+        TextEdit::singleline(content).layouter(&mut layouter),
+    );
     let text = replace_variable(content.as_str().to_string(), envs);
     if response.hovered() && text.len() > 0 && text != content.as_str() {
         response.on_hover_text(text);

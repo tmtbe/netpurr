@@ -62,6 +62,7 @@ impl DataView for RequestParamsPanel {
                         row.col(|ui| {
                             utils::highlight_template_singleline(
                                 ui,
+                                true,
                                 &mut param.key,
                                 app_data.environment.get_variable_hash_map(),
                             );
@@ -69,6 +70,7 @@ impl DataView for RequestParamsPanel {
                         row.col(|ui| {
                             utils::highlight_template_singleline(
                                 ui,
+                                true,
                                 &mut param.value,
                                 app_data.environment.get_variable_hash_map(),
                             );
@@ -90,6 +92,7 @@ impl DataView for RequestParamsPanel {
                     row.col(|ui| {
                         utils::highlight_template_singleline(
                             ui,
+                            true,
                             &mut self.new_param.key,
                             app_data.environment.get_variable_hash_map(),
                         );
@@ -97,6 +100,7 @@ impl DataView for RequestParamsPanel {
                     row.col(|ui| {
                         utils::highlight_template_singleline(
                             ui,
+                            true,
                             &mut self.new_param.value,
                             app_data.environment.get_variable_hash_map(),
                         );

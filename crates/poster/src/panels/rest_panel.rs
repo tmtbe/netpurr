@@ -6,17 +6,19 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{AppData, Header, Method, Request, Response};
+use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::response_panel::ResponsePanel;
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 
 #[derive(Default)]
 pub struct RestPanel {
     open_request_panel_enum: RequestPanelEnum,
     request_params_panel: RequestParamsPanel,
+    auth_panel: AuthPanel,
     request_headers_panel: RequestHeadersPanel,
     request_body_panel: RequestBodyPanel,
     response_panel: ResponsePanel,
@@ -111,6 +113,7 @@ impl DataView for RestPanel {
                                 ui.centered_and_justified(|ui| {
                                     utils::highlight_template_singleline(
                                         ui,
+                                        true,
                                         &mut data.rest.request.base_url,
                                         app_data.environment.get_variable_hash_map(),
                                     );
@@ -166,7 +169,15 @@ impl DataView for RestPanel {
                 self.request_params_panel
                     .set_and_render(app_data, cursor.clone(), ui)
             }
-            RequestPanelEnum::Authorization => {}
+            RequestPanelEnum::Authorization => {
+                let crt = app_data
+                    .central_request_data_list
+                    .data_map
+                    .get_mut(cursor.as_str())
+                    .unwrap();
+                self.auth_panel
+                    .set_and_render(&mut crt.rest.request.auth, ui);
+            }
             RequestPanelEnum::Headers => {
                 self.request_headers_panel
                     .set_and_render(app_data, cursor.clone(), ui)

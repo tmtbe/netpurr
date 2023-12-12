@@ -53,16 +53,17 @@ impl DataView for RequestHeadersPanel {
                     for (index, header) in data.rest.request.headers.iter_mut().enumerate() {
                         body.row(18.0, |mut row| {
                             row.col(|ui| {
-                                ui.checkbox(&mut header.enable, "");
+                                ui.add_enabled(!header.lock, Checkbox::new(&mut header.enable, ""));
                             });
                             row.col(|ui| {
-                                if ui.button("x").clicked() {
+                                if ui.add_enabled(!header.lock, Button::new("x")).clicked() {
                                     delete_index = Some(index)
                                 }
                             });
                             row.col(|ui| {
                                 utils::highlight_template_singleline(
                                     ui,
+                                    !header.lock,
                                     &mut header.key,
                                     app_data.environment.get_variable_hash_map(),
                                 );
@@ -70,14 +71,17 @@ impl DataView for RequestHeadersPanel {
                             row.col(|ui| {
                                 utils::highlight_template_singleline(
                                     ui,
+                                    !header.lock,
                                     &mut header.value,
                                     app_data.environment.get_variable_hash_map(),
                                 );
                             });
                             row.col(|ui| {
-                                TextEdit::singleline(&mut header.desc)
-                                    .desired_width(f32::INFINITY)
-                                    .ui(ui);
+                                ui.add_enabled(
+                                    !header.lock,
+                                    TextEdit::singleline(&mut header.desc)
+                                        .desired_width(f32::INFINITY),
+                                );
                             });
                         });
                     }
@@ -91,6 +95,7 @@ impl DataView for RequestHeadersPanel {
                         row.col(|ui| {
                             utils::highlight_template_singleline(
                                 ui,
+                                !self.new_header.lock,
                                 &mut self.new_header.key,
                                 app_data.environment.get_variable_hash_map(),
                             );
@@ -98,6 +103,7 @@ impl DataView for RequestHeadersPanel {
                         row.col(|ui| {
                             utils::highlight_template_singleline(
                                 ui,
+                                !self.new_header.lock,
                                 &mut self.new_header.value,
                                 app_data.environment.get_variable_hash_map(),
                             );
