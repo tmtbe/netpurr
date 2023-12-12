@@ -257,7 +257,7 @@ pub struct CentralRequestItem {
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct HistoryDataList {
     persistence: Persistence,
-    date_group: HashMap<NaiveDate, DateGroupHistoryList>,
+    date_group: BTreeMap<NaiveDate, DateGroupHistoryList>,
 }
 
 impl HistoryDataList {
@@ -283,7 +283,7 @@ impl HistoryDataList {
             }
         }
     }
-    pub fn get_group(&self) -> &HashMap<NaiveDate, DateGroupHistoryList> {
+    pub fn get_group(&self) -> &BTreeMap<NaiveDate, DateGroupHistoryList> {
         &self.date_group
     }
     pub fn record(&mut self, rest: HttpRecord) {
