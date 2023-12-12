@@ -28,7 +28,7 @@ impl DataView for RequestBodyXXXFormPanel {
             .column(Column::initial(200.0).range(40.0..=300.0))
             .column(Column::initial(200.0).range(40.0..=300.0))
             .column(Column::remainder())
-            .min_scrolled_height(0.0);
+            .max_scroll_height(100.0);
         table
             .header(20.0, |mut header| {
                 header.col(|ui| {

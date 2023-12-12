@@ -68,39 +68,54 @@ impl DataView for ResponsePanel {
             }
 
             ResponseStatus::Ready => {
-                ui.horizontal(|ui| {
-                    for x in ResponsePanelEnum::iter() {
-                        ui.selectable_value(
-                            &mut self.open_panel_enum,
-                            x.clone(),
-                            utils::build_with_count_ui_header(
-                                x.to_string(),
-                                ResponsePanel::get_count(&data.rest.response, x),
-                                ui,
-                            ),
-                        );
-                    }
-                    ui.label("Status:");
-                    ui.label(
-                        RichText::new(data.rest.response.status.to_string())
-                            .color(ui.visuals().warn_fg_color)
-                            .strong(),
-                    );
-                    if data.rest.elapsed_time.is_some() {
-                        ui.label("Time:");
-                        ui.label(
-                            RichText::new(data.rest.elapsed_time.unwrap().to_string() + "ms")
+                utils::left_right_panel(
+                    ui,
+                    "response_left",
+                    |ui| {
+                        ui.horizontal(|ui| {
+                            for x in ResponsePanelEnum::iter() {
+                                ui.selectable_value(
+                                    &mut self.open_panel_enum,
+                                    x.clone(),
+                                    utils::build_with_count_ui_header(
+                                        x.to_string(),
+                                        ResponsePanel::get_count(&data.rest.response, x),
+                                        ui,
+                                    ),
+                                );
+                            }
+                        });
+                    },
+                    "response_right",
+                    |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("Status:");
+                            ui.label(
+                                RichText::new(data.rest.response.status.to_string())
+                                    .color(ui.visuals().warn_fg_color)
+                                    .strong(),
+                            );
+                            if data.rest.elapsed_time.is_some() {
+                                ui.label("Time:");
+                                ui.label(
+                                    RichText::new(
+                                        data.rest.elapsed_time.unwrap().to_string() + "ms",
+                                    )
+                                    .color(ui.visuals().warn_fg_color)
+                                    .strong(),
+                                );
+                            }
+                            ui.label("Size:");
+                            ui.label(
+                                RichText::new(ResponsePanel::get_byte_size(
+                                    data.rest.response.body.len(),
+                                ))
                                 .color(ui.visuals().warn_fg_color)
                                 .strong(),
-                        );
-                    }
-                    ui.label("Size:");
-                    ui.label(
-                        RichText::new(ResponsePanel::get_byte_size(data.rest.response.body.len()))
-                            .color(ui.visuals().warn_fg_color)
-                            .strong(),
-                    );
-                });
+                            );
+                        });
+                    },
+                );
                 ui.separator();
                 match self.open_panel_enum {
                     ResponsePanelEnum::Body => {

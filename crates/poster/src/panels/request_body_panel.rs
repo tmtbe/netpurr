@@ -62,17 +62,19 @@ impl DataView for RequestBodyPanel {
                 .set_and_render(app_data, cursor, ui),
             BodyType::RAW => {
                 ui.push_id("request_body", |ui| {
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        ui.add(
-                            egui::TextEdit::multiline(&mut data.rest.request.body_str)
-                                .font(egui::TextStyle::Monospace) // for cursor height
-                                .desired_rows(10)
-                                .code_editor()
-                                .lock_focus(true)
-                                .desired_width(f32::INFINITY)
-                                .layouter(&mut layouter),
-                        );
-                    });
+                    egui::ScrollArea::vertical()
+                        .max_height(200.0)
+                        .show(ui, |ui| {
+                            ui.add(
+                                egui::TextEdit::multiline(&mut data.rest.request.body_str)
+                                    .font(egui::TextStyle::Monospace) // for cursor height
+                                    .desired_rows(10)
+                                    .code_editor()
+                                    .lock_focus(true)
+                                    .desired_width(f32::INFINITY)
+                                    .layouter(&mut layouter),
+                            );
+                        });
                 });
             }
             BodyType::BINARY => {}
