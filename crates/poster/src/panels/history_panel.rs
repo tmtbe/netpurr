@@ -17,7 +17,8 @@ impl DataView for HistoryPanel {
                     for history_rest_item in date_history_data.history_list.iter().rev() {
                         let lb =
                             utils::build_rest_ui_header(history_rest_item.rest.request.clone(), ui);
-                        if ui.button(lb).clicked() {
+                        let button = ui.button(lb);
+                        if button.clicked() {
                             app_data
                                 .central_request_data_list
                                 .add_crt(CentralRequestItem {

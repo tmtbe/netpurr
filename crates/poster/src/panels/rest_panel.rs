@@ -60,7 +60,7 @@ impl DataView for RestPanel {
                 .data_map
                 .get_mut(cursor.as_str())
                 .unwrap();
-            data.rest.sync();
+            data.rest.sync(app_data.environment.get_variable_hash_map());
             ui.vertical(|ui| {
                 if data.rest.request.base_url == "" {
                     ui.strong("Untitled Request");
@@ -114,6 +114,7 @@ impl DataView for RestPanel {
                                     utils::highlight_template_singleline(
                                         ui,
                                         true,
+                                        false,
                                         &mut data.rest.request.base_url,
                                         app_data.environment.get_variable_hash_map(),
                                     );
@@ -175,6 +176,8 @@ impl DataView for RestPanel {
                     .data_map
                     .get_mut(cursor.as_str())
                     .unwrap();
+                self.auth_panel
+                    .set_envs(app_data.environment.get_variable_hash_map());
                 self.auth_panel
                     .set_and_render(&mut crt.rest.request.auth, ui);
             }

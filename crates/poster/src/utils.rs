@@ -29,6 +29,9 @@ pub fn build_rest_ui_header(request: Request, ui: &Ui) -> LayoutJob {
             .color(ui.visuals().text_color())
             .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
     }
+    lb.break_on_newline = false;
+    lb.wrap.max_width = f32::INFINITY;
+    lb.wrap.max_rows = 2;
     lb
 }
 
@@ -98,6 +101,7 @@ pub fn left_right_panel(
 pub fn highlight_template_singleline(
     ui: &mut Ui,
     enable: bool,
+    all_space: bool,
     content: &mut dyn TextBuffer,
     envs: HashMap<String, String>,
 ) {
@@ -105,10 +109,11 @@ pub fn highlight_template_singleline(
         let layout_job = crate::widgets::highlight::highlight_template(string, ui, envs.clone());
         ui.fonts(|f| f.layout_job(layout_job))
     };
-    let response = ui.add_enabled(
-        enable,
-        TextEdit::singleline(content).layouter(&mut layouter),
-    );
+    let mut w = TextEdit::singleline(content).layouter(&mut layouter);
+    if all_space {
+        w = w.desired_width(f32::INFINITY);
+    }
+    let response = ui.add_enabled(enable, w);
     let text = replace_variable(content.as_str().to_string(), envs);
     if response.hovered() && text.len() > 0 && text != content.as_str() {
         response.on_hover_text(text);

@@ -64,6 +64,7 @@ impl DataView for RequestHeadersPanel {
                                 utils::highlight_template_singleline(
                                     ui,
                                     !header.lock,
+                                    false,
                                     &mut header.key,
                                     app_data.environment.get_variable_hash_map(),
                                 );
@@ -72,6 +73,7 @@ impl DataView for RequestHeadersPanel {
                                 utils::highlight_template_singleline(
                                     ui,
                                     !header.lock,
+                                    false,
                                     &mut header.value,
                                     app_data.environment.get_variable_hash_map(),
                                 );
@@ -96,6 +98,7 @@ impl DataView for RequestHeadersPanel {
                             utils::highlight_template_singleline(
                                 ui,
                                 !self.new_header.lock,
+                                false,
                                 &mut self.new_header.key,
                                 app_data.environment.get_variable_hash_map(),
                             );
@@ -104,6 +107,7 @@ impl DataView for RequestHeadersPanel {
                             utils::highlight_template_singleline(
                                 ui,
                                 !self.new_header.lock,
+                                false,
                                 &mut self.new_header.value,
                                 app_data.environment.get_variable_hash_map(),
                             );

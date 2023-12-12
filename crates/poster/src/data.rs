@@ -404,7 +404,7 @@ pub enum AuthType {
 }
 
 impl Auth {
-    pub fn build_head(&self, headers: &mut Vec<Header>) {
+    pub fn build_head(&self, headers: &mut Vec<Header>, envs: HashMap<String, String>) {
         let mut header = Header {
             key: "Authorization".to_string(),
             value: "".to_string(),
@@ -412,17 +412,20 @@ impl Auth {
             enable: true,
             lock: true,
         };
+        headers.retain(|h| !(h.key.to_lowercase() == "authorization" && h.lock));
         match self.auth_type {
             AuthType::NoAuth => {}
             AuthType::BearerToken => {
-                headers.retain(|h| h.key.to_lowercase() != "authorization");
-                header.value = "Bearer ".to_string() + self.bearer_token.as_str();
+                header.value = "Bearer ".to_string()
+                    + utils::replace_variable(self.bearer_token.clone(), envs.clone()).as_str();
                 headers.push(header)
             }
             AuthType::BasicAuth => {
-                headers.retain(|h| h.key.to_lowercase() != "authorization");
-                let encoded_credentials = general_purpose::STANDARD
-                    .encode(format!("{}:{}", self.basic_username, self.basic_password));
+                let encoded_credentials = general_purpose::STANDARD.encode(format!(
+                    "{}:{}",
+                    utils::replace_variable(self.basic_username.clone(), envs.clone()),
+                    utils::replace_variable(self.basic_password.clone(), envs.clone())
+                ));
                 header.value = "Bearer ".to_string() + encoded_credentials.as_str();
                 headers.push(header)
             }
@@ -437,8 +440,10 @@ impl Default for AuthType {
 }
 
 impl HttpRecord {
-    pub fn sync(&mut self) {
-        self.request.auth.build_head(&mut self.request.headers);
+    pub fn sync(&mut self, envs: HashMap<String, String>) {
+        self.request
+            .auth
+            .build_head(&mut self.request.headers, envs);
         match self.request.body_type {
             BodyType::NONE => {}
             BodyType::FROM_DATA => {

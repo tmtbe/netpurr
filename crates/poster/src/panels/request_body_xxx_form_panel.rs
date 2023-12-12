@@ -62,6 +62,7 @@ impl DataView for RequestBodyXXXFormPanel {
                             utils::highlight_template_singleline(
                                 ui,
                                 true,
+                                false,
                                 &mut param.key,
                                 app_data.environment.get_variable_hash_map(),
                             );
@@ -70,6 +71,7 @@ impl DataView for RequestBodyXXXFormPanel {
                             utils::highlight_template_singleline(
                                 ui,
                                 true,
+                                false,
                                 &mut param.value,
                                 app_data.environment.get_variable_hash_map(),
                             );
@@ -92,6 +94,7 @@ impl DataView for RequestBodyXXXFormPanel {
                         utils::highlight_template_singleline(
                             ui,
                             true,
+                            false,
                             &mut self.new_form.key,
                             app_data.environment.get_variable_hash_map(),
                         );
@@ -100,6 +103,7 @@ impl DataView for RequestBodyXXXFormPanel {
                         utils::highlight_template_singleline(
                             ui,
                             true,
+                            false,
                             &mut self.new_form.value,
                             app_data.environment.get_variable_hash_map(),
                         );
