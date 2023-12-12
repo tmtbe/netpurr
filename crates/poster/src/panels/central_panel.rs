@@ -116,5 +116,10 @@ impl DataView for MyCentralPanel {
         }
         self.environment_windows
             .set_and_render(app_data, cursor, ui);
+        app_data.environment.select.clone().map(|s| {
+            if !app_data.environment.get_data().contains_key(s.as_str()) {
+                app_data.environment.select = None
+            }
+        });
     }
 }
