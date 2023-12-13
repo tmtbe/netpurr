@@ -3,13 +3,12 @@ use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, MultipartData};
-use crate::panels::highlight_template_singleline::HighlightTemplateSingleline;
+use crate::panels::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct RequestBodyXXXFormPanel {
     new_form: MultipartData,
-    hts: HighlightTemplateSingleline,
 }
 
 impl DataView for RequestBodyXXXFormPanel {
@@ -60,32 +59,24 @@ impl DataView for RequestBodyXXXFormPanel {
                             }
                         });
                         row.col(|ui| {
-                            self.hts
-                                .set(
+                            HighlightTemplateSinglelineBuilder::default()
+                                .envs(app_data.environment.get_variable_hash_map())
+                                .all_space(false)
+                                .build(
                                     "request_body_key_".to_string() + index.to_string().as_str(),
-                                    true,
-                                    false,
-                                    12.0,
-                                )
-                                .show(
-                                    ui,
                                     &mut param.key,
-                                    app_data.environment.get_variable_hash_map(),
-                                );
+                                )
+                                .ui(ui);
                         });
                         row.col(|ui| {
-                            self.hts
-                                .set(
+                            HighlightTemplateSinglelineBuilder::default()
+                                .envs(app_data.environment.get_variable_hash_map())
+                                .all_space(false)
+                                .build(
                                     "request_body_value_".to_string() + index.to_string().as_str(),
-                                    true,
-                                    false,
-                                    12.0,
-                                )
-                                .show(
-                                    ui,
                                     &mut param.value,
-                                    app_data.environment.get_variable_hash_map(),
-                                );
+                                )
+                                .ui(ui);
                         });
                         row.col(|ui| {
                             TextEdit::singleline(&mut param.desc)
@@ -102,22 +93,21 @@ impl DataView for RequestBodyXXXFormPanel {
                         ui.add_enabled(false, Button::new("x"));
                     });
                     row.col(|ui| {
-                        self.hts
-                            .set("request_body_new_key".to_string(), true, false, 12.0)
-                            .show(
-                                ui,
-                                &mut self.new_form.key,
-                                app_data.environment.get_variable_hash_map(),
-                            );
+                        HighlightTemplateSinglelineBuilder::default()
+                            .envs(app_data.environment.get_variable_hash_map())
+                            .all_space(false)
+                            .build("request_body_key_new".to_string(), &mut self.new_form.key)
+                            .ui(ui);
                     });
                     row.col(|ui| {
-                        self.hts
-                            .set("request_body_new_value".to_string(), true, false, 12.0)
-                            .show(
-                                ui,
+                        HighlightTemplateSinglelineBuilder::default()
+                            .envs(app_data.environment.get_variable_hash_map())
+                            .all_space(false)
+                            .build(
+                                "request_body_value_new".to_string(),
                                 &mut self.new_form.value,
-                                app_data.environment.get_variable_hash_map(),
-                            );
+                            )
+                            .ui(ui);
                     });
                     row.col(|ui| {
                         TextEdit::singleline(&mut self.new_form.desc)

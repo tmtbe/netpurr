@@ -3,13 +3,12 @@ use egui::{Button, Checkbox, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, QueryParam};
-use crate::panels::highlight_template_singleline::HighlightTemplateSingleline;
+use crate::panels::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct RequestParamsPanel {
     new_param: QueryParam,
-    hts: HighlightTemplateSingleline,
 }
 
 impl DataView for RequestParamsPanel {
@@ -61,33 +60,25 @@ impl DataView for RequestParamsPanel {
                             }
                         });
                         row.col(|ui| {
-                            self.hts
-                                .set(
+                            HighlightTemplateSinglelineBuilder::default()
+                                .envs(app_data.environment.get_variable_hash_map())
+                                .all_space(false)
+                                .build(
                                     "request_parmas_key_".to_string() + index.to_string().as_str(),
-                                    true,
-                                    false,
-                                    12.0,
-                                )
-                                .show(
-                                    ui,
                                     &mut param.key,
-                                    app_data.environment.get_variable_hash_map(),
-                                );
+                                )
+                                .ui(ui);
                         });
                         row.col(|ui| {
-                            self.hts
-                                .set(
+                            HighlightTemplateSinglelineBuilder::default()
+                                .envs(app_data.environment.get_variable_hash_map())
+                                .all_space(false)
+                                .build(
                                     "request_parmas_value_".to_string()
                                         + index.to_string().as_str(),
-                                    true,
-                                    false,
-                                    12.0,
-                                )
-                                .show(
-                                    ui,
                                     &mut param.value,
-                                    app_data.environment.get_variable_hash_map(),
-                                );
+                                )
+                                .ui(ui);
                         });
                         row.col(|ui| {
                             TextEdit::singleline(&mut param.desc)
@@ -104,22 +95,24 @@ impl DataView for RequestParamsPanel {
                         ui.add_enabled(false, Button::new("x"));
                     });
                     row.col(|ui| {
-                        self.hts
-                            .set("request_parmas_key_new".to_string(), true, false, 12.0)
-                            .show(
-                                ui,
+                        HighlightTemplateSinglelineBuilder::default()
+                            .envs(app_data.environment.get_variable_hash_map())
+                            .all_space(false)
+                            .build(
+                                "request_parmas_key_new".to_string(),
                                 &mut self.new_param.key,
-                                app_data.environment.get_variable_hash_map(),
-                            );
+                            )
+                            .ui(ui);
                     });
                     row.col(|ui| {
-                        self.hts
-                            .set("request_parmas_value_new".to_string(), true, false, 12.0)
-                            .show(
-                                ui,
+                        HighlightTemplateSinglelineBuilder::default()
+                            .envs(app_data.environment.get_variable_hash_map())
+                            .all_space(false)
+                            .build(
+                                "request_parmas_value_new".to_string(),
                                 &mut self.new_param.value,
-                                app_data.environment.get_variable_hash_map(),
-                            );
+                            )
+                            .ui(ui);
                     });
                     row.col(|ui| {
                         TextEdit::singleline(&mut self.new_param.desc)

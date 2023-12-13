@@ -1,16 +1,15 @@
 use std::collections::BTreeMap;
 
-use egui::Ui;
+use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
 use crate::data::{Auth, AuthType};
-use crate::panels::highlight_template_singleline::HighlightTemplateSingleline;
+use crate::panels::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 use crate::panels::{AlongDataView, HORIZONTAL_GAP, VERTICAL_GAP};
 
 #[derive(Default)]
 pub struct AuthPanel {
     envs: BTreeMap<String, String>,
-    hts: HighlightTemplateSingleline,
 }
 
 impl AuthPanel {
@@ -60,8 +59,10 @@ impl AlongDataView for AuthPanel {
                         ui.horizontal(|ui| {
                             ui.add_space(HORIZONTAL_GAP);
                             ui.label("Token:");
-                            self.hts.set("token".to_string(), true, true, 12.0)
-                                .show(ui, &mut data.bearer_token, self.envs.clone());
+                            HighlightTemplateSinglelineBuilder::default()
+                                .envs(self.envs.clone())
+                                .build("token".to_string(), &mut data.bearer_token)
+                                .ui(ui);
                             ui.add_space(HORIZONTAL_GAP);
                         });
                         ui.add_space(VERTICAL_GAP * 5.0);
@@ -71,15 +72,19 @@ impl AlongDataView for AuthPanel {
                         ui.horizontal(|ui| {
                             ui.add_space(HORIZONTAL_GAP);
                             ui.label("Username:");
-                            self.hts.set("username".to_string(), true, true, 12.0)
-                                .show(ui, &mut data.basic_username, self.envs.clone());
+                            HighlightTemplateSinglelineBuilder::default()
+                                .envs(self.envs.clone())
+                                .build("username".to_string(), &mut data.basic_username)
+                                .ui(ui);
                         });
                         ui.add_space(VERTICAL_GAP);
                         ui.horizontal(|ui| {
                             ui.add_space(HORIZONTAL_GAP);
                             ui.label("Password: ");
-                            self.hts.set("password".to_string(), true, true, 12.0)
-                                .show(ui, &mut data.basic_password, self.envs.clone());
+                            HighlightTemplateSinglelineBuilder::default()
+                                .envs(self.envs.clone())
+                                .build("password".to_string(), &mut data.basic_password)
+                                .ui(ui);
                         });
                         ui.add_space(VERTICAL_GAP * 2.0);
                     }

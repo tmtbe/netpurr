@@ -3,13 +3,12 @@ use egui::{Button, Checkbox, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, Header};
-use crate::panels::highlight_template_singleline::HighlightTemplateSingleline;
+use crate::panels::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct RequestHeadersPanel {
     new_header: Header,
-    hls: HighlightTemplateSingleline,
 }
 
 impl DataView for RequestHeadersPanel {
@@ -62,34 +61,28 @@ impl DataView for RequestHeadersPanel {
                                 }
                             });
                             row.col(|ui| {
-                                self.hls
-                                    .set(
+                                HighlightTemplateSinglelineBuilder::default()
+                                    .envs(app_data.environment.get_variable_hash_map())
+                                    .enable(!header.lock)
+                                    .all_space(false)
+                                    .build(
                                         "request_header_key_".to_string()
                                             + index.to_string().as_str(),
-                                        !header.lock,
-                                        false,
-                                        12.0,
-                                    )
-                                    .show(
-                                        ui,
                                         &mut header.key,
-                                        app_data.environment.get_variable_hash_map(),
-                                    );
+                                    )
+                                    .ui(ui);
                             });
                             row.col(|ui| {
-                                self.hls
-                                    .set(
+                                HighlightTemplateSinglelineBuilder::default()
+                                    .envs(app_data.environment.get_variable_hash_map())
+                                    .enable(!header.lock)
+                                    .all_space(false)
+                                    .build(
                                         "request_header_value_".to_string()
                                             + index.to_string().as_str(),
-                                        !header.lock,
-                                        false,
-                                        12.0,
-                                    )
-                                    .show(
-                                        ui,
                                         &mut header.value,
-                                        app_data.environment.get_variable_hash_map(),
-                                    );
+                                    )
+                                    .ui(ui);
                             });
                             row.col(|ui| {
                                 ui.add_enabled(
@@ -108,32 +101,26 @@ impl DataView for RequestHeadersPanel {
                             ui.add_enabled(false, Button::new("x"));
                         });
                         row.col(|ui| {
-                            self.hls
-                                .set(
+                            HighlightTemplateSinglelineBuilder::default()
+                                .envs(app_data.environment.get_variable_hash_map())
+                                .enable(!self.new_header.lock)
+                                .all_space(false)
+                                .build(
                                     "request_header_key_new".to_string(),
-                                    !self.new_header.lock,
-                                    false,
-                                    12.0,
-                                )
-                                .show(
-                                    ui,
                                     &mut self.new_header.key,
-                                    app_data.environment.get_variable_hash_map(),
-                                );
+                                )
+                                .ui(ui);
                         });
                         row.col(|ui| {
-                            self.hls
-                                .set(
+                            HighlightTemplateSinglelineBuilder::default()
+                                .envs(app_data.environment.get_variable_hash_map())
+                                .enable(!self.new_header.lock)
+                                .all_space(false)
+                                .build(
                                     "request_header_value_new".to_string(),
-                                    !self.new_header.lock,
-                                    false,
-                                    12.0,
-                                )
-                                .show(
-                                    ui,
                                     &mut self.new_header.value,
-                                    app_data.environment.get_variable_hash_map(),
-                                );
+                                )
+                                .ui(ui);
                         });
                         row.col(|ui| {
                             TextEdit::singleline(&mut self.new_header.desc)

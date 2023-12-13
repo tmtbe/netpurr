@@ -1,13 +1,13 @@
 use std::time::Instant;
 
-use egui::{Button, Ui};
+use egui::{Button, Ui, Widget};
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{AppData, Header, Method, Request, Response};
 use crate::panels::auth_panel::AuthPanel;
-use crate::panels::highlight_template_singleline::HighlightTemplateSingleline;
+use crate::panels::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
@@ -19,7 +19,6 @@ use crate::utils;
 pub struct RestPanel {
     open_request_panel_enum: RequestPanelEnum,
     request_params_panel: RequestParamsPanel,
-    hts: HighlightTemplateSingleline,
     auth_panel: AuthPanel,
     request_headers_panel: RequestHeadersPanel,
     request_body_panel: RequestBodyPanel,
@@ -113,18 +112,11 @@ impl DataView for RestPanel {
                                         }
                                     });
                                 ui.centered_and_justified(|ui| {
-                                    self.hts.set("url".to_string(), true, false, 12.0).show(
-                                        ui,
-                                        &mut data.rest.request.base_url,
-                                        app_data.environment.get_variable_hash_map(),
-                                    );
-                                    // utils::highlight_template_singleline(
-                                    //     ui,
-                                    //     true,
-                                    //     false,
-                                    //     &mut data.rest.request.base_url,
-                                    //     app_data.environment.get_variable_hash_map(),
-                                    // );
+                                    HighlightTemplateSinglelineBuilder::default()
+                                        .envs(app_data.environment.get_variable_hash_map())
+                                        .all_space(false)
+                                        .build("url".to_string(), &mut data.rest.request.base_url)
+                                        .ui(ui);
                                 });
                             });
                         });
