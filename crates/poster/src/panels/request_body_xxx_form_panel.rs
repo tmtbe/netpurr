@@ -3,8 +3,8 @@ use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, MultipartData};
+use crate::panels::highlight_template_singleline::HighlightTemplateSingleline;
 use crate::panels::DataView;
-use crate::utils::HighlightTemplateSingleline;
 
 #[derive(Default)]
 pub struct RequestBodyXXXFormPanel {
