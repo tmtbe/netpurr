@@ -24,6 +24,7 @@ pub trait AlongDataView {
     type DataType;
     fn set_and_render(&mut self, data: &mut Self::DataType, ui: &mut egui::Ui);
 }
+
 pub trait DataView {
     type CursorType;
     fn set_and_render(

@@ -13,11 +13,13 @@ use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
+use crate::utils::HighlightTemplateSingleline;
 
 #[derive(Default)]
 pub struct RestPanel {
     open_request_panel_enum: RequestPanelEnum,
     request_params_panel: RequestParamsPanel,
+    hts: HighlightTemplateSingleline,
     auth_panel: AuthPanel,
     request_headers_panel: RequestHeadersPanel,
     request_body_panel: RequestBodyPanel,
@@ -111,13 +113,18 @@ impl DataView for RestPanel {
                                         }
                                     });
                                 ui.centered_and_justified(|ui| {
-                                    utils::highlight_template_singleline(
+                                    self.hts.set("url".to_string(), true, false, 12.0).show(
                                         ui,
-                                        true,
-                                        false,
                                         &mut data.rest.request.base_url,
                                         app_data.environment.get_variable_hash_map(),
                                     );
+                                    // utils::highlight_template_singleline(
+                                    //     ui,
+                                    //     true,
+                                    //     false,
+                                    //     &mut data.rest.request.base_url,
+                                    //     app_data.environment.get_variable_hash_map(),
+                                    // );
                                 });
                             });
                         });

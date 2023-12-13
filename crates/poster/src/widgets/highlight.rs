@@ -1,12 +1,18 @@
-use eframe::epaint::ahash::HashMap;
+use std::collections::BTreeMap;
+
 use eframe::epaint::text::{LayoutJob, TextFormat};
 use egui::{Color32, Ui};
 use regex::Regex;
 
-pub fn highlight_template(mut text: &str, ui: &Ui, envs: HashMap<String, String>) -> LayoutJob {
+pub fn highlight_template(
+    mut text: &str,
+    size: f32,
+    ui: &Ui,
+    envs: BTreeMap<String, String>,
+) -> LayoutJob {
     let re = Regex::new(r"\{\{.*?}}").unwrap();
     let mut job = LayoutJob::default();
-    let font_id = egui::FontId::monospace(10.0);
+    let font_id = egui::FontId::monospace(size);
     let not_found_format;
     let found_format;
     let normal_format = TextFormat::simple(font_id.clone(), ui.visuals().text_color().clone());

@@ -45,6 +45,7 @@ impl DataView for RequestBodyPanel {
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
             let layout_job = crate::widgets::highlight::highlight_template(
                 string,
+                12.0,
                 ui,
                 app_data.environment.get_variable_hash_map(),
             );

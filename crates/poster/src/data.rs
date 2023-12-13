@@ -42,10 +42,11 @@ pub struct Environment {
 }
 
 pub const ENVIRONMENT_GLOBALS: &str = "__Globals__";
+
 impl Environment {
-    pub fn get_variable_hash_map(&self) -> HashMap<String, String> {
-        self.select.clone().map_or_else(HashMap::default, |s| {
-            let mut result = HashMap::default();
+    pub fn get_variable_hash_map(&self) -> BTreeMap<String, String> {
+        self.select.clone().map_or_else(BTreeMap::default, |s| {
+            let mut result = BTreeMap::default();
             self.get(ENVIRONMENT_GLOBALS.to_string()).map(|e| {
                 for x in e.items.iter().filter(|i| i.enable) {
                     result.insert(x.key.clone(), x.value.clone());
@@ -108,6 +109,7 @@ pub struct EnvironmentItem {
     pub key: String,
     pub value: String,
 }
+
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct RestSender {}
 
@@ -115,7 +117,7 @@ impl RestSender {
     pub fn send(
         &mut self,
         rest: &mut HttpRecord,
-        envs: HashMap<String, String>,
+        envs: BTreeMap<String, String>,
     ) -> (Promise<ehttp::Result<ehttp::Response>>, Instant) {
         let (sender, promise) = Promise::new();
         if !rest.request.base_url.starts_with("http://")
@@ -202,7 +204,7 @@ impl RestSender {
         });
         return (promise, Instant::now());
     }
-    fn build_url(&self, rest: &HttpRecord, envs: HashMap<String, String>) -> String {
+    fn build_url(&self, rest: &HttpRecord, envs: BTreeMap<String, String>) -> String {
         let url = utils::replace_variable(rest.request.base_url.clone(), envs.clone());
         let params: Vec<String> = rest
             .request
@@ -404,7 +406,7 @@ pub enum AuthType {
 }
 
 impl Auth {
-    pub fn build_head(&self, headers: &mut Vec<Header>, envs: HashMap<String, String>) {
+    pub fn build_head(&self, headers: &mut Vec<Header>, envs: BTreeMap<String, String>) {
         let mut header = Header {
             key: "Authorization".to_string(),
             value: "".to_string(),
@@ -440,7 +442,7 @@ impl Default for AuthType {
 }
 
 impl HttpRecord {
-    pub fn sync(&mut self, envs: HashMap<String, String>) {
+    pub fn sync(&mut self, envs: BTreeMap<String, String>) {
         self.request
             .auth
             .build_head(&mut self.request.headers, envs);
