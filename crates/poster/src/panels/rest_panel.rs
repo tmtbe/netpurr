@@ -115,7 +115,10 @@ impl DataView for RestPanel {
                                     HighlightTemplateSinglelineBuilder::default()
                                         .envs(app_data.environment.get_variable_hash_map())
                                         .all_space(false)
-                                        .build("url".to_string(), &mut data.rest.request.base_url)
+                                        .build(
+                                            cursor.clone() + "url",
+                                            &mut data.rest.request.base_url,
+                                        )
                                         .ui(ui);
                                 });
                             });

@@ -17,6 +17,20 @@ pub struct HighlightTemplateSingleline<'t> {
     popup_id: String,
 }
 
+impl HighlightTemplateSingleline<'_> {
+    fn find_prompt(&self, input_string: String) -> Option<String> {
+        if let Some(start_index) = input_string.rfind("{{") {
+            if let Some(end_index) = input_string[start_index + 2..].find("}}") {
+                None
+            } else {
+                let result = &input_string[(start_index + 2)..];
+                Some(result.to_string())
+            }
+        } else {
+            None
+        }
+    }
+}
 impl Widget for HighlightTemplateSingleline<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
@@ -60,12 +74,68 @@ impl Widget for HighlightTemplateSingleline<'_> {
         }
         HTSState::load(ui.ctx(), response.id).map(|hts_state| {
             hts_state.cursor_range.map(|c| {
-                if self.content.as_str().len() <= 1 {
+                let len = self.content.as_str().len();
+                if len <= 1 || c.primary.ccursor.index > len {
                     return;
                 }
                 let before_cursor_text = &self.content.as_str()[0..c.primary.ccursor.index];
-                if before_cursor_text.ends_with("{{") && self.envs.clone().len() > 0 {
+                let prompt = self.find_prompt(before_cursor_text.to_string());
+                if prompt.is_some() && self.envs.clone().len() > 0 {
                     ui.memory_mut(|mem| mem.open_popup(popup_id));
+                    popup_widget(
+                        ui,
+                        popup_id,
+                        &response,
+                        pos2(
+                            output.text_draw_pos.x
+                                + (c.primary.rcursor.column as f32) * (self.size / 2.0 + 1.0),
+                            output.text_draw_pos.y
+                                + (c.primary.rcursor.row as f32) * (self.size / 2.0 + 1.0)
+                                + 16.0,
+                        ),
+                        |ui| {
+                            egui::ScrollArea::vertical()
+                                .max_height(100.0)
+                                .show(ui, |ui| {
+                                    ui.vertical(|ui| {
+                                        for (key, _) in self.envs.clone().iter() {
+                                            if !key.starts_with(&prompt.clone().unwrap()) {
+                                                continue;
+                                            }
+                                            if ui
+                                                .selectable_label(
+                                                    false,
+                                                    "$".to_string() + key.as_str(),
+                                                )
+                                                .clicked()
+                                            {
+                                                self.content.insert_text(
+                                                    (key.to_string() + "}}").as_str(),
+                                                    c.primary.ccursor.index,
+                                                );
+                                                // self.cursor_range = None;
+                                                ui.memory_mut(|mem| mem.toggle_popup(popup_id));
+                                                let mut tes =
+                                                    TextEditState::load(ui.ctx(), response.id)
+                                                        .unwrap();
+                                                tes.set_ccursor_range(Some(CCursorRange {
+                                                    primary: CCursor {
+                                                        index: self.content.as_str().len(),
+                                                        prefer_next_row: false,
+                                                    },
+                                                    secondary: CCursor {
+                                                        index: self.content.as_str().len(),
+                                                        prefer_next_row: false,
+                                                    },
+                                                }));
+                                                tes.store(ui.ctx(), response.id);
+                                                response.request_focus();
+                                            }
+                                        }
+                                    });
+                                });
+                        },
+                    );
                 } else {
                     ui.memory_mut(|mem| {
                         if mem.is_popup_open(popup_id) {
@@ -73,49 +143,6 @@ impl Widget for HighlightTemplateSingleline<'_> {
                         }
                     });
                 }
-                popup_widget(
-                    ui,
-                    popup_id,
-                    &response,
-                    pos2(
-                        output.text_draw_pos.x
-                            + (c.primary.rcursor.column as f32) * (self.size / 2.0 + 1.0),
-                        output.text_draw_pos.y
-                            + (c.primary.rcursor.row as f32) * (self.size / 2.0 + 1.0)
-                            + 16.0,
-                    ),
-                    |ui| {
-                        ui.vertical(|ui| {
-                            for (key, _) in self.envs.clone().iter() {
-                                if ui
-                                    .selectable_label(false, "$".to_string() + key.as_str())
-                                    .clicked()
-                                {
-                                    self.content.insert_text(
-                                        (key.to_string() + "}}").as_str(),
-                                        c.primary.ccursor.index,
-                                    );
-                                    // self.cursor_range = None;
-                                    ui.memory_mut(|mem| mem.toggle_popup(popup_id));
-                                    let mut tes =
-                                        TextEditState::load(ui.ctx(), response.id).unwrap();
-                                    tes.set_ccursor_range(Some(CCursorRange {
-                                        primary: CCursor {
-                                            index: self.content.as_str().len(),
-                                            prefer_next_row: false,
-                                        },
-                                        secondary: CCursor {
-                                            index: self.content.as_str().len(),
-                                            prefer_next_row: false,
-                                        },
-                                    }));
-                                    tes.store(ui.ctx(), response.id);
-                                    response.request_focus();
-                                }
-                            }
-                        });
-                    },
-                );
             });
         });
         response
