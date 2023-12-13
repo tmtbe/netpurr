@@ -18,7 +18,7 @@ pub struct HighlightTemplateSingleline<'t> {
 }
 
 impl HighlightTemplateSingleline<'_> {
-    fn find_prompt(&self, input_string: String) -> Option<String> {
+    fn find_prompt(&self, input_string: String) -> Option<(String)> {
         if let Some(start_index) = input_string.rfind("{{") {
             if let Some(end_index) = input_string[start_index + 2..].find("}}") {
                 None
@@ -79,8 +79,9 @@ impl Widget for HighlightTemplateSingleline<'_> {
                     return;
                 }
                 let before_cursor_text = &self.content.as_str()[0..c.primary.ccursor.index];
-                let prompt = self.find_prompt(before_cursor_text.to_string());
-                if prompt.is_some() && self.envs.clone().len() > 0 {
+                let prompt_option = self.find_prompt(before_cursor_text.to_string());
+                if prompt_option.is_some() && self.envs.clone().len() > 0 {
+                    let prompt = prompt_option.unwrap();
                     ui.memory_mut(|mem| mem.open_popup(popup_id));
                     popup_widget(
                         ui,
@@ -99,7 +100,7 @@ impl Widget for HighlightTemplateSingleline<'_> {
                                 .show(ui, |ui| {
                                     ui.vertical(|ui| {
                                         for (key, _) in self.envs.clone().iter() {
-                                            if !key.starts_with(&prompt.clone().unwrap()) {
+                                            if !key.starts_with(prompt.as_str()) {
                                                 continue;
                                             }
                                             if ui
@@ -110,7 +111,8 @@ impl Widget for HighlightTemplateSingleline<'_> {
                                                 .clicked()
                                             {
                                                 self.content.insert_text(
-                                                    (key.to_string() + "}}").as_str(),
+                                                    (key[prompt.len()..].to_string() + "}}")
+                                                        .as_str(),
                                                     c.primary.ccursor.index,
                                                 );
                                                 // self.cursor_range = None;
