@@ -49,6 +49,15 @@ impl Widget for HighlightTemplateSingleline<'_> {
             hts_state.store(ui.ctx(), response.id);
         });
         let popup_id = ui.make_persistent_id(self.popup_id.clone());
+        let mut popup_open = false;
+        ui.memory_mut(|mem| {
+            if mem.is_popup_open(popup_id) {
+                popup_open = true
+            }
+        });
+        if !popup_open && !response.has_focus() {
+            return response;
+        }
         HTSState::load(ui.ctx(), response.id).map(|hts_state| {
             hts_state.cursor_range.map(|c| {
                 if self.content.as_str().len() <= 1 {
