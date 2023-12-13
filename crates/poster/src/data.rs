@@ -37,8 +37,13 @@ impl AppData {
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct Environment {
     persistence: Persistence,
-    pub select: Option<String>,
     data: BTreeMap<String, EnvironmentConfig>,
+    status: EnvironmentStatus,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct EnvironmentStatus {
+    select: Option<String>,
 }
 
 pub const ENVIRONMENT_GLOBALS: &str = "__Globals__";
@@ -48,40 +53,55 @@ pub struct EnvironmentItemValue {
     pub value: String,
     pub scope: String,
 }
+
 impl Environment {
+    pub fn select(&self) -> Option<String> {
+        self.status.select.clone()
+    }
+    pub fn set_select(&mut self, select: Option<String>) {
+        self.status.select = select;
+        self.persistence.save(
+            Path::new("environment").to_path_buf(),
+            "status".to_string(),
+            &self.status,
+        );
+    }
     pub fn get_variable_hash_map(&self) -> BTreeMap<String, EnvironmentItemValue> {
-        self.select.clone().map_or_else(BTreeMap::default, |s| {
-            let mut result = BTreeMap::default();
-            self.get(ENVIRONMENT_GLOBALS.to_string()).map(|e| {
-                for x in e.items.iter().filter(|i| i.enable) {
-                    result.insert(
-                        x.key.clone(),
-                        EnvironmentItemValue {
-                            value: x.value.clone(),
-                            scope: ENVIRONMENT_GLOBALS.to_string(),
-                        },
-                    );
-                }
-            });
-            self.get(s.clone()).map(|e| {
-                for x in e.items.iter().filter(|i| i.enable) {
-                    result.insert(
-                        x.key.clone(),
-                        EnvironmentItemValue {
-                            value: x.value.clone(),
-                            scope: s.clone(),
-                        },
-                    );
-                }
-            });
-            result
-        })
+        self.status
+            .select
+            .clone()
+            .map_or_else(BTreeMap::default, |s| {
+                let mut result = BTreeMap::default();
+                self.get(ENVIRONMENT_GLOBALS.to_string()).map(|e| {
+                    for x in e.items.iter().filter(|i| i.enable) {
+                        result.insert(
+                            x.key.clone(),
+                            EnvironmentItemValue {
+                                value: x.value.clone(),
+                                scope: ENVIRONMENT_GLOBALS.to_string(),
+                            },
+                        );
+                    }
+                });
+                self.get(s.clone()).map(|e| {
+                    for x in e.items.iter().filter(|i| i.enable) {
+                        result.insert(
+                            x.key.clone(),
+                            EnvironmentItemValue {
+                                value: x.value.clone(),
+                                scope: s.clone(),
+                            },
+                        );
+                    }
+                });
+                result
+            })
     }
 
     pub fn load_all(&mut self) {
         for key in self
             .persistence
-            .load_list(Path::new("environment").to_path_buf())
+            .load_list(Path::new("environment/data").to_path_buf())
             .iter()
         {
             if let Some(key_os) = key.file_name() {
@@ -95,6 +115,12 @@ impl Environment {
                 }
             }
         }
+        let status = self
+            .persistence
+            .load(Path::new("environment/status.json").to_path_buf());
+        status.map(|s| {
+            self.status = s;
+        });
     }
     pub fn get(&self, key: String) -> Option<EnvironmentConfig> {
         self.data.get(key.as_str()).cloned()
@@ -104,8 +130,11 @@ impl Environment {
     }
     pub fn insert(&mut self, key: String, value: EnvironmentConfig) {
         self.data.insert(key.clone(), value.clone());
-        self.persistence
-            .save(Path::new("environment").to_path_buf(), key.clone(), &value);
+        self.persistence.save(
+            Path::new("environment/data").to_path_buf(),
+            key.clone(),
+            &value,
+        );
     }
 
     pub fn remove(&mut self, key: String) {

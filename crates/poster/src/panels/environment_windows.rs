@@ -82,7 +82,7 @@ impl DataView for EnvironmentWindows {
                             .column(Column::exact(20.0))
                             .column(Column::initial(200.0).range(40.0..=300.0))
                             .column(Column::remainder())
-                            .min_scrolled_height(200.0);
+                            .max_scroll_height(400.0);
                         table
                             .header(20.0, |mut header| {
                                 header.col(|ui| {

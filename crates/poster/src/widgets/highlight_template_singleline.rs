@@ -33,6 +33,7 @@ impl HighlightTemplateSingleline<'_> {
         }
     }
 }
+
 impl Widget for HighlightTemplateSingleline<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
@@ -107,11 +108,8 @@ impl Widget for HighlightTemplateSingleline<'_> {
                                                 if !key.starts_with(prompt.as_str()) {
                                                     continue;
                                                 }
-                                                let label = ui.selectable_label(
-                                                    false,
-                                                    RichText::new("$".to_string() + key.as_str())
-                                                        .strong(),
-                                                );
+                                                let label =
+                                                    ui.button(RichText::new(key.as_str()).strong());
                                                 if label.hovered() {
                                                     hovered_label_key = Some(key.clone());
                                                 }
