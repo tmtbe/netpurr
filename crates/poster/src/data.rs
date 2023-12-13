@@ -43,18 +43,35 @@ pub struct Environment {
 
 pub const ENVIRONMENT_GLOBALS: &str = "__Globals__";
 
+#[derive(Default, Clone)]
+pub struct EnvironmentItemValue {
+    pub value: String,
+    pub scope: String,
+}
 impl Environment {
-    pub fn get_variable_hash_map(&self) -> BTreeMap<String, String> {
+    pub fn get_variable_hash_map(&self) -> BTreeMap<String, EnvironmentItemValue> {
         self.select.clone().map_or_else(BTreeMap::default, |s| {
             let mut result = BTreeMap::default();
             self.get(ENVIRONMENT_GLOBALS.to_string()).map(|e| {
                 for x in e.items.iter().filter(|i| i.enable) {
-                    result.insert(x.key.clone(), x.value.clone());
+                    result.insert(
+                        x.key.clone(),
+                        EnvironmentItemValue {
+                            value: x.value.clone(),
+                            scope: ENVIRONMENT_GLOBALS.to_string(),
+                        },
+                    );
                 }
             });
-            self.get(s).map(|e| {
+            self.get(s.clone()).map(|e| {
                 for x in e.items.iter().filter(|i| i.enable) {
-                    result.insert(x.key.clone(), x.value.clone());
+                    result.insert(
+                        x.key.clone(),
+                        EnvironmentItemValue {
+                            value: x.value.clone(),
+                            scope: s.clone(),
+                        },
+                    );
                 }
             });
             result
@@ -117,7 +134,7 @@ impl RestSender {
     pub fn send(
         &mut self,
         rest: &mut HttpRecord,
-        envs: BTreeMap<String, String>,
+        envs: BTreeMap<String, EnvironmentItemValue>,
     ) -> (Promise<ehttp::Result<ehttp::Response>>, Instant) {
         let (sender, promise) = Promise::new();
         if !rest.request.base_url.starts_with("http://")
@@ -204,7 +221,7 @@ impl RestSender {
         });
         return (promise, Instant::now());
     }
-    fn build_url(&self, rest: &HttpRecord, envs: BTreeMap<String, String>) -> String {
+    fn build_url(&self, rest: &HttpRecord, envs: BTreeMap<String, EnvironmentItemValue>) -> String {
         let url = utils::replace_variable(rest.request.base_url.clone(), envs.clone());
         let params: Vec<String> = rest
             .request
@@ -406,7 +423,11 @@ pub enum AuthType {
 }
 
 impl Auth {
-    pub fn build_head(&self, headers: &mut Vec<Header>, envs: BTreeMap<String, String>) {
+    pub fn build_head(
+        &self,
+        headers: &mut Vec<Header>,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+    ) {
         let mut header = Header {
             key: "Authorization".to_string(),
             value: "".to_string(),
@@ -442,7 +463,7 @@ impl Default for AuthType {
 }
 
 impl HttpRecord {
-    pub fn sync(&mut self, envs: BTreeMap<String, String>) {
+    pub fn sync(&mut self, envs: BTreeMap<String, EnvironmentItemValue>) {
         self.request
             .auth
             .build_head(&mut self.request.headers, envs);

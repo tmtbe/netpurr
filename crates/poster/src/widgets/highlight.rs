@@ -4,11 +4,13 @@ use eframe::epaint::text::{LayoutJob, TextFormat};
 use egui::{Color32, Ui};
 use regex::Regex;
 
+use crate::data::EnvironmentItemValue;
+
 pub fn highlight_template(
     mut text: &str,
     size: f32,
     ui: &Ui,
-    envs: BTreeMap<String, String>,
+    envs: BTreeMap<String, EnvironmentItemValue>,
 ) -> LayoutJob {
     let re = Regex::new(r"\{\{.*?}}").unwrap();
     let mut job = LayoutJob::default();

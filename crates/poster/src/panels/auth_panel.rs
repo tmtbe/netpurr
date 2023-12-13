@@ -3,17 +3,17 @@ use std::collections::BTreeMap;
 use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
-use crate::data::{Auth, AuthType};
+use crate::data::{Auth, AuthType, EnvironmentItemValue};
 use crate::panels::{AlongDataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
 pub struct AuthPanel {
-    envs: BTreeMap<String, String>,
+    envs: BTreeMap<String, EnvironmentItemValue>,
 }
 
 impl AuthPanel {
-    pub fn set_envs(&mut self, envs: BTreeMap<String, String>) {
+    pub fn set_envs(&mut self, envs: BTreeMap<String, EnvironmentItemValue>) {
         self.envs = envs;
     }
 }

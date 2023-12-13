@@ -3,16 +3,18 @@ use std::collections::BTreeMap;
 use eframe::emath::pos2;
 use egui::text::{CCursor, CCursorRange};
 use egui::text_edit::{CursorRange, TextEditState};
-use egui::{Context, Id, Response, TextBuffer, TextEdit, Ui, Widget};
+use egui::{Context, Id, Response, RichText, TextBuffer, TextEdit, Ui, Widget};
 use serde::{Deserialize, Serialize};
 
+use crate::data::EnvironmentItemValue;
+use crate::panels::VERTICAL_GAP;
 use crate::utils::{popup_widget, replace_variable};
 
 pub struct HighlightTemplateSingleline<'t> {
     enable: bool,
     all_space: bool,
     size: f32,
-    envs: BTreeMap<String, String>,
+    envs: BTreeMap<String, EnvironmentItemValue>,
     content: &'t mut dyn TextBuffer,
     popup_id: String,
 }
@@ -82,6 +84,7 @@ impl Widget for HighlightTemplateSingleline<'_> {
                 let prompt_option = self.find_prompt(before_cursor_text.to_string());
                 if prompt_option.is_some() && self.envs.clone().len() > 0 {
                     let prompt = prompt_option.unwrap();
+                    let mut hovered_label_key = None;
                     ui.memory_mut(|mem| mem.open_popup(popup_id));
                     popup_widget(
                         ui,
@@ -95,47 +98,64 @@ impl Widget for HighlightTemplateSingleline<'_> {
                                 + 16.0,
                         ),
                         |ui| {
-                            egui::ScrollArea::vertical()
-                                .max_height(100.0)
-                                .show(ui, |ui| {
-                                    ui.vertical(|ui| {
-                                        for (key, _) in self.envs.clone().iter() {
-                                            if !key.starts_with(prompt.as_str()) {
-                                                continue;
-                                            }
-                                            if ui
-                                                .selectable_label(
+                            ui.horizontal(|ui| {
+                                egui::ScrollArea::vertical()
+                                    .max_height(200.0)
+                                    .show(ui, |ui| {
+                                        ui.vertical(|ui| {
+                                            for (key, _) in self.envs.clone().iter() {
+                                                if !key.starts_with(prompt.as_str()) {
+                                                    continue;
+                                                }
+                                                let label = ui.selectable_label(
                                                     false,
-                                                    "$".to_string() + key.as_str(),
-                                                )
-                                                .clicked()
-                                            {
-                                                self.content.insert_text(
-                                                    (key[prompt.len()..].to_string() + "}}")
-                                                        .as_str(),
-                                                    c.primary.ccursor.index,
+                                                    RichText::new("$".to_string() + key.as_str())
+                                                        .strong(),
                                                 );
-                                                // self.cursor_range = None;
-                                                ui.memory_mut(|mem| mem.toggle_popup(popup_id));
-                                                let mut tes =
-                                                    TextEditState::load(ui.ctx(), response.id)
-                                                        .unwrap();
-                                                tes.set_ccursor_range(Some(CCursorRange {
-                                                    primary: CCursor {
-                                                        index: self.content.as_str().len(),
-                                                        prefer_next_row: false,
-                                                    },
-                                                    secondary: CCursor {
-                                                        index: self.content.as_str().len(),
-                                                        prefer_next_row: false,
-                                                    },
-                                                }));
-                                                tes.store(ui.ctx(), response.id);
-                                                response.request_focus();
+                                                if label.hovered() {
+                                                    hovered_label_key = Some(key.clone());
+                                                }
+                                                if label.clicked() {
+                                                    self.content.insert_text(
+                                                        (key[prompt.len()..].to_string() + "}}")
+                                                            .as_str(),
+                                                        c.primary.ccursor.index,
+                                                    );
+                                                    ui.memory_mut(|mem| mem.toggle_popup(popup_id));
+                                                    let mut tes =
+                                                        TextEditState::load(ui.ctx(), response.id)
+                                                            .unwrap();
+                                                    tes.set_ccursor_range(Some(CCursorRange {
+                                                        primary: CCursor {
+                                                            index: self.content.as_str().len(),
+                                                            prefer_next_row: false,
+                                                        },
+                                                        secondary: CCursor {
+                                                            index: self.content.as_str().len(),
+                                                            prefer_next_row: false,
+                                                        },
+                                                    }));
+                                                    tes.store(ui.ctx(), response.id);
+                                                    response.request_focus();
+                                                }
                                             }
-                                        }
+                                        });
+                                    });
+                                hovered_label_key.clone().map(|key| {
+                                    ui.separator();
+                                    ui.vertical(|ui| {
+                                        ui.horizontal(|ui| {
+                                            ui.strong("VALUE");
+                                            ui.label(self.envs.get(&key).unwrap().value.clone())
+                                        });
+                                        ui.add_space(VERTICAL_GAP);
+                                        ui.horizontal(|ui| {
+                                            ui.strong("SCOPE");
+                                            ui.label(self.envs.get(&key).unwrap().scope.clone())
+                                        });
                                     });
                                 });
+                            });
                         },
                     );
                 } else {
@@ -155,7 +175,7 @@ pub struct HighlightTemplateSinglelineBuilder {
     enable: bool,
     all_space: bool,
     size: f32,
-    envs: BTreeMap<String, String>,
+    envs: BTreeMap<String, EnvironmentItemValue>,
 }
 
 impl Default for HighlightTemplateSinglelineBuilder {
@@ -184,7 +204,7 @@ impl HighlightTemplateSinglelineBuilder {
     }
     pub fn envs(
         &mut self,
-        envs: BTreeMap<String, String>,
+        envs: BTreeMap<String, EnvironmentItemValue>,
     ) -> &mut HighlightTemplateSinglelineBuilder {
         self.envs = envs;
         self

@@ -8,7 +8,7 @@ use egui::{
 };
 use regex::Regex;
 
-use crate::data::Request;
+use crate::data::{EnvironmentItemValue, Request};
 use crate::panels::HORIZONTAL_GAP;
 
 pub fn build_rest_ui_header(request: Request, ui: &Ui) -> LayoutJob {
@@ -105,7 +105,7 @@ pub fn popup_widget<R>(
     }
 }
 
-pub fn replace_variable(content: String, envs: BTreeMap<String, String>) -> String {
+pub fn replace_variable(content: String, envs: BTreeMap<String, EnvironmentItemValue>) -> String {
     let re = Regex::new(r"\{\{.*?}}").unwrap();
     let mut result = content.clone();
     loop {
@@ -119,7 +119,7 @@ pub fn replace_variable(content: String, envs: BTreeMap<String, String>) -> Stri
                 .trim_end_matches("}}");
             let v = envs.get(key);
             if v.is_some() {
-                result.replace_range(find.unwrap().range(), v.unwrap())
+                result.replace_range(find.unwrap().range(), v.unwrap().value.as_str())
             } else {
                 result.replace_range(find.unwrap().range(), "{UNKNOWN}")
             }
