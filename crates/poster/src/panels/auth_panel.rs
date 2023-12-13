@@ -4,8 +4,8 @@ use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
 use crate::data::{Auth, AuthType};
-use crate::panels::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 use crate::panels::{AlongDataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
 pub struct AuthPanel {

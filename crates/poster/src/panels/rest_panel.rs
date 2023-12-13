@@ -7,13 +7,13 @@ use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{AppData, Header, Method, Request, Response};
 use crate::panels::auth_panel::AuthPanel;
-use crate::panels::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
+use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
 pub struct RestPanel {

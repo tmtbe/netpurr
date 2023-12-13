@@ -4,7 +4,6 @@ mod auth_panel;
 pub mod central_panel;
 pub mod collections_panel;
 mod environment_windows;
-mod highlight_template_singleline;
 pub mod history_panel;
 pub mod left_panel;
 mod request_body_form_data_panel;

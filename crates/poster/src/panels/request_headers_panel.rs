@@ -3,8 +3,8 @@ use egui::{Button, Checkbox, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, Header};
-use crate::panels::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 use crate::panels::DataView;
+use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
 pub struct RequestHeadersPanel {
