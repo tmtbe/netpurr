@@ -22,6 +22,7 @@ impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            ui.set_enabled(!self.app_data.get_ui_lock());
             // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
@@ -50,10 +51,12 @@ impl eframe::App for App {
             ui.add_space(HORIZONTAL_GAP);
         });
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
+            ui.set_enabled(!self.app_data.get_ui_lock());
             self.left_panel.set_and_render(&mut self.app_data, 0, ui);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            ui.set_enabled(!self.app_data.get_ui_lock());
             self.central_panel.set_and_render(&mut self.app_data, 0, ui);
         });
     }

@@ -24,6 +24,7 @@ impl DataView for EnvironmentWindows {
     type CursorType = i32;
 
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+        app_data.lock_ui("env".to_string(), self.environment_windows_open);
         egui::Window::new("MANAGE ENVIRONMENTS")
             .default_open(true)
             .default_width(500.0)

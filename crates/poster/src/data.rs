@@ -1,5 +1,7 @@
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::str::FromStr;
 use std::time::Instant;
 
@@ -25,13 +27,105 @@ pub struct AppData {
     pub central_request_data_list: CentralRequestDataList,
     pub history_data_list: HistoryDataList,
     pub environment: Environment,
+    pub collections: Collections,
+    lock_ui: HashMap<String, bool>,
 }
 
 impl AppData {
     pub fn load_all(&mut self) {
         self.history_data_list.load_all();
-        self.environment.load_all()
+        self.environment.load_all();
+        self.collections.load_all();
     }
+
+    pub fn lock_ui(&mut self, key: String, bool: bool) {
+        self.lock_ui.insert(key, bool);
+    }
+    pub fn get_ui_lock(&self) -> bool {
+        let mut result = false;
+        for (_, lock) in self.lock_ui.iter() {
+            result = result || (lock.clone());
+        }
+        result
+    }
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
+pub struct Collections {
+    persistence: Persistence,
+    data: BTreeMap<String, Collection>,
+}
+
+impl Collections {
+    fn load_all(&mut self) {
+        for collection_dir in self
+            .persistence
+            .load_list(Path::new("collections").to_path_buf())
+            .iter()
+        {
+            if let Some(collection_dir_str) = collection_dir.file_name() {
+                if let Some(collection_name) = collection_dir_str.to_str() {
+                    if let Ok(history_rest_item) = self.persistence.load(collection_dir.clone()) {
+                        self.data.insert(
+                            collection_name.trim_end_matches(".json").to_string(),
+                            history_rest_item,
+                        );
+                    }
+                }
+            }
+        }
+    }
+    pub fn insert_or_update(&mut self, collection: Collection) {
+        self.data
+            .insert(collection.folder.borrow().name.clone(), collection.clone());
+        self.persistence.save(
+            Path::new("collections").to_path_buf(),
+            collection.folder.borrow().name.clone(),
+            &collection,
+        );
+    }
+    pub fn get_data(&self) -> BTreeMap<String, Collection> {
+        self.data.clone()
+    }
+
+    pub fn get_mut_folder_with_path(
+        &mut self,
+        path: String,
+    ) -> Option<Rc<RefCell<CollectionFolder>>> {
+        let collection_paths: Vec<&str> = path.split("/").collect();
+        match self.data.get(&collection_paths[0].to_string()) {
+            None => return None,
+            Some(collection) => {
+                let mut folder = collection.folder.clone();
+                let folder_paths = &collection_paths[1..];
+                for folder_name in folder_paths.iter() {
+                    let get = folder.borrow().folders.get(folder_name.to_owned()).cloned();
+                    if get.is_none() {
+                        return None;
+                    } else {
+                        folder = get.unwrap().clone();
+                    }
+                }
+                return Some(folder);
+            }
+        };
+    }
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct Collection {
+    pub envs: EnvironmentConfig,
+    pub folder: Rc<RefCell<CollectionFolder>>,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct CollectionFolder {
+    pub parent: Option<Rc<RefCell<CollectionFolder>>>,
+    pub name: String,
+    pub desc: String,
+    pub auth: Auth,
+    pub requests: Vec<HttpRecord>,
+    pub folders: BTreeMap<String, Rc<RefCell<CollectionFolder>>>,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -386,6 +480,8 @@ pub struct HistoryRestItem {
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct HttpRecord {
+    pub name: String,
+    pub desc: String,
     pub request: Request,
     pub response: Response,
     pub status: ResponseStatus,

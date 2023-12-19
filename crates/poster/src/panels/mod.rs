@@ -16,6 +16,7 @@ mod response_cookies_panel;
 mod response_headers_panel;
 mod response_panel;
 pub mod rest_panel;
+mod save_windows;
 
 pub const HORIZONTAL_GAP: f32 = 8.0;
 pub const VERTICAL_GAP: f32 = 8.0;
