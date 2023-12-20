@@ -74,8 +74,7 @@ impl DataView for MyCentralPanel {
                         for request_data in
                             app_data.central_request_data_list.data_list.clone().iter()
                         {
-                            let lb =
-                                utils::build_rest_ui_header(request_data.rest.request.clone(), ui);
+                            let lb = utils::build_rest_ui_header(request_data.rest.clone(), ui);
                             if ui
                                 .selectable_value(
                                     &mut app_data.central_request_data_list.select_id,

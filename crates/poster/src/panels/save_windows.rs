@@ -45,10 +45,10 @@ impl DataView for SaveWindows {
                 ui.label("Requests in Poster are saved in collections (a group of requests).");
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Request name");
-                ui.text_edit_singleline(&mut self.http_record.name);
+                utils::text_edit_singleline(ui, &mut self.http_record.name);
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Request description (Optional)");
-                ui.text_edit_multiline(&mut self.http_record.desc);
+                utils::text_edit_multiline(ui, &mut self.http_record.desc);
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Select a collection or folder to save to:");
                 ui.add_space(VERTICAL_GAP);
@@ -133,7 +133,7 @@ impl DataView for SaveWindows {
                         match self.select_collection_path.clone() {
                             None => {
                                 for (name, collection) in app_data.collections.get_data().iter() {
-                                    if ui.selectable_label(false, name).clicked() {
+                                    if utils::select_label(ui, name).clicked() {
                                         self.select_collection_path =
                                             Some(collection.folder.borrow().name.to_string());
                                     }
@@ -146,7 +146,7 @@ impl DataView for SaveWindows {
                                     .1
                                     .map(|cf| {
                                         for (name, cf_child) in cf.borrow().folders.iter() {
-                                            if ui.selectable_label(false, name.clone()).clicked() {
+                                            if utils::select_label(ui, name.clone()).clicked() {
                                                 self.select_collection_path = Some(
                                                     path.clone()
                                                         + "/"
@@ -155,10 +155,10 @@ impl DataView for SaveWindows {
                                             }
                                         }
                                         ui.set_enabled(false);
-                                        for (hr_name, hr) in cf.borrow().requests.iter() {
-                                            ui.selectable_label(
-                                                false,
-                                                utils::build_rest_ui_header(hr.request.clone(), ui),
+                                        for (_, hr) in cf.borrow().requests.iter() {
+                                            utils::select_label(
+                                                ui,
+                                                utils::build_rest_ui_header(hr.clone(), ui),
                                             );
                                         }
                                     });

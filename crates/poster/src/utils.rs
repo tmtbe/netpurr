@@ -4,24 +4,30 @@ use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
 use egui::{
     Area, FontSelection, Frame, Id, InnerResponse, Key, Layout, Order, Response, RichText, Style,
-    TextBuffer, Ui,
+    TextBuffer, Ui, WidgetText,
 };
 use regex::Regex;
 
-use crate::data::{EnvironmentItemValue, Request};
+use crate::data::{EnvironmentItemValue, HttpRecord};
 use crate::panels::HORIZONTAL_GAP;
 
-pub fn build_rest_ui_header(request: Request, ui: &Ui) -> LayoutJob {
+pub fn build_rest_ui_header(hr: HttpRecord, ui: &Ui) -> LayoutJob {
     let mut lb = LayoutJob::default();
     let style = Style::default();
-    if request.base_url != "" {
-        RichText::new(request.method.to_string() + " ")
+    if hr.request.base_url != "" {
+        RichText::new(hr.request.method.to_string() + " ")
             .color(ui.visuals().warn_fg_color)
             .strong()
             .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
-        RichText::new(request.base_url.to_string())
-            .color(ui.visuals().text_color())
-            .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+        if hr.name != "" {
+            RichText::new(hr.name.to_string())
+                .color(ui.visuals().text_color())
+                .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+        } else {
+            RichText::new(hr.request.base_url.to_string())
+                .color(ui.visuals().text_color())
+                .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+        }
     } else {
         RichText::new("Untitled Request")
             .strong()
@@ -128,4 +134,28 @@ pub fn replace_variable(content: String, envs: BTreeMap<String, EnvironmentItemV
         }
     }
     result
+}
+
+pub fn select_label(ui: &mut Ui, text: impl Into<WidgetText>) -> Response {
+    ui.with_layout(
+        Layout::top_down(Align::LEFT).with_cross_justify(true),
+        |ui| ui.selectable_label(false, text),
+    )
+    .inner
+}
+
+pub fn text_edit_singleline<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
+    ui.with_layout(
+        Layout::top_down(Align::LEFT).with_cross_justify(true),
+        |ui| ui.text_edit_singleline(text),
+    )
+    .inner
+}
+
+pub fn text_edit_multiline<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
+    ui.with_layout(
+        Layout::top_down(Align::LEFT).with_cross_justify(true),
+        |ui| ui.text_edit_multiline(text),
+    )
+    .inner
 }
