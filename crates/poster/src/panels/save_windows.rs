@@ -56,13 +56,14 @@ impl DataView for SaveWindows {
                     ui.horizontal(|ui| match &self.select_collection_path {
                         None => {
                             ui.label("All Collections");
-                            if ui.link("+ Create Collection").clicked() {
-                                self.add_collection = true;
-                            };
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                if ui.link("+ Create Collection").clicked() {
+                                    self.add_collection = true;
+                                };
+                            });
                         }
                         Some(name) => {
-                            ui.label("◀");
-                            if ui.link(name).clicked() {
+                            if ui.link("◀ ".to_string() + name).clicked() {
                                 let paths: Vec<&str> = name.split("/").collect();
                                 if paths.len() == 1 {
                                     self.select_collection_path = None;
@@ -71,13 +72,16 @@ impl DataView for SaveWindows {
                                     self.select_collection_path = Some(new_paths.join("/"));
                                 }
                             }
-                            if ui.link("+ Create Folder").clicked() {
-                                self.add_folder = true;
-                            };
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                if ui.link("+ Create Folder").clicked() {
+                                    self.add_folder = true;
+                                };
+                            });
                         }
                     });
                     ui.add_space(VERTICAL_GAP);
                     if self.add_collection {
+                        self.add_folder = false;
                         ui.horizontal(|ui| {
                             ui.text_edit_singleline(&mut self.add_name);
                             if ui.button("+").clicked() {
@@ -97,6 +101,7 @@ impl DataView for SaveWindows {
                         });
                     }
                     if self.add_folder {
+                        self.add_collection = false;
                         ui.horizontal(|ui| {
                             ui.text_edit_singleline(&mut self.add_name);
                             if ui.button("+").clicked() {
@@ -134,6 +139,8 @@ impl DataView for SaveWindows {
                             None => {
                                 for (name, collection) in app_data.collections.get_data().iter() {
                                     if utils::select_label(ui, name).clicked() {
+                                        self.add_folder = false;
+                                        self.add_collection = false;
                                         self.select_collection_path =
                                             Some(collection.folder.borrow().name.to_string());
                                     }
@@ -147,6 +154,8 @@ impl DataView for SaveWindows {
                                     .map(|cf| {
                                         for (name, cf_child) in cf.borrow().folders.iter() {
                                             if utils::select_label(ui, name.clone()).clicked() {
+                                                self.add_folder = false;
+                                                self.add_collection = false;
                                                 self.select_collection_path = Some(
                                                     path.clone()
                                                         + "/"
@@ -167,7 +176,7 @@ impl DataView for SaveWindows {
                     });
                     ui.add_space(VERTICAL_GAP);
 
-                    egui::TopBottomPanel::bottom("environment_bottom_panel")
+                    egui::TopBottomPanel::bottom("save_bottom_panel")
                         .resizable(false)
                         .min_height(0.0)
                         .show_inside(ui, |ui| {
