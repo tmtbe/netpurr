@@ -11,6 +11,7 @@ use crate::utils;
 #[derive(Default)]
 pub struct SaveWindows {
     save_windows_open: bool,
+    save_windows_open2: bool,
     http_record: HttpRecord,
     select_collection_path: Option<String>,
     add_collection: bool,
@@ -21,6 +22,7 @@ pub struct SaveWindows {
 impl SaveWindows {
     pub(crate) fn open(&mut self, http_record: HttpRecord) {
         self.save_windows_open = true;
+        self.save_windows_open2 = true;
         self.http_record = http_record;
         self.http_record.name = self.http_record.request.base_url.clone();
         self.add_folder = false;
@@ -210,11 +212,18 @@ impl DataView for SaveWindows {
                                                 app_data.collections.update(collection_name);
                                             }
                                         }
+                                        self.save_windows_open2 = false;
+                                    }
+                                    if ui.button("Cancel").clicked() {
+                                        self.save_windows_open2 = false;
                                     }
                                 }
                             });
                         });
                 });
             });
+        if !self.save_windows_open2 {
+            self.save_windows_open = false;
+        }
     }
 }
