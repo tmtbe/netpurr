@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use egui::{ScrollArea, Ui};
+use egui::{Align, Layout, ScrollArea, Ui};
 
 use crate::data::{AppData, Collection, CollectionFolder, HttpRecord};
 use crate::panels::{DataView, VERTICAL_GAP};
@@ -50,7 +50,7 @@ impl DataView for SaveWindows {
                 ui.text_edit_multiline(&mut self.http_record.desc);
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Select a collection or folder to save to:");
-
+                ui.add_space(VERTICAL_GAP);
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| match &self.select_collection_path {
                         None => {
@@ -60,58 +60,73 @@ impl DataView for SaveWindows {
                             };
                         }
                         Some(name) => {
-                            ui.link(name);
+                            ui.label("◀");
+                            if ui.link(name).clicked() {
+                                let paths: Vec<&str> = name.split("/").collect();
+                                if paths.len() == 1 {
+                                    self.select_collection_path = None;
+                                } else {
+                                    let new_paths = &paths[0..paths.len() - 1];
+                                    self.select_collection_path = Some(new_paths.join("/"));
+                                }
+                            }
                             if ui.link("+ Create Folder").clicked() {
                                 self.add_folder = true;
                             };
                         }
                     });
+                    ui.add_space(VERTICAL_GAP);
                     if self.add_collection {
-                        if ui.text_edit_singleline(&mut self.add_name).double_clicked() {
-                            app_data.collections.insert_or_update(Collection {
-                                envs: Default::default(),
-                                folder: Rc::new(RefCell::new(CollectionFolder {
-                                    parent: None,
-                                    name: self.add_name.clone(),
-                                    desc: "".to_string(),
-                                    auth: Default::default(),
-                                    requests: vec![],
-                                    folders: BTreeMap::default(),
-                                })),
-                            });
-                            self.add_name = "".to_string();
-                            self.add_collection = false;
-                        }
+                        ui.horizontal(|ui| {
+                            ui.text_edit_singleline(&mut self.add_name);
+                            if ui.button("+").clicked() {
+                                app_data.collections.insert_or_update(Collection {
+                                    envs: Default::default(),
+                                    folder: Rc::new(RefCell::new(CollectionFolder {
+                                        name: self.add_name.clone(),
+                                        desc: "".to_string(),
+                                        auth: Default::default(),
+                                        requests: Default::default(),
+                                        folders: BTreeMap::default(),
+                                    })),
+                                });
+                                self.add_name = "".to_string();
+                                self.add_collection = false;
+                            }
+                        });
                     }
                     if self.add_folder {
-                        if ui.text_edit_singleline(&mut self.add_name).double_clicked() {
-                            match &self.select_collection_path {
-                                None => {}
-                                Some(path) => {
-                                    match app_data
-                                        .collections
-                                        .get_mut_folder_with_path(path.clone())
-                                    {
-                                        None => {}
-                                        Some(folder) => {
-                                            folder.borrow_mut().folders.insert(
-                                                self.add_name.clone(),
-                                                Rc::new(RefCell::new(CollectionFolder {
-                                                    parent: Some(folder.clone()),
-                                                    name: self.add_name.to_string(),
-                                                    desc: "".to_string(),
-                                                    auth: Default::default(),
-                                                    requests: vec![],
-                                                    folders: Default::default(),
-                                                })),
-                                            );
+                        ui.horizontal(|ui| {
+                            ui.text_edit_singleline(&mut self.add_name);
+                            if ui.button("+").clicked() {
+                                match &self.select_collection_path {
+                                    None => {}
+                                    Some(path) => {
+                                        let (collection_name, option) = app_data
+                                            .collections
+                                            .get_mut_folder_with_path(path.clone());
+                                        match option {
+                                            None => {}
+                                            Some(folder) => {
+                                                folder.borrow_mut().folders.insert(
+                                                    self.add_name.clone(),
+                                                    Rc::new(RefCell::new(CollectionFolder {
+                                                        name: self.add_name.to_string(),
+                                                        desc: "".to_string(),
+                                                        auth: Default::default(),
+                                                        requests: Default::default(),
+                                                        folders: Default::default(),
+                                                    })),
+                                                );
+                                                app_data.collections.update(collection_name);
+                                            }
                                         }
                                     }
                                 }
+                                self.add_name = "".to_string();
+                                self.add_folder = false;
                             }
-                            self.add_name = "".to_string();
-                            self.add_folder = false;
-                        }
+                        });
                     }
                     ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
                         match self.select_collection_path.clone() {
@@ -127,6 +142,7 @@ impl DataView for SaveWindows {
                                 app_data
                                     .collections
                                     .get_mut_folder_with_path(path.clone())
+                                    .1
                                     .map(|cf| {
                                         for (name, cf_child) in cf.borrow().folders.iter() {
                                             if ui.selectable_label(false, name.clone()).clicked() {
@@ -138,13 +154,53 @@ impl DataView for SaveWindows {
                                             }
                                         }
                                         ui.set_enabled(false);
-                                        for hr in cf.borrow().requests.iter() {
-                                            ui.selectable_label(false, hr.name.clone());
+                                        for (hr_name, _) in cf.borrow().requests.iter() {
+                                            ui.selectable_label(false, hr_name);
                                         }
                                     });
                             }
                         }
                     });
+                    ui.add_space(VERTICAL_GAP);
+
+                    egui::TopBottomPanel::bottom("environment_bottom_panel")
+                        .resizable(false)
+                        .min_height(0.0)
+                        .show_inside(ui, |ui| {
+                            ui.add_space(VERTICAL_GAP);
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| match &self
+                                .select_collection_path
+                            {
+                                None => {
+                                    ui.set_enabled(false);
+                                    ui.button("Save");
+                                    ui.set_enabled(true);
+                                }
+                                Some(path) => {
+                                    if ui
+                                        .button(
+                                            "Save to ".to_string()
+                                                + path.split("/").last().unwrap(),
+                                        )
+                                        .clicked()
+                                    {
+                                        let (collection_name, option) = app_data
+                                            .collections
+                                            .get_mut_folder_with_path(path.clone());
+                                        match option {
+                                            None => {}
+                                            Some(cf) => {
+                                                cf.borrow_mut().requests.insert(
+                                                    self.http_record.name.clone(),
+                                                    self.http_record.clone(),
+                                                );
+                                                app_data.collections.update(collection_name);
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        });
                 });
             });
     }

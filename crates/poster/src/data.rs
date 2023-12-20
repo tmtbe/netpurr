@@ -84,6 +84,16 @@ impl Collections {
             &collection,
         );
     }
+
+    pub fn update(&mut self, collection_name: String) {
+        self.data.get(collection_name.as_str()).map(|c| {
+            self.persistence.save(
+                Path::new("collections").to_path_buf(),
+                c.folder.borrow().name.clone(),
+                c,
+            );
+        });
+    }
     pub fn get_data(&self) -> BTreeMap<String, Collection> {
         self.data.clone()
     }
@@ -91,22 +101,23 @@ impl Collections {
     pub fn get_mut_folder_with_path(
         &mut self,
         path: String,
-    ) -> Option<Rc<RefCell<CollectionFolder>>> {
+    ) -> (String, Option<Rc<RefCell<CollectionFolder>>>) {
         let collection_paths: Vec<&str> = path.split("/").collect();
-        match self.data.get(&collection_paths[0].to_string()) {
-            None => return None,
+        let collection_name = &collection_paths[0].to_string();
+        match self.data.get(collection_name) {
+            None => return (collection_name.to_string(), None),
             Some(collection) => {
                 let mut folder = collection.folder.clone();
                 let folder_paths = &collection_paths[1..];
                 for folder_name in folder_paths.iter() {
                     let get = folder.borrow().folders.get(folder_name.to_owned()).cloned();
                     if get.is_none() {
-                        return None;
+                        return (collection_name.to_string(), None);
                     } else {
                         folder = get.unwrap().clone();
                     }
                 }
-                return Some(folder);
+                return (collection_name.to_string(), Some(folder));
             }
         };
     }
@@ -120,11 +131,10 @@ pub struct Collection {
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct CollectionFolder {
-    pub parent: Option<Rc<RefCell<CollectionFolder>>>,
     pub name: String,
     pub desc: String,
     pub auth: Auth,
-    pub requests: Vec<HttpRecord>,
+    pub requests: BTreeMap<String, HttpRecord>,
     pub folders: BTreeMap<String, Rc<RefCell<CollectionFolder>>>,
 }
 
