@@ -22,6 +22,7 @@ impl DataView for HistoryPanel {
                                 .central_request_data_list
                                 .add_crt(CentralRequestItem {
                                     id: history_rest_item.id.clone(),
+                                    collection_path: None,
                                     rest: history_rest_item.rest.clone(),
                                 })
                         }

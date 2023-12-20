@@ -20,7 +20,7 @@ pub struct SaveWindows {
 }
 
 impl SaveWindows {
-    pub(crate) fn open(&mut self, http_record: HttpRecord) {
+    pub(crate) fn open(&mut self, http_record: HttpRecord, default_path: Option<String>) {
         self.save_windows_open = true;
         self.save_windows_open2 = true;
         self.http_record = http_record;
@@ -28,6 +28,7 @@ impl SaveWindows {
         self.add_folder = false;
         self.add_collection = false;
         self.add_name = "".to_string();
+        self.select_collection_path = default_path
     }
 }
 
@@ -192,17 +193,28 @@ impl DataView for SaveWindows {
                                     ui.set_enabled(true);
                                 }
                                 Some(path) => {
-                                    if ui
-                                        .button(
-                                            "Save to ".to_string()
-                                                + path.split("/").last().unwrap(),
-                                        )
-                                        .clicked()
-                                    {
-                                        let (collection_name, option) = app_data
-                                            .collections
-                                            .get_mut_folder_with_path(path.clone());
-                                        match option {
+                                    let mut button_name =
+                                        "Save to ".to_string() + path.split("/").last().unwrap();
+                                    let (collection_name, option) =
+                                        app_data.collections.get_mut_folder_with_path(path.clone());
+                                    let mut need_replace = false;
+                                    match &option {
+                                        None => {}
+                                        Some(cf) => {
+                                            if cf
+                                                .borrow()
+                                                .requests
+                                                .contains_key(self.http_record.name.as_str())
+                                            {
+                                                button_name =
+                                                    "⚠ ".to_string() + button_name.as_str();
+                                                need_replace = true;
+                                            }
+                                        }
+                                    }
+                                    let save_button = ui.button(button_name);
+                                    if save_button.clicked() {
+                                        match &option {
                                             None => {}
                                             Some(cf) => {
                                                 cf.borrow_mut().requests.insert(
@@ -213,6 +225,9 @@ impl DataView for SaveWindows {
                                             }
                                         }
                                         self.save_windows_open2 = false;
+                                    }
+                                    if need_replace {
+                                        save_button.on_hover_text("The request will be replaced.");
                                     }
                                     if ui.button("Cancel").clicked() {
                                         self.save_windows_open2 = false;

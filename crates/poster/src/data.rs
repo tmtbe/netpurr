@@ -393,6 +393,7 @@ impl CentralRequestDataList {
     pub fn add_new(&mut self) {
         let crt = CentralRequestItem {
             id: Uuid::new_v4().to_string(),
+            collection_path: None,
             rest: Default::default(),
         };
         self.add_crt(crt.clone());
@@ -413,6 +414,7 @@ impl CentralRequestDataList {
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct CentralRequestItem {
     pub id: String,
+    pub collection_path: Option<String>,
     pub rest: HttpRecord,
 }
 

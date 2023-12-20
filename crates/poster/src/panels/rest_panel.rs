@@ -92,7 +92,8 @@ impl DataView for RestPanel {
                                     }
                                 }
                                 if ui.button("Save").clicked() {
-                                    self.save_windows.open(data.rest.clone());
+                                    self.save_windows
+                                        .open(data.rest.clone(), data.collection_path.clone());
                                 }
                             });
                         });
