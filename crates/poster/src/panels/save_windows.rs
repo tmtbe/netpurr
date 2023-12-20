@@ -6,6 +6,7 @@ use egui::{Align, Layout, ScrollArea, Ui};
 
 use crate::data::{AppData, Collection, CollectionFolder, HttpRecord};
 use crate::panels::{DataView, VERTICAL_GAP};
+use crate::utils;
 
 #[derive(Default)]
 pub struct SaveWindows {
@@ -154,8 +155,11 @@ impl DataView for SaveWindows {
                                             }
                                         }
                                         ui.set_enabled(false);
-                                        for (hr_name, _) in cf.borrow().requests.iter() {
-                                            ui.selectable_label(false, hr_name);
+                                        for (hr_name, hr) in cf.borrow().requests.iter() {
+                                            ui.selectable_label(
+                                                false,
+                                                utils::build_rest_ui_header(hr.request.clone(), ui),
+                                            );
                                         }
                                     });
                             }
