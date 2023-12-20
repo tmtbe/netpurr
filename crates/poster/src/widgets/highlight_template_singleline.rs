@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::data::EnvironmentItemValue;
 use crate::panels::VERTICAL_GAP;
+use crate::utils;
 use crate::utils::{popup_widget, replace_variable};
 
 pub struct HighlightTemplateSingleline<'t> {
@@ -101,6 +102,7 @@ impl Widget for HighlightTemplateSingleline<'_> {
                         |ui| {
                             ui.horizontal(|ui| {
                                 egui::ScrollArea::vertical()
+                                    .max_width(150.0)
                                     .max_height(200.0)
                                     .show(ui, |ui| {
                                         ui.vertical(|ui| {
@@ -108,8 +110,10 @@ impl Widget for HighlightTemplateSingleline<'_> {
                                                 if !key.starts_with(prompt.as_str()) {
                                                     continue;
                                                 }
-                                                let label =
-                                                    ui.button(RichText::new(key.as_str()).strong());
+                                                let label = utils::select_label(
+                                                    ui,
+                                                    RichText::new(key.as_str()).strong(),
+                                                );
                                                 if label.hovered() {
                                                     hovered_label_key = Some(key.clone());
                                                 }
