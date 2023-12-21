@@ -25,7 +25,7 @@ impl DataView for CollectionsPanel {
                 .circle_filled(response.rect.center(), radius, stroke.color);
         }
         if ui.link("+ New Collection").clicked() {
-            self.new_collection_windows.open(None);
+            self.new_collection_windows.open_collection(None);
         };
         for (c_name, collection) in app_data.collections.get_data().iter() {
             let response = CollapsingHeader::new(RichText::new(c_name).strong())
@@ -72,7 +72,8 @@ impl DataView for CollectionsPanel {
                         .show(ui, |ui| {
                             ui.vertical(|ui| {
                                 if utils::select_label(ui, "Edit").clicked() {
-                                    self.new_collection_windows.open(Some(collection.clone()));
+                                    self.new_collection_windows
+                                        .open_collection(Some(collection.clone()));
                                 }
                                 if utils::select_label(ui, "Remove").clicked() {
                                     app_data
@@ -90,13 +91,13 @@ impl DataView for CollectionsPanel {
 
 impl CollectionsPanel {
     fn set_folder(
-        &self,
+        &mut self,
         app_data: &mut AppData,
         ui: &mut Ui,
         cf: Rc<RefCell<CollectionFolder>>,
         path: String,
     ) {
-        CollapsingHeader::new(cf.borrow().name.as_str())
+        let response = CollapsingHeader::new(cf.borrow().name.as_str())
             .default_open(false)
             .show(ui, |ui| {
                 for (name, cf) in cf.borrow().folders.iter() {
@@ -115,6 +116,34 @@ impl CollectionsPanel {
                             })
                     }
                 }
-            });
+            })
+            .header_response;
+
+        let popup_id = ui.make_persistent_id(
+            "collection_item_popup_menu_".to_string()
+                + format!("{}/{}", path, cf.borrow().name.as_str()).as_str(),
+        );
+        if response.secondary_clicked() {
+            ui.memory_mut(|mem| mem.toggle_popup(popup_id));
+        }
+        utils::popup_widget(
+            ui,
+            popup_id,
+            &response,
+            pos2(response.rect.right(), response.rect.bottom()),
+            |ui| {
+                egui::ScrollArea::vertical()
+                    .max_width(100.0)
+                    .max_height(200.0)
+                    .show(ui, |ui| {
+                        ui.vertical(|ui| {
+                            if utils::select_label(ui, "Edit").clicked() {
+                                //self.new_collection_windows.open_collection(Some(collection.clone()));
+                            }
+                            if utils::select_label(ui, "Remove").clicked() {}
+                        });
+                    });
+            },
+        );
     }
 }

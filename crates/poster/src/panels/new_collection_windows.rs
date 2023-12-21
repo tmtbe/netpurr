@@ -36,7 +36,7 @@ impl Default for NewCollectionContentType {
 }
 
 impl NewCollectionWindows {
-    pub(crate) fn open(&mut self, new_collection: Option<Collection>) {
+    pub(crate) fn open_collection(&mut self, new_collection: Option<Collection>) {
         self.new_collection_windows_open = true;
         self.new_collection_windows_open2 = true;
         match new_collection {
