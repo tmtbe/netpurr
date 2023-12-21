@@ -167,7 +167,14 @@ impl DataView for RestPanel {
                     .set_and_render(app_data, cursor.clone(), ui)
             }
             RequestPanelEnum::Authorization => {
-                self.auth_panel.set_envs(envs.clone());
+                let mut parent_auth = None;
+                match &data.collection_path {
+                    None => {}
+                    Some(collection_path) => {
+                        parent_auth = Some(app_data.collections.get_auth(collection_path.clone()));
+                    }
+                }
+                self.auth_panel.set_envs(envs.clone(), parent_auth);
                 self.auth_panel
                     .set_and_render(&mut data.rest.request.auth, ui);
             }

@@ -14,13 +14,19 @@ pub struct AuthPanel {
     envs: BTreeMap<String, EnvironmentItemValue>,
     collection: Option<Collection>,
     folder: Option<Rc<RefCell<CollectionFolder>>>,
+    parent_auth: Option<Auth>,
     name: String,
     no_inherit: bool,
 }
 
 impl AuthPanel {
-    pub fn set_envs(&mut self, envs: BTreeMap<String, EnvironmentItemValue>) {
+    pub fn set_envs(
+        &mut self,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        parent_auth: Option<Auth>,
+    ) {
         self.envs = envs;
+        self.parent_auth = parent_auth
     }
 
     pub fn set_collection_folder(
@@ -56,7 +62,7 @@ impl AlongDataView for AuthPanel {
                             ui.set_min_width(60.0);
                             for x in AuthType::iter() {
                                 if self.no_inherit && x == AuthType::InheritAuthFromParent {
-                                    continue
+                                    continue;
                                 }
                                 ui.selectable_value(&mut data.auth_type, x.clone(), x.to_string());
                             }
@@ -110,10 +116,45 @@ impl AlongDataView for AuthPanel {
                         ui.add_space(VERTICAL_GAP * 2.0);
                     }
                     AuthType::InheritAuthFromParent => {
-                        ui.centered_and_justified(|ui| {
-                            ui.add_space(VERTICAL_GAP * 5.0);
-                            ui.label("This request is not inheriting any authorization helper at the moment. Save it in a collection to use the parent's authorization helper.");
-                            ui.add_space(VERTICAL_GAP * 5.0);
+                        ui.add_space(VERTICAL_GAP);
+                        ui.label("This request is not inheriting any authorization helper at the moment. Save it in a collection to use the parent's authorization helper.");
+                        ui.add_space(VERTICAL_GAP);
+                        self.parent_auth.clone().map(|parent_auth| {
+                            match parent_auth.auth_type {
+                                AuthType::InheritAuthFromParent => {}
+                                AuthType::NoAuth => {
+                                    ui.centered_and_justified(|ui| {
+                                        ui.add_space(VERTICAL_GAP * 5.0);
+                                        ui.label("This request does not use any authorization. ");
+                                        ui.add_space(VERTICAL_GAP * 5.0);
+                                    });
+                                }
+                                AuthType::BearerToken => {
+                                    ui.add_space(VERTICAL_GAP * 5.0);
+                                    ui.horizontal(|ui| {
+                                        ui.add_space(HORIZONTAL_GAP);
+                                        ui.label("Token:");
+                                        ui.label(parent_auth.bearer_token.clone());
+                                        ui.add_space(HORIZONTAL_GAP);
+                                    });
+                                    ui.add_space(VERTICAL_GAP * 5.0);
+                                }
+                                AuthType::BasicAuth => {
+                                    ui.add_space(VERTICAL_GAP * 2.0);
+                                    ui.horizontal(|ui| {
+                                        ui.add_space(HORIZONTAL_GAP);
+                                        ui.label("Username:");
+                                        ui.label(parent_auth.basic_username.clone());
+                                    });
+                                    ui.add_space(VERTICAL_GAP);
+                                    ui.horizontal(|ui| {
+                                        ui.add_space(HORIZONTAL_GAP);
+                                        ui.label("Password: ");
+                                        ui.label(parent_auth.basic_password.clone());
+                                    });
+                                    ui.add_space(VERTICAL_GAP * 2.0);
+                                }
+                            }
                         });
                     }
                 });
