@@ -84,6 +84,11 @@ impl Collections {
             &collection,
         );
     }
+    pub fn remove(&mut self, collection_name: String) {
+        self.data.remove(collection_name.as_str());
+        self.persistence
+            .remove(Path::new("collections").to_path_buf(), collection_name)
+    }
 
     pub fn update(&mut self, collection_name: String) {
         self.data.get(collection_name.as_str()).map(|c| {

@@ -6,6 +6,7 @@ pub mod collections_panel;
 mod environment_windows;
 pub mod history_panel;
 pub mod left_panel;
+mod new_collection_windows;
 mod request_body_form_data_panel;
 mod request_body_panel;
 mod request_body_xxx_form_panel;

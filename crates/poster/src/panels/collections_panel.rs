@@ -4,17 +4,22 @@ use std::rc::Rc;
 use egui::{CollapsingHeader, Ui};
 
 use crate::data::{AppData, CentralRequestItem, CollectionFolder};
+use crate::panels::new_collection_windows::NewCollectionWindows;
 use crate::panels::DataView;
 use crate::utils;
 
-#[derive(Copy, Clone, PartialEq, Default)]
-pub struct CollectionsPanel {}
+#[derive(Default)]
+pub struct CollectionsPanel {
+    new_collection_windows: NewCollectionWindows,
+}
 
 impl DataView for CollectionsPanel {
     type CursorType = i32;
 
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        ui.link("+ New Collection");
+        if ui.link("+ New Collection").clicked() {
+            self.new_collection_windows.open(None);
+        };
         for (c_name, collection) in app_data.collections.get_data().iter() {
             CollapsingHeader::new(c_name)
                 .default_open(false)
@@ -29,6 +34,7 @@ impl DataView for CollectionsPanel {
                     }
                 });
         }
+        self.new_collection_windows.set_and_render(app_data, 0, ui);
     }
 }
 
