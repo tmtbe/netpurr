@@ -32,7 +32,8 @@ impl DataView for CollectionsPanel {
                 .icon(circle_icon)
                 .default_open(false)
                 .show(ui, |ui| {
-                    for (cf_name, cf) in collection.folder.borrow().folders.iter() {
+                    let folders = collection.folder.borrow().folders.clone();
+                    for (cf_name, cf) in folders.iter() {
                         self.set_folder(
                             app_data,
                             collection.clone(),
@@ -42,7 +43,8 @@ impl DataView for CollectionsPanel {
                             format!("{}/{}", c_name, cf_name.clone()),
                         );
                     }
-                    for (_, hr) in collection.folder.borrow().requests.iter() {
+                    let requests = collection.folder.borrow().requests.clone();
+                    for (_, hr) in requests.iter() {
                         let lb = utils::build_rest_ui_header(hr.clone(), ui);
                         let button = ui.button(lb);
                         if button.clicked() {
@@ -106,7 +108,8 @@ impl CollectionsPanel {
         let response = CollapsingHeader::new(name.clone())
             .default_open(false)
             .show(ui, |ui| {
-                for (name, cf) in cf.borrow().folders.iter() {
+                let folders = cf.borrow().folders.clone();
+                for (name, cf) in folders.iter() {
                     self.set_folder(
                         app_data,
                         collection.clone(),
@@ -116,7 +119,8 @@ impl CollectionsPanel {
                         format!("{}/{}", path, name),
                     )
                 }
-                for (_, hr) in cf.borrow().requests.iter() {
+                let requests = cf.borrow().requests.clone();
+                for (_, hr) in requests.iter() {
                     let lb = utils::build_rest_ui_header(hr.clone(), ui);
                     let button = ui.button(lb);
                     if button.clicked() {
