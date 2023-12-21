@@ -101,7 +101,9 @@ impl CollectionsPanel {
         cf: Rc<RefCell<CollectionFolder>>,
         path: String,
     ) {
-        let response = CollapsingHeader::new(cf.borrow().name.as_str())
+        let mut remove_id = None;
+        let name = cf.borrow().name.clone();
+        let response = CollapsingHeader::new(name.clone())
             .default_open(false)
             .show(ui, |ui| {
                 for (name, cf) in cf.borrow().folders.iter() {
@@ -151,14 +153,19 @@ impl CollectionsPanel {
                             if utils::select_label(ui, "Edit").clicked() {
                                 self.new_collection_windows.open_folder(
                                     collection,
-                                    parent_folder,
-                                    Some(cf),
+                                    parent_folder.clone(),
+                                    Some(cf.clone()),
                                 );
                             }
-                            if utils::select_label(ui, "Remove").clicked() {}
+                            if utils::select_label(ui, "Remove").clicked() {
+                                remove_id = Some(name.clone());
+                            }
                         });
                     });
             },
         );
+        remove_id.map(|id| {
+            parent_folder.borrow_mut().folders.remove(id.as_str());
+        });
     }
 }
