@@ -4,7 +4,7 @@ use std::rc::Rc;
 use eframe::emath::pos2;
 use egui::{CollapsingHeader, RichText, Ui};
 
-use crate::data::{AppData, CentralRequestItem, CollectionFolder};
+use crate::data::{AppData, CentralRequestItem, Collection, CollectionFolder};
 use crate::panels::new_collection_windows::NewCollectionWindows;
 use crate::panels::DataView;
 use crate::utils;
@@ -35,6 +35,8 @@ impl DataView for CollectionsPanel {
                     for (cf_name, cf) in collection.folder.borrow().folders.iter() {
                         self.set_folder(
                             app_data,
+                            collection.clone(),
+                            collection.folder.clone(),
                             ui,
                             cf.clone(),
                             format!("{}/{}", c_name, cf_name.clone()),
@@ -93,6 +95,8 @@ impl CollectionsPanel {
     fn set_folder(
         &mut self,
         app_data: &mut AppData,
+        collection: Collection,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
         ui: &mut Ui,
         cf: Rc<RefCell<CollectionFolder>>,
         path: String,
@@ -101,7 +105,14 @@ impl CollectionsPanel {
             .default_open(false)
             .show(ui, |ui| {
                 for (name, cf) in cf.borrow().folders.iter() {
-                    self.set_folder(app_data, ui, cf.clone(), format!("{}/{}", path, name))
+                    self.set_folder(
+                        app_data,
+                        collection.clone(),
+                        parent_folder.clone(),
+                        ui,
+                        cf.clone(),
+                        format!("{}/{}", path, name),
+                    )
                 }
                 for (_, hr) in cf.borrow().requests.iter() {
                     let lb = utils::build_rest_ui_header(hr.clone(), ui);
@@ -138,7 +149,11 @@ impl CollectionsPanel {
                     .show(ui, |ui| {
                         ui.vertical(|ui| {
                             if utils::select_label(ui, "Edit").clicked() {
-                                //self.new_collection_windows.open_collection(Some(collection.clone()));
+                                self.new_collection_windows.open_folder(
+                                    collection,
+                                    parent_folder,
+                                    Some(cf),
+                                );
                             }
                             if utils::select_label(ui, "Remove").clicked() {}
                         });

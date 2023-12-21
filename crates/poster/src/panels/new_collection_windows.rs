@@ -1,11 +1,13 @@
+use std::cell::RefCell;
 use std::default::Default;
+use std::rc::Rc;
 
 use egui::{Align, Button, Checkbox, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, Collection, EnvironmentItem};
+use crate::data::{AppData, Collection, CollectionFolder, EnvironmentItem};
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::{AlongDataView, DataView, VERTICAL_GAP};
 use crate::utils;
@@ -18,6 +20,9 @@ pub struct NewCollectionWindows {
     new_collection_windows_open2: bool,
     new_collection: Collection,
     old_collection_name: Option<String>,
+    old_folder_name: Option<String>,
+    folder: Rc<RefCell<CollectionFolder>>,
+    parent_folder: Option<Rc<RefCell<CollectionFolder>>>,
     new_collection_content_type: NewCollectionContentType,
     auth_panel: AuthPanel,
 }
@@ -36,10 +41,10 @@ impl Default for NewCollectionContentType {
 }
 
 impl NewCollectionWindows {
-    pub(crate) fn open_collection(&mut self, new_collection: Option<Collection>) {
+    pub(crate) fn open_collection(&mut self, collection: Option<Collection>) {
         self.new_collection_windows_open = true;
         self.new_collection_windows_open2 = true;
-        match new_collection {
+        match collection {
             None => {
                 self.new_collection = Collection::default();
                 self.title_name = "CREATE A NEW COLLECTION".to_string();
@@ -51,6 +56,46 @@ impl NewCollectionWindows {
             }
         }
 
+        self.new_collection_content_type = NewCollectionContentType::Description;
+        self.folder = self.new_collection.folder.clone();
+        self.parent_folder = None;
+    }
+    pub(crate) fn open_folder(
+        &mut self,
+        collection: Collection,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
+        folder: Option<Rc<RefCell<CollectionFolder>>>,
+    ) {
+        self.new_collection_windows_open = true;
+        self.new_collection_windows_open2 = true;
+        match folder {
+            None => {
+                self.new_collection = collection;
+                self.title_name = "CREATE A NEW FOLDER".to_string();
+                self.folder = Rc::new(RefCell::new(CollectionFolder {
+                    name: "".to_string(),
+                    desc: "".to_string(),
+                    auth: Default::default(),
+                    is_root: false,
+                    requests: Default::default(),
+                    folders: Default::default(),
+                }));
+            }
+            Some(cf) => {
+                self.new_collection = collection;
+                self.old_folder_name = Some(cf.borrow().name.clone());
+                self.title_name = "EDIT FOLDER".to_string();
+                self.folder = Rc::new(RefCell::new(CollectionFolder {
+                    name: cf.borrow().name.clone(),
+                    desc: cf.borrow().desc.clone(),
+                    auth: cf.borrow().auth.clone(),
+                    is_root: cf.borrow().is_root,
+                    requests: cf.borrow().requests.clone(),
+                    folders: cf.borrow().folders.clone(),
+                }));
+            }
+        }
+        self.parent_folder = Some(parent_folder.clone());
         self.new_collection_content_type = NewCollectionContentType::Description;
     }
 }
@@ -74,10 +119,13 @@ impl DataView for NewCollectionWindows {
             .open(&mut self.new_collection_windows_open)
             .show(ui.ctx(), |ui| {
                 ui.label("Name");
-                utils::text_edit_singleline(ui, &mut self.new_collection.folder.borrow_mut().name);
+                utils::text_edit_singleline(ui, &mut self.folder.borrow_mut().name);
 
                 ui.horizontal(|ui| {
                     for x in NewCollectionContentType::iter() {
+                        if x == NewCollectionContentType::Variables && self.parent_folder.is_some() {
+                            continue;
+                        }
                         ui.selectable_value(
                             &mut self.new_collection_content_type,
                             x.clone(),
@@ -93,7 +141,7 @@ impl DataView for NewCollectionWindows {
                         ui.add_space(VERTICAL_GAP);
                         ui.separator();
                         ui.add_space(VERTICAL_GAP);
-                        utils::text_edit_multiline(ui, &mut self.new_collection.folder.borrow_mut().desc);
+                        utils::text_edit_multiline(ui, &mut self.folder.borrow_mut().desc);
                         ui.add_space(VERTICAL_GAP);
                     }
                     NewCollectionContentType::Authorization => {
@@ -101,8 +149,8 @@ impl DataView for NewCollectionWindows {
                         ui.add_space(VERTICAL_GAP);
                         ui.separator();
                         ui.add_space(VERTICAL_GAP);
-                        self.auth_panel.set_collection_folder(self.new_collection.clone(), self.new_collection.folder.clone());
-                        self.auth_panel.set_and_render(&mut self.new_collection.folder.borrow_mut().auth, ui);
+                        self.auth_panel.set_collection_folder(self.new_collection.clone(), self.folder.clone());
+                        self.auth_panel.set_and_render(&mut self.folder.borrow_mut().auth, ui);
                     }
                     NewCollectionContentType::Variables => {
                         ui.label("These variables are specific to this collection and its requests. ");
@@ -198,6 +246,37 @@ impl DataView for NewCollectionWindows {
                                     self.new_collection_windows_open2 = false;
                                 }
                                 if self.new_collection.folder.borrow().name != "" {
+                                    match &self.parent_folder {
+                                        None => {
+                                            match &self.old_collection_name {
+                                                None => {
+                                                    if app_data.collections.get_data().contains_key(self.folder.borrow().name.as_str()) {
+                                                        ui.set_enabled(false)
+                                                    }
+                                                }
+                                                Some(old_name) => {
+                                                    if old_name != self.folder.borrow().name.as_str() && app_data.collections.get_data().contains_key(self.folder.borrow().name.as_str()) {
+                                                        ui.set_enabled(false);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Some(parent_folder) => {
+                                            match &self.old_folder_name {
+                                                None => {
+                                                    if parent_folder.borrow().folders.contains_key(self.folder.borrow().name.as_str()) {
+                                                        ui.set_enabled(false);
+                                                    }
+                                                }
+                                                Some(old_name) => {
+                                                    if old_name != self.folder.borrow().name.as_str() && parent_folder.borrow().folders.contains_key(self.folder.borrow().name.as_str()) {
+                                                        ui.set_enabled(false);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     if ui.button("Save").clicked() {
                                         self.new_collection_windows_open2 = false;
                                         match &self.old_collection_name {
@@ -206,8 +285,21 @@ impl DataView for NewCollectionWindows {
                                                 app_data.collections.remove(old_name.clone());
                                             }
                                         }
+                                        match &self.parent_folder {
+                                            None => {}
+                                            Some(parent_folder) => {
+                                                match &self.old_folder_name {
+                                                    None => {}
+                                                    Some(old_name) => {
+                                                        parent_folder.borrow_mut().folders.remove(old_name);
+                                                    }
+                                                }
+                                                parent_folder.borrow_mut().folders.insert(self.folder.borrow().name.clone(), self.folder.clone());
+                                            }
+                                        }
                                         app_data.collections.insert_or_update(self.new_collection.clone());
                                     }
+                                    ui.set_enabled(true);
                                 } else {
                                     ui.set_enabled(false);
                                     ui.button("Save");
