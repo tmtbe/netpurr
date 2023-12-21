@@ -14,7 +14,7 @@ pub struct RequestParamsPanel {
 impl DataView for RequestParamsPanel {
     type CursorType = String;
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        let (data, envs) = app_data.get_mut_crt_and_envs(cursor.clone());
+        let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
         ui.label("Query Params");
         let mut delete_index = None;
         let table = TableBuilder::new(ui)

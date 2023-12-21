@@ -1,20 +1,38 @@
+use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
-use crate::data::{Auth, AuthType, EnvironmentItemValue};
+use crate::data::{Auth, AuthType, Collection, CollectionFolder, EnvironmentItemValue};
 use crate::panels::{AlongDataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
 pub struct AuthPanel {
     envs: BTreeMap<String, EnvironmentItemValue>,
+    collection: Option<Collection>,
+    folder: Option<Rc<RefCell<CollectionFolder>>>,
+    name: String,
+    no_inherit: bool,
 }
 
 impl AuthPanel {
     pub fn set_envs(&mut self, envs: BTreeMap<String, EnvironmentItemValue>) {
         self.envs = envs;
+    }
+
+    pub fn set_collection_folder(
+        &mut self,
+        collection: Collection,
+        folder: Rc<RefCell<CollectionFolder>>,
+    ) {
+        self.envs = collection.build_envs();
+        self.collection = Some(collection);
+        self.name = folder.borrow().name.clone();
+        self.no_inherit = folder.borrow().is_root;
+        self.folder = Some(folder);
     }
 }
 
@@ -23,7 +41,7 @@ impl AlongDataView for AuthPanel {
 
     fn set_and_render(&mut self, data: &mut Self::DataType, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            egui::SidePanel::left("auth_left")
+            egui::SidePanel::left(self.name.clone() + "auth_left")
                 .resizable(true)
                 .show_separator_line(false)
                 .show_inside(ui, |ui| {
@@ -31,18 +49,21 @@ impl AlongDataView for AuthPanel {
                     ui.add_space(VERTICAL_GAP);
                     ui.label("The authorization header will be automatically generated when you send the request. ");
                     ui.add_space(VERTICAL_GAP);
-                    egui::ComboBox::from_id_source("method")
+                    egui::ComboBox::from_id_source("auth_type")
                         .selected_text(data.auth_type.to_string())
                         .show_ui(ui, |ui| {
                             ui.style_mut().wrap = Some(false);
                             ui.set_min_width(60.0);
                             for x in AuthType::iter() {
+                                if self.no_inherit && x == AuthType::InheritAuthFromParent {
+                                    continue
+                                }
                                 ui.selectable_value(&mut data.auth_type, x.clone(), x.to_string());
                             }
                         });
                     ui.add_space(VERTICAL_GAP);
                 });
-            egui::SidePanel::right("auth_right")
+            egui::SidePanel::right(self.name.clone() + "auth_right")
                 .resizable(true)
                 .show_separator_line(true)
                 .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
@@ -87,6 +108,13 @@ impl AlongDataView for AuthPanel {
                                 .ui(ui);
                         });
                         ui.add_space(VERTICAL_GAP * 2.0);
+                    }
+                    AuthType::InheritAuthFromParent => {
+                        ui.centered_and_justified(|ui| {
+                            ui.add_space(VERTICAL_GAP * 5.0);
+                            ui.label("This request is not inheriting any authorization helper at the moment. Save it in a collection to use the parent's authorization helper.");
+                            ui.add_space(VERTICAL_GAP * 5.0);
+                        });
                     }
                 });
         });

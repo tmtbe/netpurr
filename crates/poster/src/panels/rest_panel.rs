@@ -57,8 +57,8 @@ impl RestPanel {
 impl DataView for RestPanel {
     type CursorType = String;
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        let (mut data, envs) = app_data.get_crt_and_envs(cursor.clone());
-        data.rest.sync(envs.clone());
+        let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
+        data.rest.sync(envs.clone(), auth.clone());
         ui.vertical(|ui| {
             if data.rest.request.base_url == "" {
                 ui.strong("Untitled Request");

@@ -40,6 +40,19 @@ impl DataView for CollectionsPanel {
                             format!("{}/{}", c_name, cf_name.clone()),
                         );
                     }
+                    for (_, hr) in collection.folder.borrow().requests.iter() {
+                        let lb = utils::build_rest_ui_header(hr.clone(), ui);
+                        let button = ui.button(lb);
+                        if button.clicked() {
+                            app_data
+                                .central_request_data_list
+                                .add_crt(CentralRequestItem {
+                                    id: hr.name.clone(),
+                                    collection_path: Some(c_name.clone()),
+                                    rest: hr.clone(),
+                                })
+                        }
+                    }
                 })
                 .header_response;
             let popup_id =

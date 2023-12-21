@@ -16,7 +16,7 @@ impl DataView for RequestBodyPanel {
     type CursorType = String;
 
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        let (data, envs) = app_data.get_mut_crt_and_envs(cursor.clone());
+        let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
         ui.horizontal(|ui| {
             for x in BodyType::iter() {
                 ui.selectable_value(&mut data.rest.request.body_type, x.clone(), x.to_string());

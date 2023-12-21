@@ -101,6 +101,7 @@ impl DataView for NewCollectionWindows {
                         ui.add_space(VERTICAL_GAP);
                         ui.separator();
                         ui.add_space(VERTICAL_GAP);
+                        self.auth_panel.set_collection_folder(self.new_collection.clone(), self.new_collection.folder.clone());
                         self.auth_panel.set_and_render(&mut self.new_collection.folder.borrow_mut().auth, ui);
                     }
                     NewCollectionContentType::Variables => {

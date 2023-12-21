@@ -62,12 +62,13 @@ impl AppData {
             .get_variable_hash_map(self.get_collection(collection_path))
     }
 
-    pub fn get_mut_crt_and_envs(
+    pub fn get_mut_crt_and_envs_auth(
         &mut self,
         id: String,
     ) -> (
         &mut CentralRequestItem,
         BTreeMap<String, EnvironmentItemValue>,
+        Auth,
     ) {
         let data = self
             .central_request_data_list
@@ -76,26 +77,59 @@ impl AppData {
             .unwrap();
         let envs = self.get_variable_hash_map(data.collection_path.clone());
 
+        let mut auth;
+        match &data.collection_path {
+            None => {
+                auth = Auth {
+                    auth_type: AuthType::NoAuth,
+                    basic_username: "".to_string(),
+                    basic_password: "".to_string(),
+                    bearer_token: "".to_string(),
+                }
+            }
+            Some(collection_path) => {
+                auth = self.collections.get_auth(collection_path.clone());
+            }
+        }
         (
             self.central_request_data_list
                 .data_map
                 .get_mut(id.as_str())
                 .unwrap(),
             envs,
+            auth,
         )
     }
 
-    pub fn get_crt_and_envs(
+    pub fn get_crt_and_envs_auth(
         &self,
         id: String,
-    ) -> (CentralRequestItem, BTreeMap<String, EnvironmentItemValue>) {
+    ) -> (
+        CentralRequestItem,
+        BTreeMap<String, EnvironmentItemValue>,
+        Auth,
+    ) {
         let data = self
             .central_request_data_list
             .data_map
             .get(id.as_str())
             .unwrap();
         let envs = self.get_variable_hash_map(data.collection_path.clone());
-        (data.clone(), envs)
+        let mut auth;
+        match &data.collection_path {
+            None => {
+                auth = Auth {
+                    auth_type: AuthType::NoAuth,
+                    basic_username: "".to_string(),
+                    basic_password: "".to_string(),
+                    bearer_token: "".to_string(),
+                }
+            }
+            Some(collection_path) => {
+                auth = self.collections.get_auth(collection_path.clone());
+            }
+        }
+        (data.clone(), envs, auth)
     }
 }
 
@@ -158,8 +192,8 @@ impl Collections {
     ) -> (String, Option<Rc<RefCell<CollectionFolder>>>) {
         let collection_paths: Vec<&str> = path.split("/").collect();
         let collection_name = &collection_paths[0].to_string();
-        match self.data.get(collection_name) {
-            None => return (collection_name.to_string(), None),
+        return match self.data.get(collection_name) {
+            None => (collection_name.to_string(), None),
             Some(collection) => {
                 let mut folder = collection.folder.clone();
                 let folder_paths = &collection_paths[1..];
@@ -171,16 +205,99 @@ impl Collections {
                         folder = get.unwrap().clone();
                     }
                 }
-                return (collection_name.to_string(), Some(folder));
+                (collection_name.to_string(), Some(folder))
+            }
+        };
+    }
+
+    pub fn get_auth(&self, path: String) -> Auth {
+        let (_, of) = self.get_folder_with_path(path.clone());
+        let binding = path.clone();
+        let paths: Vec<&str> = binding.split("/").collect();
+        let mut auth;
+        match of {
+            None => {
+                auth = Auth {
+                    auth_type: Default::default(),
+                    basic_username: "".to_string(),
+                    basic_password: "".to_string(),
+                    bearer_token: "".to_string(),
+                }
+            }
+            Some(a) => auth = a.borrow().auth.clone(),
+        };
+        if paths.len() == 1 || auth.auth_type != AuthType::InheritAuthFromParent {
+            auth
+        } else {
+            self.get_auth(paths[0..paths.len() - 1].join("/"))
+        }
+    }
+    pub fn get_folder_with_path(
+        &self,
+        path: String,
+    ) -> (String, Option<Rc<RefCell<CollectionFolder>>>) {
+        let collection_paths: Vec<&str> = path.split("/").collect();
+        let collection_name = &collection_paths[0].to_string();
+        return match self.data.get(collection_name) {
+            None => (collection_name.to_string(), None),
+            Some(collection) => {
+                let mut folder = collection.folder.clone();
+                let folder_paths = &collection_paths[1..];
+                for folder_name in folder_paths.iter() {
+                    let get = folder.borrow().folders.get(folder_name.to_owned()).cloned();
+                    if get.is_none() {
+                        return (collection_name.to_string(), None);
+                    } else {
+                        folder = get.unwrap().clone();
+                    }
+                }
+                (collection_name.to_string(), Some(folder))
             }
         };
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Collection {
     pub envs: EnvironmentConfig,
     pub folder: Rc<RefCell<CollectionFolder>>,
+}
+
+impl Default for Collection {
+    fn default() -> Self {
+        Collection {
+            envs: Default::default(),
+            folder: Rc::new(RefCell::new(CollectionFolder {
+                name: "".to_string(),
+                desc: "".to_string(),
+                auth: Auth {
+                    auth_type: AuthType::NoAuth,
+                    basic_username: "".to_string(),
+                    basic_password: "".to_string(),
+                    bearer_token: "".to_string(),
+                },
+                is_root: true,
+                requests: Default::default(),
+                folders: Default::default(),
+            })),
+        }
+    }
+}
+
+impl Collection {
+    pub fn build_envs(&self) -> BTreeMap<String, EnvironmentItemValue> {
+        let mut result = BTreeMap::default();
+        for item in self.envs.items.iter().filter(|i| i.enable) {
+            result.insert(
+                item.key.clone(),
+                EnvironmentItemValue {
+                    value: item.value.to_string(),
+                    scope: self.folder.borrow().name.clone() + " Collection",
+                },
+            );
+        }
+        result
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -188,6 +305,7 @@ pub struct CollectionFolder {
     pub name: String,
     pub desc: String,
     pub auth: Auth,
+    pub is_root: bool,
     pub requests: BTreeMap<String, HttpRecord>,
     pub folders: BTreeMap<String, Rc<RefCell<CollectionFolder>>>,
 }
@@ -631,6 +749,7 @@ pub struct Auth {
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, EnumIter, EnumString, Display)]
 pub enum AuthType {
+    InheritAuthFromParent,
     NoAuth,
     BearerToken,
     BasicAuth,
@@ -641,6 +760,7 @@ impl Auth {
         &self,
         headers: &mut Vec<Header>,
         envs: BTreeMap<String, EnvironmentItemValue>,
+        auth: Auth,
     ) {
         let mut header = Header {
             key: "Authorization".to_string(),
@@ -666,21 +786,31 @@ impl Auth {
                 header.value = "Bearer ".to_string() + encoded_credentials.as_str();
                 headers.push(header)
             }
+            AuthType::InheritAuthFromParent => auth.build_head(
+                headers,
+                envs,
+                Auth {
+                    auth_type: AuthType::NoAuth,
+                    basic_username: "".to_string(),
+                    basic_password: "".to_string(),
+                    bearer_token: "".to_string(),
+                },
+            ),
         }
     }
 }
 
 impl Default for AuthType {
     fn default() -> Self {
-        AuthType::NoAuth
+        AuthType::InheritAuthFromParent
     }
 }
 
 impl HttpRecord {
-    pub fn sync(&mut self, envs: BTreeMap<String, EnvironmentItemValue>) {
+    pub fn sync(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, auth: Auth) {
         self.request
             .auth
-            .build_head(&mut self.request.headers, envs);
+            .build_head(&mut self.request.headers, envs, auth);
         match self.request.body_type {
             BodyType::NONE => {}
             BodyType::FROM_DATA => {

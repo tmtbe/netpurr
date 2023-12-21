@@ -14,7 +14,7 @@ pub struct RequestHeadersPanel {
 impl DataView for RequestHeadersPanel {
     type CursorType = String;
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        let (data, envs) = app_data.get_mut_crt_and_envs(cursor.clone());
+        let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
         ui.label("Headers");
         let mut delete_index = None;
         ui.push_id("request_headers_table", |ui| {
