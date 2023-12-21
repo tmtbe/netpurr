@@ -67,6 +67,8 @@ impl DataView for SaveWindows {
                         }
                         Some(name) => {
                             if ui.link("◀ ".to_string() + name).clicked() {
+                                self.add_folder = false;
+                                self.add_collection = false;
                                 let paths: Vec<&str> = name.split("/").collect();
                                 if paths.len() == 1 {
                                     self.select_collection_path = None;
@@ -87,6 +89,13 @@ impl DataView for SaveWindows {
                         self.add_folder = false;
                         ui.horizontal(|ui| {
                             ui.text_edit_singleline(&mut self.add_name);
+                            if app_data
+                                .collections
+                                .get_data()
+                                .contains_key(self.add_name.as_str())
+                            {
+                                ui.set_enabled(false);
+                            }
                             if ui.button("+").clicked() {
                                 app_data.collections.insert_or_update(Collection {
                                     envs: Default::default(),
@@ -102,12 +111,33 @@ impl DataView for SaveWindows {
                                 self.add_name = "".to_string();
                                 self.add_collection = false;
                             }
+                            ui.set_enabled(true);
                         });
                     }
                     if self.add_folder {
                         self.add_collection = false;
                         ui.horizontal(|ui| {
                             ui.text_edit_singleline(&mut self.add_name);
+                            match &self.select_collection_path {
+                                None => {}
+                                Some(path) => {
+                                    let (_, option) =
+                                        app_data.collections.get_folder_with_path(path.clone());
+                                    match option {
+                                        None => {}
+                                        Some(folder) => {
+                                            if folder
+                                                .borrow()
+                                                .folders
+                                                .contains_key(self.add_name.as_str())
+                                            {
+                                                ui.set_enabled(false);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                             if ui.button("+").clicked() {
                                 match &self.select_collection_path {
                                     None => {}
