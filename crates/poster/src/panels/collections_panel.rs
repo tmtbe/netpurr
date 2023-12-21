@@ -79,6 +79,13 @@ impl DataView for CollectionsPanel {
                                     self.new_collection_windows
                                         .open_collection(Some(collection.clone()));
                                 }
+                                if utils::select_label(ui, "Add Folder").clicked() {
+                                    self.new_collection_windows.open_folder(
+                                        collection.clone(),
+                                        collection.folder.clone(),
+                                        None,
+                                    );
+                                }
                                 if utils::select_label(ui, "Remove").clicked() {
                                     app_data
                                         .collections
@@ -156,9 +163,16 @@ impl CollectionsPanel {
                         ui.vertical(|ui| {
                             if utils::select_label(ui, "Edit").clicked() {
                                 self.new_collection_windows.open_folder(
-                                    collection,
+                                    collection.clone(),
                                     parent_folder.clone(),
                                     Some(cf.clone()),
+                                );
+                            }
+                            if utils::select_label(ui, "Add Folder").clicked() {
+                                self.new_collection_windows.open_folder(
+                                    collection.clone(),
+                                    cf.clone(),
+                                    None,
                                 );
                             }
                             if utils::select_label(ui, "Remove").clicked() {
