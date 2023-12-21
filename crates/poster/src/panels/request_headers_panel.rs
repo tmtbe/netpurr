@@ -14,11 +14,7 @@ pub struct RequestHeadersPanel {
 impl DataView for RequestHeadersPanel {
     type CursorType = String;
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        let data = app_data
-            .central_request_data_list
-            .data_map
-            .get_mut(cursor.as_str())
-            .unwrap();
+        let (data, envs) = app_data.get_mut_crt_and_envs(cursor.clone());
         ui.label("Headers");
         let mut delete_index = None;
         ui.push_id("request_headers_table", |ui| {
@@ -62,7 +58,7 @@ impl DataView for RequestHeadersPanel {
                             });
                             row.col(|ui| {
                                 HighlightTemplateSinglelineBuilder::default()
-                                    .envs(app_data.environment.get_variable_hash_map())
+                                    .envs(envs.clone())
                                     .enable(!header.lock)
                                     .all_space(false)
                                     .build(
@@ -74,7 +70,7 @@ impl DataView for RequestHeadersPanel {
                             });
                             row.col(|ui| {
                                 HighlightTemplateSinglelineBuilder::default()
-                                    .envs(app_data.environment.get_variable_hash_map())
+                                    .envs(envs.clone())
                                     .enable(!header.lock)
                                     .all_space(false)
                                     .build(
@@ -102,7 +98,7 @@ impl DataView for RequestHeadersPanel {
                         });
                         row.col(|ui| {
                             HighlightTemplateSinglelineBuilder::default()
-                                .envs(app_data.environment.get_variable_hash_map())
+                                .envs(envs.clone())
                                 .enable(!self.new_header.lock)
                                 .all_space(false)
                                 .build(
@@ -113,7 +109,7 @@ impl DataView for RequestHeadersPanel {
                         });
                         row.col(|ui| {
                             HighlightTemplateSinglelineBuilder::default()
-                                .envs(app_data.environment.get_variable_hash_map())
+                                .envs(envs.clone())
                                 .enable(!self.new_header.lock)
                                 .all_space(false)
                                 .build(

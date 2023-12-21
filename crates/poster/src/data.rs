@@ -48,6 +48,55 @@ impl AppData {
         }
         result
     }
+
+    pub fn get_collection(&self, option_path: Option<String>) -> Option<Collection> {
+        let path = option_path?;
+        let collection_name = path.splitn(2, "/").next()?;
+        self.collections.data.get(collection_name).cloned()
+    }
+    fn get_variable_hash_map(
+        &self,
+        collection_path: Option<String>,
+    ) -> BTreeMap<String, EnvironmentItemValue> {
+        self.environment
+            .get_variable_hash_map(self.get_collection(collection_path))
+    }
+
+    pub fn get_mut_crt_and_envs(
+        &mut self,
+        id: String,
+    ) -> (
+        &mut CentralRequestItem,
+        BTreeMap<String, EnvironmentItemValue>,
+    ) {
+        let data = self
+            .central_request_data_list
+            .data_map
+            .get(id.as_str())
+            .unwrap();
+        let envs = self.get_variable_hash_map(data.collection_path.clone());
+
+        (
+            self.central_request_data_list
+                .data_map
+                .get_mut(id.as_str())
+                .unwrap(),
+            envs,
+        )
+    }
+
+    pub fn get_crt_and_envs(
+        &self,
+        id: String,
+    ) -> (CentralRequestItem, BTreeMap<String, EnvironmentItemValue>) {
+        let data = self
+            .central_request_data_list
+            .data_map
+            .get(id.as_str())
+            .unwrap();
+        let envs = self.get_variable_hash_map(data.collection_path.clone());
+        (data.clone(), envs)
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -175,7 +224,10 @@ impl Environment {
             &self.status,
         );
     }
-    pub fn get_variable_hash_map(&self) -> BTreeMap<String, EnvironmentItemValue> {
+    fn get_variable_hash_map(
+        &self,
+        collection: Option<Collection>,
+    ) -> BTreeMap<String, EnvironmentItemValue> {
         self.status
             .select
             .clone()
@@ -203,6 +255,18 @@ impl Environment {
                         );
                     }
                 });
+                collection.map(|c| {
+                    for et in c.envs.items.iter().filter(|item| item.enable) {
+                        result.insert(
+                            et.key.clone(),
+                            EnvironmentItemValue {
+                                value: et.value.clone(),
+                                scope: c.folder.borrow().name.clone() + " Collection",
+                            },
+                        );
+                    }
+                });
+
                 result
             })
     }
@@ -336,7 +400,7 @@ impl RestSender {
         }
         let request = ehttp::Request {
             method: rest.request.method.to_string(),
-            url: self.build_url(rest, envs.clone()),
+            url: self.build_url(&rest, envs.clone()),
             body: rest.request.body.clone(),
             headers: rest
                 .request
@@ -413,6 +477,11 @@ impl CentralRequestDataList {
             self.data_list.push(crt.clone())
         }
         self.select(crt.id.clone())
+    }
+
+    pub fn refresh(&mut self, crt: CentralRequestItem) {
+        self.remove(crt.id.clone());
+        self.add_crt(crt)
     }
 }
 

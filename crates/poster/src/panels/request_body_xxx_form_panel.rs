@@ -14,11 +14,7 @@ pub struct RequestBodyXXXFormPanel {
 impl DataView for RequestBodyXXXFormPanel {
     type CursorType = String;
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        let data = app_data
-            .central_request_data_list
-            .data_map
-            .get_mut(cursor.as_str())
-            .unwrap();
+        let (data, envs) = app_data.get_mut_crt_and_envs(cursor.clone());
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
             .resizable(false)
@@ -60,7 +56,7 @@ impl DataView for RequestBodyXXXFormPanel {
                         });
                         row.col(|ui| {
                             HighlightTemplateSinglelineBuilder::default()
-                                .envs(app_data.environment.get_variable_hash_map())
+                                .envs(envs.clone())
                                 .all_space(false)
                                 .build(
                                     "request_body_key_".to_string() + index.to_string().as_str(),
@@ -70,7 +66,7 @@ impl DataView for RequestBodyXXXFormPanel {
                         });
                         row.col(|ui| {
                             HighlightTemplateSinglelineBuilder::default()
-                                .envs(app_data.environment.get_variable_hash_map())
+                                .envs(envs.clone())
                                 .all_space(false)
                                 .build(
                                     "request_body_value_".to_string() + index.to_string().as_str(),
@@ -94,14 +90,14 @@ impl DataView for RequestBodyXXXFormPanel {
                     });
                     row.col(|ui| {
                         HighlightTemplateSinglelineBuilder::default()
-                            .envs(app_data.environment.get_variable_hash_map())
+                            .envs(envs.clone())
                             .all_space(false)
                             .build("request_body_key_new".to_string(), &mut self.new_form.key)
                             .ui(ui);
                     });
                     row.col(|ui| {
                         HighlightTemplateSinglelineBuilder::default()
-                            .envs(app_data.environment.get_variable_hash_map())
+                            .envs(envs)
                             .all_space(false)
                             .build(
                                 "request_body_value_new".to_string(),

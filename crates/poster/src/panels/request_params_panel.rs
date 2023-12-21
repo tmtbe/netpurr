@@ -14,11 +14,7 @@ pub struct RequestParamsPanel {
 impl DataView for RequestParamsPanel {
     type CursorType = String;
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        let data = app_data
-            .central_request_data_list
-            .data_map
-            .get_mut(cursor.as_str())
-            .unwrap();
+        let (data, envs) = app_data.get_mut_crt_and_envs(cursor.clone());
         ui.label("Query Params");
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
@@ -61,7 +57,7 @@ impl DataView for RequestParamsPanel {
                         });
                         row.col(|ui| {
                             HighlightTemplateSinglelineBuilder::default()
-                                .envs(app_data.environment.get_variable_hash_map())
+                                .envs(envs.clone())
                                 .all_space(false)
                                 .build(
                                     "request_parmas_key_".to_string() + index.to_string().as_str(),
@@ -71,7 +67,7 @@ impl DataView for RequestParamsPanel {
                         });
                         row.col(|ui| {
                             HighlightTemplateSinglelineBuilder::default()
-                                .envs(app_data.environment.get_variable_hash_map())
+                                .envs(envs.clone())
                                 .all_space(false)
                                 .build(
                                     "request_parmas_value_".to_string()
@@ -96,7 +92,7 @@ impl DataView for RequestParamsPanel {
                     });
                     row.col(|ui| {
                         HighlightTemplateSinglelineBuilder::default()
-                            .envs(app_data.environment.get_variable_hash_map())
+                            .envs(envs.clone())
                             .all_space(false)
                             .build(
                                 "request_parmas_key_new".to_string(),
@@ -106,7 +102,7 @@ impl DataView for RequestParamsPanel {
                     });
                     row.col(|ui| {
                         HighlightTemplateSinglelineBuilder::default()
-                            .envs(app_data.environment.get_variable_hash_map())
+                            .envs(envs.clone())
                             .all_space(false)
                             .build(
                                 "request_parmas_value_new".to_string(),

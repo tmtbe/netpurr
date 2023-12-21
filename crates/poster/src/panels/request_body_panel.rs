@@ -1,4 +1,4 @@
-use egui::{TextBuffer, Ui};
+use egui::Ui;
 use strum::IntoEnumIterator;
 
 use crate::data::{AppData, BodyRawType, BodyType};
@@ -16,11 +16,7 @@ impl DataView for RequestBodyPanel {
     type CursorType = String;
 
     fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
-        let data = app_data
-            .central_request_data_list
-            .data_map
-            .get_mut(cursor.as_str())
-            .unwrap();
+        let (data, envs) = app_data.get_mut_crt_and_envs(cursor.clone());
         ui.horizontal(|ui| {
             for x in BodyType::iter() {
                 ui.selectable_value(&mut data.rest.request.body_type, x.clone(), x.to_string());
@@ -43,12 +39,8 @@ impl DataView for RequestBodyPanel {
         });
         ui.add_space(VERTICAL_GAP);
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
-            let layout_job = crate::widgets::highlight::highlight_template(
-                string,
-                12.0,
-                ui,
-                app_data.environment.get_variable_hash_map(),
-            );
+            let layout_job =
+                crate::widgets::highlight::highlight_template(string, 12.0, ui, envs.clone());
             ui.fonts(|f| f.layout_job(layout_job))
         };
         match data.rest.request.body_type {
