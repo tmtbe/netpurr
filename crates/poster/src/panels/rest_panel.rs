@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use egui::{Button, Ui, Widget};
+use egui::{Button, Label, RichText, Ui, Widget};
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
@@ -63,7 +63,26 @@ impl DataView for RestPanel {
             if data.rest.request.base_url == "" {
                 ui.strong("Untitled Request");
             } else {
-                ui.strong(data.rest.request.base_url.clone());
+                match &data.collection_path {
+                    None => {
+                        ui.horizontal(|ui| {
+                            ui.add_space(VERTICAL_GAP);
+                            ui.strong(data.rest.request.base_url.clone());
+                        });
+                    }
+                    Some(collection_path) => {
+                        ui.horizontal(|ui| {
+                            ui.add_space(VERTICAL_GAP);
+                            Label::new(
+                                RichText::new(collection_path)
+                                    .strong()
+                                    .background_color(ui.visuals().code_bg_color),
+                            )
+                            .ui(ui);
+                            ui.strong(data.rest.request.base_url.as_str());
+                        });
+                    }
+                }
             }
             ui.separator();
             ui.add_space(VERTICAL_GAP);

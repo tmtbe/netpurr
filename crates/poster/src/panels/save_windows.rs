@@ -24,7 +24,11 @@ impl SaveWindows {
         self.save_windows_open = true;
         self.save_windows_open2 = true;
         self.http_record = http_record;
-        self.http_record.name = self.http_record.request.base_url.clone();
+        if self.http_record.name == "" {
+            self.http_record.name = self.http_record.request.base_url.clone();
+        } else {
+            self.http_record.name = self.http_record.name.clone();
+        }
         self.add_folder = false;
         self.add_collection = false;
         self.add_name = "".to_string();

@@ -332,7 +332,7 @@ impl CollectionsPanel {
                 app_data
                     .central_request_data_list
                     .add_crt(CentralRequestItem {
-                        id: hr.name.clone(),
+                        id: path.clone() + "/" + hr.name.as_str(),
                         collection_path: Some(path.clone()),
                         rest: hr.clone(),
                     })
