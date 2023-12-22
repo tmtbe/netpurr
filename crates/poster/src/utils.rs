@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
+use egui::ahash::HashSet;
 use egui::{
     Area, FontSelection, Frame, Id, InnerResponse, Key, Layout, Order, Response, RichText, Style,
     TextBuffer, Ui, WidgetText,
@@ -158,4 +159,15 @@ pub fn text_edit_multiline<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response
         |ui| ui.text_edit_multiline(text),
     )
     .inner
+}
+
+pub fn build_copy_name(mut name: String, names: HashSet<String>) -> String {
+    name = name.splitn(2, "Copy").next().unwrap().trim().to_string();
+    let mut index = 2;
+    let mut new_name = name.clone();
+    while (names.contains(new_name.as_str())) {
+        new_name = format!("{} Copy {}", name.clone(), index);
+        index += 1;
+    }
+    return new_name;
 }
