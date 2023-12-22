@@ -31,7 +31,7 @@ impl EnvironmentWindows {
                     ui.add_space(HORIZONTAL_GAP * 3.0);
                     utils::left_right_panel(
                         ui,
-                        "env_".to_string() + name + "_left",
+                        "env_".to_string() + name,
                         |ui| {
                             if ui.hyperlink(name).clicked() {
                                 self.select_env = Some(name.clone());
@@ -39,7 +39,6 @@ impl EnvironmentWindows {
                                 self.select_env_name = name.clone();
                             }
                         },
-                        "env_".to_string() + name + "_right",
                         |ui| {
                             ui.horizontal(|ui| {
                                 if ui.button("📋").clicked() {

@@ -59,11 +59,12 @@ pub fn build_with_count_ui_header(name: String, count: usize, ui: &Ui) -> Layout
 
 pub fn left_right_panel(
     ui: &mut Ui,
-    left_id: impl Into<Id>,
+    id: String,
     left: impl FnOnce(&mut Ui),
-    right_id: impl Into<Id>,
     right: impl FnOnce(&mut Ui),
 ) -> InnerResponse<()> {
+    let left_id = id.clone() + "_left";
+    let right_id = id.clone() + "_right";
     ui.horizontal(|ui| {
         egui::SidePanel::right(right_id)
             .resizable(true)

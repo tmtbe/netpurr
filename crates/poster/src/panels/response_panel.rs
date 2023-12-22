@@ -52,7 +52,7 @@ impl ResponsePanel {
     ) {
         utils::left_right_panel(
             ui,
-            "response_left",
+            "response".to_string(),
             |ui| {
                 ui.horizontal(|ui| {
                     for x in ResponsePanelEnum::iter() {
@@ -68,7 +68,6 @@ impl ResponsePanel {
                     }
                 });
             },
-            "response_right",
             |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Status:");
