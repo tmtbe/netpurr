@@ -260,11 +260,12 @@ impl CollectionsPanel {
         app_data: &mut AppData,
         collection_name: String,
         response: &Response,
-        request_name: &String,
+        request: &HttpRecord,
         path: &String,
     ) {
-        let popup_id = ui
-            .make_persistent_id("request_item_popup_menu_".to_string() + path + "_" + request_name);
+        let popup_id = ui.make_persistent_id(
+            "request_item_popup_menu_".to_string() + path + "_" + request.name.as_str(),
+        );
         if response.secondary_clicked() {
             ui.memory_mut(|mem| mem.toggle_popup(popup_id));
         }
@@ -279,12 +280,37 @@ impl CollectionsPanel {
                     .max_height(200.0)
                     .show(ui, |ui| {
                         ui.vertical(|ui| {
+                            if utils::select_label(ui, "Open in New Table").clicked() {
+                                let mut id = path.clone() + "/" + request.name.as_str();
+                                if app_data
+                                    .central_request_data_list
+                                    .data_map
+                                    .contains_key(id.as_str())
+                                {
+                                    id = utils::build_copy_name(
+                                        id.clone(),
+                                        app_data
+                                            .central_request_data_list
+                                            .data_map
+                                            .iter()
+                                            .map(|(k, _)| k.clone())
+                                            .collect(),
+                                    );
+                                }
+                                app_data
+                                    .central_request_data_list
+                                    .add_crt(CentralRequestItem {
+                                        id,
+                                        collection_path: Some(path.clone()),
+                                        rest: request.clone(),
+                                    })
+                            }
                             if utils::select_label(ui, "Duplicate").clicked() {
                                 let (_, folder) =
                                     app_data.collections.get_mut_folder_with_path(path.clone());
                                 folder.map(|f| {
                                     let cf = f.borrow().clone();
-                                    let request = cf.requests.get(request_name);
+                                    let request = cf.requests.get(request.name.as_str());
                                     request.map(|r| {
                                         let mut new_request = r.clone();
                                         let name = new_request.name.clone();
@@ -308,7 +334,7 @@ impl CollectionsPanel {
                                 let (_, folder) =
                                     app_data.collections.get_mut_folder_with_path(path.clone());
                                 folder.map(|f| {
-                                    f.borrow_mut().requests.remove(request_name);
+                                    f.borrow_mut().requests.remove(request.name.as_str());
                                 });
                             }
                         });
@@ -337,14 +363,7 @@ impl CollectionsPanel {
                         rest: hr.clone(),
                     })
             }
-            self.popup_request_item(
-                ui,
-                app_data,
-                collection_name.clone(),
-                &button,
-                &hr.name,
-                path,
-            )
+            self.popup_request_item(ui, app_data, collection_name.clone(), &button, &hr, path)
         }
     }
 }
