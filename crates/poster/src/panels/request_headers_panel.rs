@@ -1,8 +1,10 @@
+use std::collections::BTreeMap;
+
 use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextEdit, Ui, Widget};
-use egui_extras::{Column, TableBuilder};
+use egui_extras::{Column, TableBody, TableBuilder};
 
-use crate::data::{AppData, Header};
+use crate::data::{AppData, CentralRequestItem, EnvironmentItemValue, Header};
 use crate::panels::DataView;
 use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 
@@ -46,84 +48,8 @@ impl DataView for RequestHeadersPanel {
                     });
                 })
                 .body(|mut body| {
-                    for (index, header) in data.rest.request.headers.iter_mut().enumerate() {
-                        body.row(18.0, |mut row| {
-                            row.col(|ui| {
-                                ui.add_enabled(!header.lock, Checkbox::new(&mut header.enable, ""));
-                            });
-                            row.col(|ui| {
-                                if ui.add_enabled(!header.lock, Button::new("x")).clicked() {
-                                    delete_index = Some(index)
-                                }
-                            });
-                            row.col(|ui| {
-                                HighlightTemplateSinglelineBuilder::default()
-                                    .envs(envs.clone())
-                                    .enable(!header.lock)
-                                    .all_space(false)
-                                    .build(
-                                        "request_header_key_".to_string()
-                                            + index.to_string().as_str(),
-                                        &mut header.key,
-                                    )
-                                    .ui(ui);
-                            });
-                            row.col(|ui| {
-                                HighlightTemplateSinglelineBuilder::default()
-                                    .envs(envs.clone())
-                                    .enable(!header.lock)
-                                    .all_space(false)
-                                    .build(
-                                        "request_header_value_".to_string()
-                                            + index.to_string().as_str(),
-                                        &mut header.value,
-                                    )
-                                    .ui(ui);
-                            });
-                            row.col(|ui| {
-                                ui.add_enabled(
-                                    !header.lock,
-                                    TextEdit::singleline(&mut header.desc)
-                                        .desired_width(f32::INFINITY),
-                                );
-                            });
-                        });
-                    }
-                    body.row(18.0, |mut row| {
-                        row.col(|ui| {
-                            ui.add_enabled(false, Checkbox::new(&mut self.new_header.enable, ""));
-                        });
-                        row.col(|ui| {
-                            ui.add_enabled(false, Button::new("x"));
-                        });
-                        row.col(|ui| {
-                            HighlightTemplateSinglelineBuilder::default()
-                                .envs(envs.clone())
-                                .enable(!self.new_header.lock)
-                                .all_space(false)
-                                .build(
-                                    "request_header_key_new".to_string(),
-                                    &mut self.new_header.key,
-                                )
-                                .ui(ui);
-                        });
-                        row.col(|ui| {
-                            HighlightTemplateSinglelineBuilder::default()
-                                .envs(envs.clone())
-                                .enable(!self.new_header.lock)
-                                .all_space(false)
-                                .build(
-                                    "request_header_value_new".to_string(),
-                                    &mut self.new_header.value,
-                                )
-                                .ui(ui);
-                        });
-                        row.col(|ui| {
-                            TextEdit::singleline(&mut self.new_header.desc)
-                                .desired_width(f32::INFINITY)
-                                .ui(ui);
-                        });
-                    });
+                    self.build_body(data, &envs, delete_index, &mut body);
+                    self.build_new_body(envs, body);
                 });
         });
         if delete_index.is_some() {
@@ -137,5 +63,98 @@ impl DataView for RequestHeadersPanel {
             self.new_header.desc = "".to_string();
             self.new_header.enable = false;
         }
+    }
+}
+
+impl RequestHeadersPanel {
+    fn build_body(
+        &self,
+        data: &mut CentralRequestItem,
+        envs: &BTreeMap<String, EnvironmentItemValue>,
+        mut delete_index: Option<usize>,
+        mut body: &mut TableBody,
+    ) {
+        for (index, header) in data.rest.request.headers.iter_mut().enumerate() {
+            body.row(18.0, |mut row| {
+                row.col(|ui| {
+                    ui.add_enabled(!header.lock, Checkbox::new(&mut header.enable, ""));
+                });
+                row.col(|ui| {
+                    if ui.add_enabled(!header.lock, Button::new("x")).clicked() {
+                        delete_index = Some(index)
+                    }
+                });
+                row.col(|ui| {
+                    HighlightTemplateSinglelineBuilder::default()
+                        .envs(envs.clone())
+                        .enable(!header.lock)
+                        .all_space(false)
+                        .build(
+                            "request_header_key_".to_string() + index.to_string().as_str(),
+                            &mut header.key,
+                        )
+                        .ui(ui);
+                });
+                row.col(|ui| {
+                    HighlightTemplateSinglelineBuilder::default()
+                        .envs(envs.clone())
+                        .enable(!header.lock)
+                        .all_space(false)
+                        .build(
+                            "request_header_value_".to_string() + index.to_string().as_str(),
+                            &mut header.value,
+                        )
+                        .ui(ui);
+                });
+                row.col(|ui| {
+                    ui.add_enabled(
+                        !header.lock,
+                        TextEdit::singleline(&mut header.desc).desired_width(f32::INFINITY),
+                    );
+                });
+            });
+        }
+    }
+
+    fn build_new_body(
+        &mut self,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        mut body: TableBody,
+    ) {
+        body.row(18.0, |mut row| {
+            row.col(|ui| {
+                ui.add_enabled(false, Checkbox::new(&mut self.new_header.enable, ""));
+            });
+            row.col(|ui| {
+                ui.add_enabled(false, Button::new("x"));
+            });
+            row.col(|ui| {
+                HighlightTemplateSinglelineBuilder::default()
+                    .envs(envs.clone())
+                    .enable(!self.new_header.lock)
+                    .all_space(false)
+                    .build(
+                        "request_header_key_new".to_string(),
+                        &mut self.new_header.key,
+                    )
+                    .ui(ui);
+            });
+            row.col(|ui| {
+                HighlightTemplateSinglelineBuilder::default()
+                    .envs(envs.clone())
+                    .enable(!self.new_header.lock)
+                    .all_space(false)
+                    .build(
+                        "request_header_value_new".to_string(),
+                        &mut self.new_header.value,
+                    )
+                    .ui(ui);
+            });
+            row.col(|ui| {
+                TextEdit::singleline(&mut self.new_header.desc)
+                    .desired_width(f32::INFINITY)
+                    .ui(ui);
+            });
+        });
     }
 }

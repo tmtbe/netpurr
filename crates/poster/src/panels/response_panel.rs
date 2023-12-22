@@ -2,7 +2,7 @@ use egui::{RichText, Ui};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, Response, ResponseStatus};
+use crate::data::{AppData, CentralRequestItem, Response, ResponseStatus};
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
 use crate::panels::response_headers_panel::ResponseHeadersPanel;
@@ -42,6 +42,74 @@ impl ResponsePanel {
             ResponsePanelEnum::Headers => response.headers.iter().count(),
         }
     }
+
+    fn build_ready_panel(
+        &mut self,
+        app_data: &mut AppData,
+        cursor: String,
+        ui: &mut Ui,
+        data: &CentralRequestItem,
+    ) {
+        utils::left_right_panel(
+            ui,
+            "response_left",
+            |ui| {
+                ui.horizontal(|ui| {
+                    for x in ResponsePanelEnum::iter() {
+                        ui.selectable_value(
+                            &mut self.open_panel_enum,
+                            x.clone(),
+                            utils::build_with_count_ui_header(
+                                x.to_string(),
+                                ResponsePanel::get_count(&data.rest.response, x),
+                                ui,
+                            ),
+                        );
+                    }
+                });
+            },
+            "response_right",
+            |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Status:");
+                    ui.label(
+                        RichText::new(data.rest.response.status.to_string())
+                            .color(ui.visuals().warn_fg_color)
+                            .strong(),
+                    );
+                    if data.rest.elapsed_time.is_some() {
+                        ui.label("Time:");
+                        ui.label(
+                            RichText::new(data.rest.elapsed_time.unwrap().to_string() + "ms")
+                                .color(ui.visuals().warn_fg_color)
+                                .strong(),
+                        );
+                    }
+                    ui.label("Size:");
+                    ui.label(
+                        RichText::new(ResponsePanel::get_byte_size(data.rest.response.body.len()))
+                            .color(ui.visuals().warn_fg_color)
+                            .strong(),
+                    );
+                });
+            },
+        );
+        ui.separator();
+        match self.open_panel_enum {
+            ResponsePanelEnum::Body => {
+                self.response_body_panel
+                    .set_and_render(app_data, cursor, ui);
+            }
+            ResponsePanelEnum::Cookies => {
+                self.response_cookies_panel
+                    .set_and_render(app_data, cursor, ui);
+            }
+            ResponsePanelEnum::Headers => {
+                self.response_headers_panel
+                    .set_and_render(app_data, cursor, ui);
+            }
+        }
+    }
 }
 
 impl DataView for ResponsePanel {
@@ -52,6 +120,7 @@ impl DataView for ResponsePanel {
             .central_request_data_list
             .data_map
             .get(cursor.as_str())
+            .cloned()
             .unwrap();
         match data.rest.status {
             ResponseStatus::None => {
@@ -68,69 +137,7 @@ impl DataView for ResponsePanel {
             }
 
             ResponseStatus::Ready => {
-                utils::left_right_panel(
-                    ui,
-                    "response_left",
-                    |ui| {
-                        ui.horizontal(|ui| {
-                            for x in ResponsePanelEnum::iter() {
-                                ui.selectable_value(
-                                    &mut self.open_panel_enum,
-                                    x.clone(),
-                                    utils::build_with_count_ui_header(
-                                        x.to_string(),
-                                        ResponsePanel::get_count(&data.rest.response, x),
-                                        ui,
-                                    ),
-                                );
-                            }
-                        });
-                    },
-                    "response_right",
-                    |ui| {
-                        ui.horizontal(|ui| {
-                            ui.label("Status:");
-                            ui.label(
-                                RichText::new(data.rest.response.status.to_string())
-                                    .color(ui.visuals().warn_fg_color)
-                                    .strong(),
-                            );
-                            if data.rest.elapsed_time.is_some() {
-                                ui.label("Time:");
-                                ui.label(
-                                    RichText::new(
-                                        data.rest.elapsed_time.unwrap().to_string() + "ms",
-                                    )
-                                    .color(ui.visuals().warn_fg_color)
-                                    .strong(),
-                                );
-                            }
-                            ui.label("Size:");
-                            ui.label(
-                                RichText::new(ResponsePanel::get_byte_size(
-                                    data.rest.response.body.len(),
-                                ))
-                                .color(ui.visuals().warn_fg_color)
-                                .strong(),
-                            );
-                        });
-                    },
-                );
-                ui.separator();
-                match self.open_panel_enum {
-                    ResponsePanelEnum::Body => {
-                        self.response_body_panel
-                            .set_and_render(app_data, cursor, ui);
-                    }
-                    ResponsePanelEnum::Cookies => {
-                        self.response_cookies_panel
-                            .set_and_render(app_data, cursor, ui);
-                    }
-                    ResponsePanelEnum::Headers => {
-                        self.response_headers_panel
-                            .set_and_render(app_data, cursor, ui);
-                    }
-                }
+                self.build_ready_panel(app_data, cursor, ui, &data);
             }
             ResponseStatus::Error => {
                 ui.centered_and_justified(|ui| {

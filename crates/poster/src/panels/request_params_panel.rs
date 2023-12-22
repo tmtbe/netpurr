@@ -1,8 +1,10 @@
+use std::collections::BTreeMap;
+
 use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextEdit, Ui, Widget};
-use egui_extras::{Column, TableBuilder};
+use egui_extras::{Column, TableBody, TableBuilder};
 
-use crate::data::{AppData, QueryParam};
+use crate::data::{AppData, CentralRequestItem, EnvironmentItemValue, QueryParam};
 use crate::panels::DataView;
 use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 
@@ -45,77 +47,8 @@ impl DataView for RequestParamsPanel {
                 });
             })
             .body(|mut body| {
-                for (index, param) in data.rest.request.params.iter_mut().enumerate() {
-                    body.row(18.0, |mut row| {
-                        row.col(|ui| {
-                            ui.checkbox(&mut param.enable, "");
-                        });
-                        row.col(|ui| {
-                            if ui.button("x").clicked() {
-                                delete_index = Some(index)
-                            }
-                        });
-                        row.col(|ui| {
-                            HighlightTemplateSinglelineBuilder::default()
-                                .envs(envs.clone())
-                                .all_space(false)
-                                .build(
-                                    "request_parmas_key_".to_string() + index.to_string().as_str(),
-                                    &mut param.key,
-                                )
-                                .ui(ui);
-                        });
-                        row.col(|ui| {
-                            HighlightTemplateSinglelineBuilder::default()
-                                .envs(envs.clone())
-                                .all_space(false)
-                                .build(
-                                    "request_parmas_value_".to_string()
-                                        + index.to_string().as_str(),
-                                    &mut param.value,
-                                )
-                                .ui(ui);
-                        });
-                        row.col(|ui| {
-                            TextEdit::singleline(&mut param.desc)
-                                .desired_width(f32::INFINITY)
-                                .ui(ui);
-                        });
-                    });
-                }
-                body.row(18.0, |mut row| {
-                    row.col(|ui| {
-                        ui.add_enabled(false, Checkbox::new(&mut self.new_param.enable, ""));
-                    });
-                    row.col(|ui| {
-                        ui.add_enabled(false, Button::new("x"));
-                    });
-                    row.col(|ui| {
-                        HighlightTemplateSinglelineBuilder::default()
-                            .envs(envs.clone())
-                            .all_space(false)
-                            .build(
-                                "request_parmas_key_new".to_string(),
-                                &mut self.new_param.key,
-                            )
-                            .ui(ui);
-                    });
-                    row.col(|ui| {
-                        HighlightTemplateSinglelineBuilder::default()
-                            .envs(envs.clone())
-                            .all_space(false)
-                            .build(
-                                "request_parmas_value_new".to_string(),
-                                &mut self.new_param.value,
-                            )
-                            .ui(ui);
-                    });
-                    row.col(|ui| {
-                        TextEdit::singleline(&mut self.new_param.desc)
-                            .desired_width(f32::INFINITY)
-                            .ui(ui);
-                    });
-                });
+                self.build_body(data, &envs, delete_index, &mut body);
+                self.build_new_body(envs, body);
             });
         if delete_index.is_some() {
             data.rest.request.params.remove(delete_index.unwrap());
@@ -128,5 +61,93 @@ impl DataView for RequestParamsPanel {
             self.new_param.desc = "".to_string();
             self.new_param.enable = false;
         }
+    }
+}
+
+impl RequestParamsPanel {
+    fn build_body(
+        &self,
+        data: &mut CentralRequestItem,
+        envs: &BTreeMap<String, EnvironmentItemValue>,
+        mut delete_index: Option<usize>,
+        mut body: &mut TableBody,
+    ) {
+        for (index, param) in data.rest.request.params.iter_mut().enumerate() {
+            body.row(18.0, |mut row| {
+                row.col(|ui| {
+                    ui.checkbox(&mut param.enable, "");
+                });
+                row.col(|ui| {
+                    if ui.button("x").clicked() {
+                        delete_index = Some(index)
+                    }
+                });
+                row.col(|ui| {
+                    HighlightTemplateSinglelineBuilder::default()
+                        .envs(envs.clone())
+                        .all_space(false)
+                        .build(
+                            "request_parmas_key_".to_string() + index.to_string().as_str(),
+                            &mut param.key,
+                        )
+                        .ui(ui);
+                });
+                row.col(|ui| {
+                    HighlightTemplateSinglelineBuilder::default()
+                        .envs(envs.clone())
+                        .all_space(false)
+                        .build(
+                            "request_parmas_value_".to_string() + index.to_string().as_str(),
+                            &mut param.value,
+                        )
+                        .ui(ui);
+                });
+                row.col(|ui| {
+                    TextEdit::singleline(&mut param.desc)
+                        .desired_width(f32::INFINITY)
+                        .ui(ui);
+                });
+            });
+        }
+    }
+
+    fn build_new_body(
+        &mut self,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        mut body: TableBody,
+    ) {
+        body.row(18.0, |mut row| {
+            row.col(|ui| {
+                ui.add_enabled(false, Checkbox::new(&mut self.new_param.enable, ""));
+            });
+            row.col(|ui| {
+                ui.add_enabled(false, Button::new("x"));
+            });
+            row.col(|ui| {
+                HighlightTemplateSinglelineBuilder::default()
+                    .envs(envs.clone())
+                    .all_space(false)
+                    .build(
+                        "request_parmas_key_new".to_string(),
+                        &mut self.new_param.key,
+                    )
+                    .ui(ui);
+            });
+            row.col(|ui| {
+                HighlightTemplateSinglelineBuilder::default()
+                    .envs(envs.clone())
+                    .all_space(false)
+                    .build(
+                        "request_parmas_value_new".to_string(),
+                        &mut self.new_param.value,
+                    )
+                    .ui(ui);
+            });
+            row.col(|ui| {
+                TextEdit::singleline(&mut self.new_param.desc)
+                    .desired_width(f32::INFINITY)
+                    .ui(ui);
+            });
+        });
     }
 }
