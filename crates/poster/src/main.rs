@@ -13,7 +13,7 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
     eframe::run_native(
-        "eframe template",
+        "Poster",
         native_options,
         Box::new(|cc| Box::new(poster::App::new(cc))),
     )
