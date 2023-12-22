@@ -97,15 +97,15 @@ impl ResponsePanel {
         match self.open_panel_enum {
             ResponsePanelEnum::Body => {
                 self.response_body_panel
-                    .set_and_render(app_data, cursor, ui);
+                    .set_and_render(ui, app_data, cursor);
             }
             ResponsePanelEnum::Cookies => {
                 self.response_cookies_panel
-                    .set_and_render(app_data, cursor, ui);
+                    .set_and_render(ui, app_data, cursor);
             }
             ResponsePanelEnum::Headers => {
                 self.response_headers_panel
-                    .set_and_render(app_data, cursor, ui);
+                    .set_and_render(ui, app_data, cursor);
             }
         }
     }
@@ -114,7 +114,12 @@ impl ResponsePanel {
 impl DataView for ResponsePanel {
     type CursorType = String;
 
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut egui::Ui,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         let data = app_data
             .central_request_data_list
             .data_map

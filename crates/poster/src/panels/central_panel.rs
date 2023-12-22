@@ -25,7 +25,12 @@ impl Default for PanelEnum {
 
 impl DataView for MyCentralPanel {
     type CursorType = i32;
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut egui::Ui,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         ui.horizontal(|ui| {
             self.central_right(app_data, ui);
             self.central_left(app_data, ui);
@@ -36,12 +41,12 @@ impl DataView for MyCentralPanel {
         match &app_data.central_request_data_list.select_id {
             Some(request_id) => {
                 self.editor_panel
-                    .set_and_render(app_data, request_id.clone(), ui);
+                    .set_and_render(ui, app_data, request_id.clone());
             }
             _ => {}
         }
         self.environment_windows
-            .set_and_render(app_data, cursor, ui);
+            .set_and_render(ui, app_data, cursor);
         app_data.environment.select().clone().map(|s| {
             if !app_data.environment.get_data().contains_key(s.as_str()) {
                 app_data.environment.set_select(None)

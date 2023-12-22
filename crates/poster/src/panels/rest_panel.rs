@@ -158,7 +158,7 @@ impl RestPanel {
         match self.open_request_panel_enum {
             RequestPanelEnum::Params => {
                 self.request_params_panel
-                    .set_and_render(app_data, cursor.clone(), ui)
+                    .set_and_render(ui, app_data, cursor.clone())
             }
             RequestPanelEnum::Authorization => {
                 let mut parent_auth = None;
@@ -170,15 +170,15 @@ impl RestPanel {
                 }
                 self.auth_panel.set_envs(envs.clone(), parent_auth);
                 self.auth_panel
-                    .set_and_render(&mut data.rest.request.auth, ui);
+                    .set_and_render(ui, &mut data.rest.request.auth);
             }
             RequestPanelEnum::Headers => {
                 self.request_headers_panel
-                    .set_and_render(app_data, cursor.clone(), ui)
+                    .set_and_render(ui, app_data, cursor.clone())
             }
             RequestPanelEnum::Body => {
                 self.request_body_panel
-                    .set_and_render(app_data, cursor.clone(), ui)
+                    .set_and_render(ui, app_data, cursor.clone())
             }
         }
     }
@@ -211,7 +211,12 @@ impl RestPanel {
 
 impl DataView for RestPanel {
     type CursorType = String;
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut egui::Ui,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
         data.rest.sync(envs.clone(), auth.clone());
         ui.vertical(|ui| {
@@ -249,8 +254,8 @@ impl DataView for RestPanel {
         self.render_request_open_panel(app_data, &cursor, ui, &mut data, envs);
         ui.separator();
         self.response_panel
-            .set_and_render(app_data, cursor.clone(), ui);
-        self.save_windows.set_and_render(app_data, 0, ui);
+            .set_and_render(ui, app_data, cursor.clone());
+        self.save_windows.set_and_render(ui, app_data, 0);
         app_data.central_request_data_list.refresh(data)
     }
 }

@@ -52,12 +52,12 @@ impl eframe::App for App {
         });
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
             ui.set_enabled(!self.app_data.get_ui_lock());
-            self.left_panel.set_and_render(&mut self.app_data, 0, ui);
+            self.left_panel.set_and_render(ui, &mut self.app_data, 0);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.set_enabled(!self.app_data.get_ui_lock());
-            self.central_panel.set_and_render(&mut self.app_data, 0, ui);
+            self.central_panel.set_and_render(ui, &mut self.app_data, 0);
         });
     }
 }

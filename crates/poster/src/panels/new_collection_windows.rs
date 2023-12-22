@@ -191,7 +191,7 @@ impl NewCollectionWindows {
         self.auth_panel
             .set_collection_folder(self.new_collection.clone(), self.folder.clone());
         self.auth_panel
-            .set_and_render(&mut self.folder.borrow_mut().auth, ui);
+            .set_and_render(ui, &mut self.folder.borrow_mut().auth);
     }
 
     fn build_desc(&mut self, ui: &mut Ui) {
@@ -300,7 +300,12 @@ impl NewCollectionWindows {
 impl DataView for NewCollectionWindows {
     type CursorType = i32;
 
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut egui::Ui,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         app_data.lock_ui(
             "new_collection".to_string(),
             self.new_collection_windows_open,

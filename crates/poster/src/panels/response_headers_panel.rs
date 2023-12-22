@@ -1,5 +1,5 @@
 use eframe::emath::Align;
-use egui::{Checkbox, Layout, TextEdit, Ui, Widget};
+use egui::{Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::AppData;
@@ -10,7 +10,12 @@ pub struct ResponseHeadersPanel {}
 
 impl DataView for ResponseHeadersPanel {
     type CursorType = String;
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut egui::Ui,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         let data = app_data
             .central_request_data_list
             .data_map

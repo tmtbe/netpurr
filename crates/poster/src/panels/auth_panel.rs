@@ -162,7 +162,7 @@ impl AuthPanel {
 impl AlongDataView for AuthPanel {
     type DataType = Auth;
 
-    fn set_and_render(&mut self, data: &mut Self::DataType, ui: &mut Ui) {
+    fn set_and_render(&mut self, ui: &mut egui::Ui, data: &mut Self::DataType) {
         ui.horizontal(|ui| {
             self.auth_left(data, ui);
             self.auth_right(data, ui);

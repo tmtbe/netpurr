@@ -1,5 +1,5 @@
 use eframe::emath::Align;
-use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Ui, Widget};
+use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder, TableRow};
 use strum::IntoEnumIterator;
 
@@ -14,7 +14,12 @@ pub struct RequestBodyFormDataPanel {
 
 impl DataView for RequestBodyFormDataPanel {
     type CursorType = String;
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut egui::Ui,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         let data = app_data
             .central_request_data_list
             .data_map

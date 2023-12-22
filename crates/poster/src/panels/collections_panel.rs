@@ -6,23 +6,26 @@ use egui::{CollapsingHeader, Response, RichText, Ui};
 
 use crate::data::{AppData, CentralRequestItem, Collection, CollectionFolder, HttpRecord};
 use crate::panels::new_collection_windows::NewCollectionWindows;
+use crate::panels::save_windows::SaveWindows;
 use crate::panels::DataView;
 use crate::utils;
 
 #[derive(Default)]
 pub struct CollectionsPanel {
     new_collection_windows: NewCollectionWindows,
+    save_windows: SaveWindows,
 }
 
 impl DataView for CollectionsPanel {
     type CursorType = i32;
 
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
         if ui.link("+ New Collection").clicked() {
             self.new_collection_windows.open_collection(None);
         };
         self.render_collection_item(ui, app_data);
-        self.new_collection_windows.set_and_render(app_data, 0, ui);
+        self.save_windows.set_and_render(ui, app_data, 0);
+        self.new_collection_windows.set_and_render(ui, app_data, 0);
     }
 }
 
@@ -247,6 +250,10 @@ impl CollectionsPanel {
                         collection_path: Some(path.clone()),
                         rest: request.clone(),
                     });
+                ui.close_menu();
+            }
+            if utils::select_label(ui, "Edit").clicked() {
+                self.save_windows.open(request.clone(), Some(path.clone()));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Duplicate").clicked() {

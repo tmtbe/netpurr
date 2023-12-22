@@ -1,4 +1,4 @@
-use egui::{CollapsingHeader, Ui};
+use egui::CollapsingHeader;
 
 use crate::data::{AppData, CentralRequestItem};
 use crate::panels::DataView;
@@ -9,7 +9,12 @@ pub struct HistoryPanel {}
 
 impl DataView for HistoryPanel {
     type CursorType = i32;
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut egui::Ui,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         for (date, date_history_data) in app_data.history_data_list.get_group().iter().rev() {
             CollapsingHeader::new(date.to_string())
                 .default_open(false)

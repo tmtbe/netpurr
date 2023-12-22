@@ -16,6 +16,7 @@ pub struct SaveWindows {
     add_collection: bool,
     add_folder: bool,
     add_name: String,
+    title: String,
 }
 
 impl SaveWindows {
@@ -30,7 +31,15 @@ impl SaveWindows {
         self.add_folder = false;
         self.add_collection = false;
         self.add_name = "".to_string();
-        self.select_collection_path = default_path
+        match &default_path {
+            None => {
+                self.title = "SAVE REQUEST".to_string();
+            }
+            Some(_) => {
+                self.title = "EDIT REQUEST".to_string();
+            }
+        }
+        self.select_collection_path = default_path;
     }
 
     fn render(&mut self, app_data: &mut AppData, ui: &mut Ui) {
@@ -258,10 +267,10 @@ impl SaveWindows {
 impl DataView for SaveWindows {
     type CursorType = i32;
 
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
         let mut save_windows_open = self.save_windows_open;
         app_data.lock_ui("save".to_string(), self.save_windows_open);
-        egui::Window::new("SAVE REQUEST")
+        egui::Window::new(self.title.clone())
             .default_open(true)
             .default_width(500.0)
             .default_height(300.0)

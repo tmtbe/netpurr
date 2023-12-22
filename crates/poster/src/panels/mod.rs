@@ -24,15 +24,15 @@ pub const VERTICAL_GAP: f32 = 8.0;
 
 pub trait AlongDataView {
     type DataType;
-    fn set_and_render(&mut self, data: &mut Self::DataType, ui: &mut egui::Ui);
+    fn set_and_render(&mut self, ui: &mut egui::Ui, data: &mut Self::DataType);
 }
 
 pub trait DataView {
     type CursorType;
     fn set_and_render(
         &mut self,
+        ui: &mut egui::Ui,
         app_data: &mut AppData,
         cursor: Self::CursorType,
-        ui: &mut egui::Ui,
     );
 }

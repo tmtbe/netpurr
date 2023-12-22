@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use eframe::emath::Align;
-use egui::{Button, Checkbox, Layout, TextEdit, Ui, Widget};
+use egui::{Button, Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder};
 
 use crate::data::{AppData, CentralRequestItem, EnvironmentItemValue, QueryParam};
@@ -15,7 +15,12 @@ pub struct RequestParamsPanel {
 
 impl DataView for RequestParamsPanel {
     type CursorType = String;
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut egui::Ui,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
         ui.label("Query Params");
         let mut delete_index = None;

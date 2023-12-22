@@ -1,4 +1,4 @@
-use egui::{TextBuffer, Ui};
+use egui::TextBuffer;
 
 use crate::data::{AppData, Response};
 use crate::panels::DataView;
@@ -28,7 +28,12 @@ impl ResponseBodyPanel {
 impl DataView for ResponseBodyPanel {
     type CursorType = String;
 
-    fn set_and_render(&mut self, app_data: &mut AppData, cursor: Self::CursorType, ui: &mut Ui) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut egui::Ui,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         let data = app_data
             .central_request_data_list
             .data_map
