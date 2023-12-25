@@ -34,11 +34,7 @@ impl ResponsePanel {
     fn get_count(response: &Response, panel_enum: ResponsePanelEnum) -> usize {
         match panel_enum {
             ResponsePanelEnum::Body => 0,
-            ResponsePanelEnum::Cookies => response
-                .headers
-                .iter()
-                .filter(|a| a.key.starts_with("set-cookie"))
-                .count(),
+            ResponsePanelEnum::Cookies => response.get_cookies().len(),
             ResponsePanelEnum::Headers => response.headers.iter().count(),
         }
     }
