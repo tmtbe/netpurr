@@ -182,7 +182,7 @@ impl RestPanel {
         }
     }
 
-    fn send_promise(&mut self, data: &mut CentralRequestItem) {
+    fn send_promise(&mut self, app_data: &mut AppData, data: &mut CentralRequestItem) {
         if let Some(promise) = &self.send_promise {
             if let Some(result) = promise.ready() {
                 data.rest.elapsed_time = Some(self.send_instant.unwrap().elapsed().as_millis());
@@ -196,6 +196,14 @@ impl RestPanel {
                             status: r.status.clone(),
                             status_text: r.status_text.clone(),
                         };
+                        let cookies = data.rest.response.get_cookies();
+                        cookies.iter().next().map(|(_, c)| {
+                            app_data.rest_sender.cookies_manager.add_domain_cookies(
+                                c.domain.clone(),
+                                c.name.clone(),
+                                c.clone(),
+                            );
+                        });
                         data.rest.ready()
                     }
                     Err(_) => data.rest.error(),
@@ -249,7 +257,7 @@ impl DataView for RestPanel {
             ui.separator();
             ui.add_space(HORIZONTAL_GAP);
         });
-        self.send_promise(&mut data);
+        self.send_promise(app_data, &mut data);
         self.render_request_open_panel(app_data, &cursor, ui, &mut data, envs);
         ui.separator();
         self.response_panel

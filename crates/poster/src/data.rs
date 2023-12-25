@@ -24,7 +24,6 @@ use crate::utils;
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct AppData {
     pub rest_sender: RestSender,
-    pub cookies_manager: CookiesManager,
     pub central_request_data_list: CentralRequestDataList,
     pub history_data_list: HistoryDataList,
     pub environment: Environment,
@@ -36,7 +35,7 @@ pub struct AppData {
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct CookiesManager {
     persistence: Persistence,
-    data_map: BTreeMap<String, BTreeMap<String, String>>,
+    data_map: BTreeMap<String, BTreeMap<String, Cookie>>,
 }
 
 impl CookiesManager {
@@ -55,15 +54,15 @@ impl CookiesManager {
             }
         }
     }
-    pub fn set_domain_cookies(&mut self, domain: String, cookies: BTreeMap<String, String>) {
+    pub fn set_domain_cookies(&mut self, domain: String, cookies: BTreeMap<String, Cookie>) {
         self.data_map.insert(domain.clone(), cookies.clone());
         self.persistence
             .save(Path::new("cookies").to_path_buf(), domain.clone(), &cookies);
     }
-    pub fn get_domain_cookies(&mut self, domain: String) -> Option<BTreeMap<String, String>> {
+    pub fn get_domain_cookies(&mut self, domain: String) -> Option<BTreeMap<String, Cookie>> {
         self.data_map.get(domain.as_str()).cloned()
     }
-    pub fn add_domain_cookies(&mut self, domain: String, key: String, value: String) {
+    pub fn add_domain_cookies(&mut self, domain: String, key: String, value: Cookie) {
         self.data_map.get_mut(domain.as_str()).map(|d| {
             d.insert(key, value);
             self.persistence
@@ -123,7 +122,7 @@ impl AppData {
         self.history_data_list.load_all();
         self.environment.load_all();
         self.collections.load_all();
-        self.cookies_manager.load_all();
+        self.rest_sender.load_all();
     }
 
     pub fn lock_ui(&mut self, key: String, bool: bool) {
@@ -539,9 +538,14 @@ pub struct EnvironmentItem {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
-pub struct RestSender {}
+pub struct RestSender {
+    pub cookies_manager: CookiesManager,
+}
 
 impl RestSender {
+    pub fn load_all(&mut self) {
+        self.cookies_manager.load_all();
+    }
     pub fn send(
         &mut self,
         rest: &mut HttpRecord,
@@ -607,30 +611,52 @@ impl RestSender {
             }
             BodyType::BINARY => {}
         }
+        let headers = self.build_cookie_header(rest, &envs);
         let request = ehttp::Request {
             method: rest.request.method.to_string(),
             url: self.build_url(&rest, envs.clone()),
             body: rest.request.body.clone(),
-            headers: rest
-                .request
-                .headers
-                .iter()
-                .filter(|h| h.enable)
-                .map(|h| Header {
-                    key: h.key.clone(),
-                    value: utils::replace_variable(h.value.clone(), envs.clone()),
-                    desc: h.desc.clone(),
-                    enable: h.enable,
-                    lock: h.lock,
-                })
-                .map(|h| (h.key.clone(), h.value.clone()))
-                .collect(),
+            headers: headers,
         };
-
         ehttp::fetch(request, move |response| {
             sender.send(response);
         });
         return (promise, Instant::now());
+    }
+
+    fn build_cookie_header(
+        &mut self,
+        rest: &mut HttpRecord,
+        envs: &BTreeMap<String, EnvironmentItemValue>,
+    ) -> Vec<(String, String)> {
+        let mut headers: Vec<(String, String)> = rest
+            .request
+            .headers
+            .iter()
+            .filter(|h| h.enable)
+            .map(|h| Header {
+                key: h.key.clone(),
+                value: utils::replace_variable(h.value.clone(), envs.clone()),
+                desc: h.desc.clone(),
+                enable: h.enable,
+                lock: h.lock,
+            })
+            .map(|h| (h.key.clone(), h.value.clone()))
+            .collect();
+        let base_url = utils::replace_variable(rest.request.base_url.clone(), envs.clone());
+        let base_url_splits: Vec<&str> = base_url.splitn(2, "//").collect();
+        let domain = base_url_splits[1].splitn(2, "/").next();
+        domain.map(|d| {
+            let cookies = self.cookies_manager.get_domain_cookies(d.to_string());
+            cookies.map(|c| {
+                let mut cookie_str_list = vec![];
+                for (_, v) in c.iter() {
+                    cookie_str_list.push(format!("{}={}", v.name, v.value))
+                }
+                headers.push(("Cookie".to_string(), cookie_str_list.join(";")))
+            });
+        });
+        headers
     }
     fn build_url(&self, rest: &HttpRecord, envs: BTreeMap<String, EnvironmentItemValue>) -> String {
         let url = utils::replace_variable(rest.request.base_url.clone(), envs.clone());
@@ -1045,6 +1071,7 @@ pub struct Response {
     pub status_text: String,
 }
 
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Cookie {
     pub name: String,
     pub value: String,
@@ -1058,8 +1085,11 @@ pub struct Cookie {
 
 impl Response {
     //BAIDUID=67147D03A8E2F75F66619A1CFADFAAF2:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com
-    pub fn get_cookies(&self) -> Vec<Cookie> {
-        self.headers
+    pub fn get_cookies(&self) -> BTreeMap<String, Cookie> {
+        let mut result = BTreeMap::default();
+        println!("{:?}", self.headers);
+        let cookies: Vec<Cookie> = self
+            .headers
             .iter()
             .filter(|h| h.key.starts_with("set-cookie"))
             .map(|h| {
@@ -1074,7 +1104,7 @@ impl Response {
                     secure: false,
                 };
                 let s = h.value.split(";");
-                for x in s {
+                for (index, x) in s.into_iter().enumerate() {
                     let one: Vec<&str> = x.splitn(2, "=").collect();
                     match one[0].trim() {
                         "expires" => cookie.expires = one[1].to_string(),
@@ -1084,14 +1114,20 @@ impl Response {
                         "secure" => cookie.secure = true,
                         "httponly" => cookie.http_only = true,
                         _ => {
-                            cookie.value = one[1].to_string();
-                            cookie.name = one[0].to_string()
+                            if index == 0 {
+                                cookie.value = one[1].to_string();
+                                cookie.name = one[0].to_string()
+                            }
                         }
                     }
                 }
                 cookie
             })
-            .collect()
+            .collect();
+        for c in cookies {
+            result.insert(c.name.clone(), c);
+        }
+        result
     }
 }
 

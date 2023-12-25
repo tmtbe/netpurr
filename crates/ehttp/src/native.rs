@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 #[cfg(feature = "native-async")]
 use async_channel::{Receiver, Sender};
 
@@ -45,10 +47,14 @@ pub fn fetch_blocking(request: &Request) -> crate::Result<Response> {
     let status = resp.status();
     let status_text = resp.status_text().to_owned();
     let mut headers = vec![];
+    let mut header_names = HashSet::new();
     for key in &resp.headers_names() {
-        if let Some(value) = resp.header(key) {
-            // lowercase for easy lookup
-            headers.push((key.to_ascii_lowercase(), value.to_owned()));
+        // lowercase for easy lookup
+        header_names.insert(key.to_ascii_lowercase());
+    }
+    for key in header_names.iter() {
+        for value in resp.all(key).iter() {
+            headers.push((key.to_string(), value.to_string()));
         }
     }
 

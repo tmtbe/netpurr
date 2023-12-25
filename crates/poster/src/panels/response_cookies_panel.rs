@@ -59,7 +59,7 @@ impl DataView for ResponseCookiesPanel {
                     });
                 })
                 .body(|mut body| {
-                    for (index, cookie) in data.rest.response.get_cookies().iter_mut().enumerate() {
+                    for (_, cookie) in data.rest.response.get_cookies().iter_mut() {
                         body.row(18.0, |mut row| {
                             row.col(|ui| {
                                 ui.text_edit_singleline(&mut cookie.name.clone());
