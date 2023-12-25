@@ -24,14 +24,65 @@ use crate::utils;
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct AppData {
     pub rest_sender: RestSender,
+    pub cookies_manager: CookiesManager,
     pub central_request_data_list: CentralRequestDataList,
     pub history_data_list: HistoryDataList,
     pub environment: Environment,
     pub collections: Collections,
-    pub open_windows: OpenWindows,
+    open_windows: OpenWindows,
     lock_ui: HashMap<String, bool>,
 }
 
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
+pub struct CookiesManager {
+    persistence: Persistence,
+    data_map: BTreeMap<String, BTreeMap<String, String>>,
+}
+
+impl CookiesManager {
+    pub fn load_all(&mut self) {
+        for cookie_dir in self
+            .persistence
+            .load_list(Path::new("cookies").to_path_buf())
+            .iter()
+        {
+            if let Some(cookie_dir_str) = cookie_dir.file_name() {
+                if let Some(domain_name) = cookie_dir_str.to_str() {
+                    if let Ok(cookie_item) = self.persistence.load(cookie_dir.clone()) {
+                        self.data_map.insert(domain_name.to_string(), cookie_item);
+                    }
+                }
+            }
+        }
+    }
+    pub fn set_domain_cookies(&mut self, domain: String, cookies: BTreeMap<String, String>) {
+        self.data_map.insert(domain.clone(), cookies.clone());
+        self.persistence
+            .save(Path::new("cookies").to_path_buf(), domain.clone(), &cookies);
+    }
+    pub fn get_domain_cookies(&mut self, domain: String) -> Option<BTreeMap<String, String>> {
+        self.data_map.get(domain.as_str()).cloned()
+    }
+    pub fn add_domain_cookies(&mut self, domain: String, key: String, value: String) {
+        self.data_map.get_mut(domain.as_str()).map(|d| {
+            d.insert(key, value);
+            self.persistence
+                .save(Path::new("cookies").to_path_buf(), domain.clone(), d);
+        });
+    }
+    pub fn remove_domain_cookies(&mut self, domain: String, key: String) {
+        self.data_map.get_mut(domain.as_str()).map(|d| {
+            d.remove(key.as_str());
+            self.persistence
+                .save(Path::new("cookies").to_path_buf(), domain.clone(), d);
+        });
+    }
+    pub fn remove_domain(&mut self, domain: String) {
+        self.data_map.remove(domain.as_str());
+        self.persistence
+            .remove(Path::new("cookies").to_path_buf(), domain.clone())
+    }
+}
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct OpenWindows {
     pub save_opened: bool,
@@ -72,6 +123,7 @@ impl AppData {
         self.history_data_list.load_all();
         self.environment.load_all();
         self.collections.load_all();
+        self.cookies_manager.load_all();
     }
 
     pub fn lock_ui(&mut self, key: String, bool: bool) {
@@ -166,6 +218,9 @@ impl AppData {
             }
         }
         (data.clone(), envs, auth)
+    }
+    pub fn open_windows(&mut self) -> &mut OpenWindows {
+        &mut self.open_windows
     }
 }
 

@@ -102,7 +102,7 @@ impl RestPanel {
                     }
                     if ui.button("Save").clicked() {
                         app_data
-                            .open_windows
+                            .open_windows()
                             .open_save(data.rest.clone(), data.collection_path.clone());
                     }
                 });

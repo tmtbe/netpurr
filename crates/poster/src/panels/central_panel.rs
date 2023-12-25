@@ -51,26 +51,26 @@ impl DataView for MyCentralPanel {
                 app_data.environment.set_select(None)
             }
         });
-        if app_data.open_windows.save_opened {
+        if app_data.open_windows().save_opened {
             self.save_windows.open(
-                app_data.open_windows.http_record.clone(),
-                app_data.open_windows.default_path.clone(),
+                app_data.open_windows().http_record.clone(),
+                app_data.open_windows().default_path.clone(),
             );
-            app_data.open_windows.save_opened = false;
+            app_data.open_windows().save_opened = false;
         }
         self.save_windows.set_and_render(ui, app_data, 0);
-        if app_data.open_windows.collection_opened {
+        if app_data.open_windows().collection_opened {
             self.new_collection_windows
-                .open_collection(app_data.open_windows.collection.clone());
-            app_data.open_windows.collection_opened = false;
+                .open_collection(app_data.open_windows().collection.clone());
+            app_data.open_windows().collection_opened = false;
         }
-        if app_data.open_windows.folder_opened {
+        if app_data.open_windows().folder_opened {
             self.new_collection_windows.open_folder(
-                app_data.open_windows.collection.clone().unwrap(),
-                app_data.open_windows.parent_folder.clone(),
-                app_data.open_windows.folder.clone(),
+                app_data.open_windows().collection.clone().unwrap(),
+                app_data.open_windows().parent_folder.clone(),
+                app_data.open_windows().folder.clone(),
             );
-            app_data.open_windows.folder_opened = false;
+            app_data.open_windows().folder_opened = false;
         }
         self.new_collection_windows.set_and_render(ui, app_data, 0);
     }

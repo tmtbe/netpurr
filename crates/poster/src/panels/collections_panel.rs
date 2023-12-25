@@ -16,7 +16,7 @@ impl DataView for CollectionsPanel {
 
     fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
         if ui.link("+ New Collection").clicked() {
-            app_data.open_windows.open_collection(None);
+            app_data.open_windows().open_collection(None);
         };
         self.render_collection_item(ui, app_data);
     }
@@ -79,7 +79,7 @@ impl CollectionsPanel {
     ) {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Edit").clicked() {
-                app_data.open_windows.open_folder(
+                app_data.open_windows().open_folder(
                     collection.clone(),
                     parent_folder.clone(),
                     Some(folder.clone()),
@@ -88,7 +88,7 @@ impl CollectionsPanel {
             }
             if utils::select_label(ui, "Add Folder").clicked() {
                 app_data
-                    .open_windows
+                    .open_windows()
                     .open_folder(collection.clone(), folder.clone(), None);
                 ui.close_menu();
             }
@@ -139,12 +139,12 @@ impl CollectionsPanel {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Edit").clicked() {
                 app_data
-                    .open_windows
+                    .open_windows()
                     .open_collection(Some(collection.clone()));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Add Folder").clicked() {
-                app_data.open_windows.open_folder(
+                app_data.open_windows().open_folder(
                     collection.clone(),
                     collection.folder.clone(),
                     None,
@@ -249,7 +249,7 @@ impl CollectionsPanel {
             }
             if utils::select_label(ui, "Edit").clicked() {
                 app_data
-                    .open_windows
+                    .open_windows()
                     .open_save(request.clone(), Some(path.clone()));
                 ui.close_menu();
             }
