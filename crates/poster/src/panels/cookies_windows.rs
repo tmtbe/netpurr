@@ -139,6 +139,7 @@ impl DataView for CookiesWindows {
                                     let cookie = map.get(key);
                                     cookie.map(|c| {
                                         utils::text_edit_multiline(ui, &mut self.select_content);
+                                        ui.add_space(VERTICAL_GAP);
                                         ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
                                             let new_cookie =
                                                 Cookie::from_raw(self.select_content.clone());
@@ -155,6 +156,15 @@ impl DataView for CookiesWindows {
                                                         domain.to_string(),
                                                         key.to_string(),
                                                         new_cookie,
+                                                    );
+                                            }
+                                            if ui.button("Remove").clicked() {
+                                                app_data
+                                                    .rest_sender
+                                                    .cookies_manager
+                                                    .remove_domain_key(
+                                                        domain.to_string(),
+                                                        key.to_string(),
                                                     );
                                             }
                                             ui.set_enabled(true);
