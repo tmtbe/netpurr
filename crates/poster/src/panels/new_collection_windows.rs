@@ -349,6 +349,8 @@ impl DataView for NewCollectionWindows {
                 }
                 self.bottom_panel(app_data, ui);
             });
-        self.new_collection_windows_open = new_collection_windows_open;
+        if !new_collection_windows_open {
+            self.new_collection_windows_open = new_collection_windows_open;
+        }
     }
 }

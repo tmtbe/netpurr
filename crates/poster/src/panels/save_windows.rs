@@ -295,6 +295,8 @@ impl DataView for SaveWindows {
                 ui.add_space(VERTICAL_GAP);
                 self.render(app_data, ui);
             });
-        self.save_windows_open = save_windows_open;
+        if !save_windows_open {
+            self.save_windows_open = save_windows_open;
+        }
     }
 }
