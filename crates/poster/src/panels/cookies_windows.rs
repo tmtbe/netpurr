@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 
-use egui::{ScrollArea, Ui};
+use eframe::emath::Align;
+use egui::{Layout, ScrollArea, Ui};
 
-use crate::data::AppData;
+use crate::data::{AppData, Cookie};
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;
 
@@ -12,6 +13,7 @@ pub struct CookiesWindows {
     new_cookie_name: String,
     select_domain_name: Option<String>,
     select_key_name: Option<String>,
+    select_content: String,
 }
 
 impl CookiesWindows {
@@ -60,12 +62,12 @@ impl DataView for CookiesWindows {
                     ui.horizontal(|ui| {
                         let names = app_data.rest_sender.cookies_manager.get_cookies_names();
                         for name in names {
-                            ui.selectable_value(
+                            let response = ui.selectable_value(
                                 &mut self.select_domain_name,
                                 Some(name.to_string()),
                                 name.as_str(),
-                            )
-                            .context_menu(|ui| {
+                            );
+                            response.context_menu(|ui| {
                                 if ui.button("Remove").clicked() {
                                     app_data
                                         .rest_sender
@@ -91,13 +93,18 @@ impl DataView for CookiesWindows {
                                     Some(cookies) => {
                                         for (name, c) in cookies.iter() {
                                             ui.vertical(|ui| {
-                                                utils::select_value(
+                                                let response = utils::select_value(
                                                     ui,
                                                     &mut self.select_key_name,
                                                     Some(name.clone()),
                                                     name,
-                                                )
-                                                .context_menu(|ui| {
+                                                );
+                                                if response.clicked() {
+                                                    self.select_domain_name.clone().map(|domain| {
+                                                        self.select_content = c.raw.clone();
+                                                    });
+                                                }
+                                                response.context_menu(|ui| {
                                                     if ui.button("Remove").clicked() {
                                                         app_data
                                                             .rest_sender
@@ -131,8 +138,27 @@ impl DataView for CookiesWindows {
                                 Some(key) => {
                                     let cookie = map.get(key);
                                     cookie.map(|c| {
-                                        let mut content = c.raw.clone();
-                                        utils::text_edit_multiline(ui, &mut content)
+                                        utils::text_edit_multiline(ui, &mut self.select_content);
+                                        ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
+                                            let new_cookie =
+                                                Cookie::from_raw(self.select_content.clone());
+                                            if new_cookie.name != c.name
+                                                || new_cookie.domain != c.domain
+                                            {
+                                                ui.set_enabled(false);
+                                            }
+                                            if ui.button("Save").clicked() {
+                                                app_data
+                                                    .rest_sender
+                                                    .cookies_manager
+                                                    .update_domain_key(
+                                                        domain.to_string(),
+                                                        key.to_string(),
+                                                        new_cookie,
+                                                    );
+                                            }
+                                            ui.set_enabled(true);
+                                        });
                                     });
                                 }
                             });

@@ -69,6 +69,12 @@ impl CookiesManager {
     pub fn get_domain_cookies(&self, domain: String) -> Option<BTreeMap<String, Cookie>> {
         self.data_map.get(domain.trim_start_matches(".")).cloned()
     }
+    pub fn get_domain_key(&self, domain: String, key: String) -> Option<Cookie> {
+        self.data_map
+            .get(domain.as_str())?
+            .get(key.as_str())
+            .cloned()
+    }
     pub fn add_domain_cookies(&mut self, mut domain: String, key: String, value: Cookie) {
         domain = domain.trim_start_matches(".").to_string();
         if !self.data_map.contains_key(domain.as_str()) {
@@ -129,6 +135,15 @@ impl CookiesManager {
             }
         }
         cookies
+    }
+
+    pub fn update_domain_key(&mut self, domain: String, key: String, cookie: Cookie) {
+        let domain_map = self.data_map.get_mut(domain.as_str());
+        domain_map.map(|m| {
+            m.insert(key.clone(), cookie);
+            self.persistence
+                .save(Path::new("cookies").to_path_buf(), domain.clone(), m);
+        });
     }
 }
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -1166,6 +1181,42 @@ pub struct Cookie {
     pub secure: bool,
 }
 
+impl Cookie {
+    pub fn from_raw(raw: String) -> Self {
+        let mut cookie = Cookie {
+            name: "".to_string(),
+            value: "".to_string(),
+            domain: "".to_string(),
+            path: "".to_string(),
+            expires: "".to_string(),
+            max_age: "".to_string(),
+            raw,
+            http_only: false,
+            secure: false,
+        };
+        let raw = cookie.raw.clone();
+        let s = raw.split(";");
+        for (index, x) in s.into_iter().enumerate() {
+            let one: Vec<&str> = x.splitn(2, "=").collect();
+            match one[0].trim() {
+                "expires" => cookie.expires = one[1].to_string(),
+                "path" => cookie.path = one[1].to_string(),
+                "domain" => cookie.domain = one[1].to_string(),
+                "max-age" => cookie.max_age = one[1].to_string(),
+                "secure" => cookie.secure = true,
+                "httponly" => cookie.http_only = true,
+                _ => {
+                    if index == 0 {
+                        cookie.value = one[1].to_string();
+                        cookie.name = one[0].to_string()
+                    }
+                }
+            }
+        }
+        cookie
+    }
+}
+
 impl Response {
     //BAIDUID=67147D03A8E2F75F66619A1CFADFAAF2:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com
     pub fn get_cookies(&self) -> BTreeMap<String, Cookie> {
@@ -1174,38 +1225,7 @@ impl Response {
             .headers
             .iter()
             .filter(|h| h.key.starts_with("set-cookie"))
-            .map(|h| {
-                let mut cookie = Cookie {
-                    name: "".to_string(),
-                    value: "".to_string(),
-                    domain: "".to_string(),
-                    path: "".to_string(),
-                    expires: "".to_string(),
-                    max_age: "".to_string(),
-                    raw: h.value.clone(),
-                    http_only: false,
-                    secure: false,
-                };
-                let s = h.value.split(";");
-                for (index, x) in s.into_iter().enumerate() {
-                    let one: Vec<&str> = x.splitn(2, "=").collect();
-                    match one[0].trim() {
-                        "expires" => cookie.expires = one[1].to_string(),
-                        "path" => cookie.path = one[1].to_string(),
-                        "domain" => cookie.domain = one[1].to_string(),
-                        "max-age" => cookie.max_age = one[1].to_string(),
-                        "secure" => cookie.secure = true,
-                        "httponly" => cookie.http_only = true,
-                        _ => {
-                            if index == 0 {
-                                cookie.value = one[1].to_string();
-                                cookie.name = one[0].to_string()
-                            }
-                        }
-                    }
-                }
-                cookie
-            })
+            .map(|h| Cookie::from_raw(h.value.clone()))
             .collect();
         for c in cookies {
             result.insert(c.name.clone(), c);
