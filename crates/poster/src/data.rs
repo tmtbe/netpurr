@@ -188,6 +188,7 @@ impl OpenWindows {
 
 impl AppData {
     pub fn load_all(&mut self) {
+        self.central_request_data_list.load_all();
         self.history_data_list.load_all();
         self.environment.load_all();
         self.collections.load_all();
@@ -737,9 +738,28 @@ pub struct CentralRequestDataList {
     pub select_id: Option<String>,
     pub data_list: Vec<CentralRequestItem>,
     pub data_map: HashMap<String, CentralRequestItem>,
+    persistence: Persistence,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+struct CentralRequestDataListSaved {
+    pub select_id: Option<String>,
+    pub data_map: HashMap<String, CentralRequestItem>,
 }
 
 impl CentralRequestDataList {
+    pub fn load_all(&mut self) {
+        let result: Result<CentralRequestDataListSaved, _> = self
+            .persistence
+            .load(Path::new("requests/data.json").to_path_buf());
+        result.map(|c| {
+            self.data_map = c.data_map;
+            self.select_id = c.select_id;
+            for (_, crt) in self.data_map.iter() {
+                self.data_list.push(crt.clone());
+            }
+        });
+    }
     pub fn remove(&mut self, id: String) {
         self.data_map.remove(id.as_str());
         self.data_list
@@ -748,6 +768,14 @@ impl CentralRequestDataList {
             .enumerate()
             .find(|(_, c)| c.id == id)
             .map(|(index, _)| self.data_list.remove(index));
+        self.persistence.save(
+            Path::new("requests").to_path_buf(),
+            "data".to_string(),
+            &CentralRequestDataListSaved {
+                select_id: self.select_id.clone(),
+                data_map: self.data_map.clone(),
+            },
+        );
     }
     pub fn add_new(&mut self) {
         let crt = CentralRequestItem {
@@ -766,7 +794,15 @@ impl CentralRequestDataList {
             self.data_map.insert(crt.id.clone(), crt.clone());
             self.data_list.push(crt.clone())
         }
-        self.select(crt.id.clone())
+        self.select(crt.id.clone());
+        self.persistence.save(
+            Path::new("requests").to_path_buf(),
+            "data".to_string(),
+            &CentralRequestDataListSaved {
+                select_id: self.select_id.clone(),
+                data_map: self.data_map.clone(),
+            },
+        );
     }
 
     pub fn refresh(&mut self, crt: CentralRequestItem) {
@@ -778,7 +814,7 @@ impl CentralRequestDataList {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
 pub struct CentralRequestItem {
     pub id: String,
     pub collection_path: Option<String>,
