@@ -218,14 +218,13 @@ impl RestPanel {
 
 impl DataView for RestPanel {
     type CursorType = String;
-    fn set_and_render(
-        &mut self,
-        ui: &mut egui::Ui,
-        app_data: &mut AppData,
-        cursor: Self::CursorType,
-    ) {
+    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
         let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
-        data.rest.sync(envs.clone(), auth.clone());
+        data.rest.sync(
+            envs.clone(),
+            auth.clone(),
+            &app_data.rest_sender.cookies_manager,
+        );
         ui.vertical(|ui| {
             if data.rest.request.base_url == "" {
                 ui.strong("Untitled Request");

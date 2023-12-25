@@ -636,7 +636,7 @@ impl RestSender {
             }
             BodyType::BINARY => {}
         }
-        let headers = self.build_cookie_header(rest, &envs);
+        let headers = self.build_header(rest, &envs);
         let request = ehttp::Request {
             method: rest.request.method.to_string(),
             url: self.build_url(&rest, envs.clone()),
@@ -650,13 +650,12 @@ impl RestSender {
         return (promise, Instant::now());
     }
 
-    fn build_cookie_header(
+    fn build_header(
         &mut self,
         rest: &mut HttpRecord,
         envs: &BTreeMap<String, EnvironmentItemValue>,
     ) -> Vec<(String, String)> {
-        let mut headers: Vec<(String, String)> = rest
-            .request
+        rest.request
             .headers
             .iter()
             .filter(|h| h.enable)
@@ -668,26 +667,7 @@ impl RestSender {
                 lock: h.lock,
             })
             .map(|h| (h.key.clone(), h.value.clone()))
-            .collect();
-        let base_url = utils::replace_variable(rest.request.base_url.clone(), envs.clone());
-        let base_url_splits: Vec<&str> = base_url.splitn(2, "//").collect();
-        let request_domain_and_path: Vec<&str> = base_url_splits[1].splitn(2, "/").collect();
-        let request_domain = request_domain_and_path[0];
-        let mut request_path = "/";
-        if request_domain_and_path.len() == 2 {
-            request_path = request_domain_and_path[1];
-        }
-        let cookies = self
-            .cookies_manager
-            .get_match_cookie(request_domain.to_string(), request_path.to_string());
-        let mut cookie_str_list = vec![];
-        for cookie in cookies {
-            cookie_str_list.push(format!("{}={}", cookie.name, cookie.value))
-        }
-        if cookie_str_list.len() > 0 {
-            headers.push(("Cookie".to_string(), cookie_str_list.join(";")));
-        }
-        headers
+            .collect()
     }
     fn build_url(&self, rest: &HttpRecord, envs: BTreeMap<String, EnvironmentItemValue>) -> String {
         let url = utils::replace_variable(rest.request.base_url.clone(), envs.clone());
@@ -955,10 +935,15 @@ impl Default for AuthType {
 }
 
 impl HttpRecord {
-    pub fn sync(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, auth: Auth) {
+    pub fn sync(
+        &mut self,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        auth: Auth,
+        cookies_manager: &CookiesManager,
+    ) {
         self.request
             .auth
-            .build_head(&mut self.request.headers, envs, auth);
+            .build_head(&mut self.request.headers, envs.clone(), auth);
         match self.request.body_type {
             BodyType::NONE => {}
             BodyType::FROM_DATA => {
@@ -981,6 +966,43 @@ impl HttpRecord {
                 }
             }
             BodyType::BINARY => {}
+        }
+        let base_url = utils::replace_variable(self.request.base_url.clone(), envs.clone());
+        let base_url_splits: Vec<&str> = base_url.splitn(2, "//").collect();
+        let request_domain_and_path: Vec<&str> = base_url_splits[1].splitn(2, "/").collect();
+        let request_domain = request_domain_and_path[0];
+        let mut request_path = "/";
+        if request_domain_and_path.len() == 2 {
+            request_path = request_domain_and_path[1];
+        }
+        let cookies =
+            cookies_manager.get_match_cookie(request_domain.to_string(), request_path.to_string());
+        let mut cookie_str_list = vec![];
+        for cookie in cookies {
+            cookie_str_list.push(format!("{}={}", cookie.name, cookie.value))
+        }
+        if cookie_str_list.len() > 0 {
+            let mut has = false;
+            self.request
+                .headers
+                .iter_mut()
+                .filter(|h| h.key.to_lowercase() == "cookie")
+                .for_each(|h| {
+                    h.desc = "auto gen".to_string();
+                    h.lock = true;
+                    h.enable = true;
+                    h.value = cookie_str_list.join(";");
+                    has = true;
+                });
+            if !has {
+                self.request.headers.push(Header {
+                    key: "cookie".to_string(),
+                    value: cookie_str_list.join(";"),
+                    desc: "auto gen".to_string(),
+                    enable: true,
+                    lock: true,
+                })
+            }
         }
     }
 
