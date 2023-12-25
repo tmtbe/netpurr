@@ -197,13 +197,13 @@ impl RestPanel {
                             status_text: r.status_text.clone(),
                         };
                         let cookies = data.rest.response.get_cookies();
-                        cookies.iter().next().map(|(_, c)| {
+                        for (_, c) in cookies.iter() {
                             app_data.rest_sender.cookies_manager.add_domain_cookies(
                                 c.domain.clone(),
                                 c.name.clone(),
                                 c.clone(),
                             );
-                        });
+                        }
                         data.rest.ready()
                     }
                     Err(_) => data.rest.error(),

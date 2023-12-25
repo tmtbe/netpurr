@@ -59,10 +59,13 @@ impl CookiesManager {
         self.persistence
             .save(Path::new("cookies").to_path_buf(), domain.clone(), &cookies);
     }
-    pub fn get_domain_cookies(&mut self, domain: String) -> Option<BTreeMap<String, Cookie>> {
+    pub fn get_domain_cookies(&self, domain: String) -> Option<BTreeMap<String, Cookie>> {
         self.data_map.get(domain.as_str()).cloned()
     }
     pub fn add_domain_cookies(&mut self, domain: String, key: String, value: Cookie) {
+        if !self.data_map.contains_key(domain.as_str()) {
+            self.data_map.insert(domain.clone(), BTreeMap::default());
+        }
         self.data_map.get_mut(domain.as_str()).map(|d| {
             d.insert(key, value);
             self.persistence
@@ -80,6 +83,28 @@ impl CookiesManager {
         self.data_map.remove(domain.as_str());
         self.persistence
             .remove(Path::new("cookies").to_path_buf(), domain.clone())
+    }
+
+    pub fn get_match_cookie(&self, request_domain: String, request_path: String) -> Vec<Cookie> {
+        let mut cookies = vec![];
+        for (_, map) in self.data_map.iter().filter(|(key, _)| {
+            let mut domain = key.to_string();
+            if !domain.starts_with(".") {
+                domain = ".".to_string() + domain.as_str();
+            }
+            request_domain.ends_with(domain.as_str())
+        }) {
+            for (_, c) in map.iter().filter(|(_, c)| {
+                let mut path = c.path.clone();
+                if !path.ends_with("/") {
+                    path = path + "/";
+                }
+                request_path.starts_with(path.as_str())
+            }) {
+                cookies.push(c.clone())
+            }
+        }
+        cookies
     }
 }
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -616,8 +641,9 @@ impl RestSender {
             method: rest.request.method.to_string(),
             url: self.build_url(&rest, envs.clone()),
             body: rest.request.body.clone(),
-            headers: headers,
+            headers,
         };
+        println!("{:?}", request);
         ehttp::fetch(request, move |response| {
             sender.send(response);
         });
@@ -645,17 +671,22 @@ impl RestSender {
             .collect();
         let base_url = utils::replace_variable(rest.request.base_url.clone(), envs.clone());
         let base_url_splits: Vec<&str> = base_url.splitn(2, "//").collect();
-        let domain = base_url_splits[1].splitn(2, "/").next();
-        domain.map(|d| {
-            let cookies = self.cookies_manager.get_domain_cookies(d.to_string());
-            cookies.map(|c| {
-                let mut cookie_str_list = vec![];
-                for (_, v) in c.iter() {
-                    cookie_str_list.push(format!("{}={}", v.name, v.value))
-                }
-                headers.push(("Cookie".to_string(), cookie_str_list.join(";")))
-            });
-        });
+        let request_domain_and_path: Vec<&str> = base_url_splits[1].splitn(2, "/").collect();
+        let request_domain = request_domain_and_path[0];
+        let mut request_path = "/";
+        if request_domain_and_path.len() == 2 {
+            request_path = request_domain_and_path[1];
+        }
+        let cookies = self
+            .cookies_manager
+            .get_match_cookie(request_domain.to_string(), request_path.to_string());
+        let mut cookie_str_list = vec![];
+        for cookie in cookies {
+            cookie_str_list.push(format!("{}={}", cookie.name, cookie.value))
+        }
+        if cookie_str_list.len() > 0 {
+            headers.push(("Cookie".to_string(), cookie_str_list.join(";")));
+        }
         headers
     }
     fn build_url(&self, rest: &HttpRecord, envs: BTreeMap<String, EnvironmentItemValue>) -> String {
@@ -1087,7 +1118,6 @@ impl Response {
     //BAIDUID=67147D03A8E2F75F66619A1CFADFAAF2:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com
     pub fn get_cookies(&self) -> BTreeMap<String, Cookie> {
         let mut result = BTreeMap::default();
-        println!("{:?}", self.headers);
         let cookies: Vec<Cookie> = self
             .headers
             .iter()
