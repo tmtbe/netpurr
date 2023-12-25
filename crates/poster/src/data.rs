@@ -996,7 +996,7 @@ impl HttpRecord {
                 });
             if !has {
                 self.request.headers.push(Header {
-                    key: "cookie".to_string(),
+                    key: "Cookie".to_string(),
                     value: cookie_str_list.join(";"),
                     desc: "auto gen".to_string(),
                     enable: true,
