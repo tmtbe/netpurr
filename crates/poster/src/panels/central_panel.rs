@@ -1,6 +1,7 @@
 use egui::{Response, Ui, WidgetText};
 
 use crate::data::{AppData, ENVIRONMENT_GLOBALS};
+use crate::panels::cookies_windows::CookiesWindows;
 use crate::panels::environment_windows::EnvironmentWindows;
 use crate::panels::new_collection_windows::NewCollectionWindows;
 use crate::panels::rest_panel::RestPanel;
@@ -14,6 +15,7 @@ pub struct MyCentralPanel {
     environment_windows: EnvironmentWindows,
     save_windows: SaveWindows,
     new_collection_windows: NewCollectionWindows,
+    cookies_windows: CookiesWindows,
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -73,6 +75,11 @@ impl DataView for MyCentralPanel {
             app_data.open_windows().folder_opened = false;
         }
         self.new_collection_windows.set_and_render(ui, app_data, 0);
+        if app_data.open_windows().cookies_opened {
+            self.cookies_windows.open();
+            app_data.open_windows().cookies_opened = false;
+        }
+        self.cookies_windows.set_and_render(ui, app_data, 0);
     }
 }
 

@@ -48,21 +48,29 @@ impl CookiesManager {
             if let Some(cookie_dir_str) = cookie_dir.file_name() {
                 if let Some(domain_name) = cookie_dir_str.to_str() {
                     if let Ok(cookie_item) = self.persistence.load(cookie_dir.clone()) {
-                        self.data_map.insert(domain_name.to_string(), cookie_item);
+                        self.data_map.insert(
+                            Persistence::decode_with_file_name(domain_name.to_string()),
+                            cookie_item,
+                        );
                     }
                 }
             }
         }
     }
-    pub fn set_domain_cookies(&mut self, domain: String, cookies: BTreeMap<String, Cookie>) {
+    pub fn contain_domain(&self, domain: String) -> bool {
+        self.data_map.contains_key(domain.as_str())
+    }
+    pub fn set_domain_cookies(&mut self, mut domain: String, cookies: BTreeMap<String, Cookie>) {
+        domain = domain.trim_start_matches(".").to_string();
         self.data_map.insert(domain.clone(), cookies.clone());
         self.persistence
             .save(Path::new("cookies").to_path_buf(), domain.clone(), &cookies);
     }
     pub fn get_domain_cookies(&self, domain: String) -> Option<BTreeMap<String, Cookie>> {
-        self.data_map.get(domain.as_str()).cloned()
+        self.data_map.get(domain.trim_start_matches(".")).cloned()
     }
-    pub fn add_domain_cookies(&mut self, domain: String, key: String, value: Cookie) {
+    pub fn add_domain_cookies(&mut self, mut domain: String, key: String, value: Cookie) {
+        domain = domain.trim_start_matches(".").to_string();
         if !self.data_map.contains_key(domain.as_str()) {
             self.data_map.insert(domain.clone(), BTreeMap::default());
         }
@@ -72,19 +80,35 @@ impl CookiesManager {
                 .save(Path::new("cookies").to_path_buf(), domain.clone(), d);
         });
     }
-    pub fn remove_domain_cookies(&mut self, domain: String, key: String) {
+    pub fn remove_domain_cookies(&mut self, mut domain: String, key: String) {
+        domain = domain.trim_start_matches(".").to_string();
         self.data_map.get_mut(domain.as_str()).map(|d| {
             d.remove(key.as_str());
             self.persistence
                 .save(Path::new("cookies").to_path_buf(), domain.clone(), d);
         });
     }
-    pub fn remove_domain(&mut self, domain: String) {
+    pub fn remove_domain(&mut self, mut domain: String) {
+        domain = domain.trim_start_matches(".").to_string();
         self.data_map.remove(domain.as_str());
         self.persistence
             .remove(Path::new("cookies").to_path_buf(), domain.clone())
     }
-
+    pub fn remove_domain_key(&mut self, mut domain: String, key: String) {
+        domain = domain.trim_start_matches(".").to_string();
+        self.data_map.get_mut(domain.as_str()).map(|d| {
+            d.remove(key.as_str());
+            self.persistence
+                .save(Path::new("cookies").to_path_buf(), domain.clone(), d);
+        });
+    }
+    pub fn get_cookies_names(&self) -> Vec<String> {
+        let mut keys = vec![];
+        self.data_map.keys().for_each(|name| {
+            keys.push(name.clone());
+        });
+        keys
+    }
     pub fn get_match_cookie(&self, request_domain: String, request_path: String) -> Vec<Cookie> {
         let mut cookies = vec![];
         for (_, map) in self.data_map.iter().filter(|(key, _)| {
@@ -112,6 +136,7 @@ pub struct OpenWindows {
     pub save_opened: bool,
     pub collection_opened: bool,
     pub folder_opened: bool,
+    pub cookies_opened: bool,
     pub http_record: HttpRecord,
     pub default_path: Option<String>,
     pub collection: Option<Collection>,
@@ -139,6 +164,10 @@ impl OpenWindows {
         self.parent_folder = parent_folder;
         self.folder = folder;
         self.folder_opened = true;
+    }
+
+    pub fn open_cookies(&mut self) {
+        self.cookies_opened = true
     }
 }
 
@@ -265,7 +294,7 @@ impl Collections {
                 if let Some(collection_name) = collection_dir_str.to_str() {
                     if let Ok(history_rest_item) = self.persistence.load(collection_dir.clone()) {
                         self.data.insert(
-                            collection_name.trim_end_matches(".json").to_string(),
+                            Persistence::decode_with_file_name(collection_name.to_string()),
                             history_rest_item,
                         );
                     }
@@ -514,7 +543,7 @@ impl Environment {
                 if let Some(key_name) = key_os.to_str() {
                     if let Ok(environment_config) = self.persistence.load(key.clone()) {
                         self.data.insert(
-                            key_name.trim_end_matches(".json").to_string(),
+                            Persistence::decode_with_file_name(key_name.to_string()),
                             environment_config,
                         );
                     }
@@ -1132,6 +1161,7 @@ pub struct Cookie {
     pub path: String,
     pub expires: String,
     pub max_age: String,
+    pub raw: String,
     pub http_only: bool,
     pub secure: bool,
 }
@@ -1152,6 +1182,7 @@ impl Response {
                     path: "".to_string(),
                     expires: "".to_string(),
                     max_age: "".to_string(),
+                    raw: h.value.clone(),
                     http_only: false,
                     secure: false,
                 };

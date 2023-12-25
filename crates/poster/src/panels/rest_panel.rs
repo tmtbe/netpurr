@@ -240,19 +240,35 @@ impl DataView for RestPanel {
             ui.add_space(HORIZONTAL_GAP);
             ui.separator();
             ui.add_space(HORIZONTAL_GAP);
-            ui.horizontal(|ui| {
-                for x in RequestPanelEnum::iter() {
-                    ui.selectable_value(
-                        &mut self.open_request_panel_enum,
-                        x.clone(),
-                        utils::build_with_count_ui_header(
-                            x.to_string(),
-                            RestPanel::get_count(&data.rest.request, x),
-                            ui,
-                        ),
-                    );
-                }
-            });
+
+            utils::left_right_panel(
+                ui,
+                "rest_middle_select_label".to_string(),
+                |ui| {
+                    ui.horizontal(|ui| {
+                        for x in RequestPanelEnum::iter() {
+                            ui.selectable_value(
+                                &mut self.open_request_panel_enum,
+                                x.clone(),
+                                utils::build_with_count_ui_header(
+                                    x.to_string(),
+                                    RestPanel::get_count(&data.rest.request, x),
+                                    ui,
+                                ),
+                            );
+                        }
+                    });
+                },
+                |ui| {
+                    ui.horizontal(|ui| {
+                        if ui.link("Cookies").clicked() {
+                            app_data.open_windows().open_cookies();
+                        };
+                        ui.link("Code");
+                    });
+                },
+            );
+
             ui.separator();
             ui.add_space(HORIZONTAL_GAP);
         });

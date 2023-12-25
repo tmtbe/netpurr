@@ -146,6 +146,19 @@ pub fn select_label(ui: &mut Ui, text: impl Into<WidgetText>) -> Response {
     .inner
 }
 
+pub fn select_value<Value: PartialEq>(
+    ui: &mut Ui,
+    current_value: &mut Value,
+    select_value: Value,
+    text: impl Into<WidgetText>,
+) -> Response {
+    ui.with_layout(
+        Layout::top_down(Align::LEFT).with_cross_justify(true),
+        |ui| ui.selectable_value(current_value, select_value, text),
+    )
+    .inner
+}
+
 pub fn text_edit_singleline<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
     ui.with_layout(
         Layout::top_down(Align::LEFT).with_cross_justify(true),

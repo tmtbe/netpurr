@@ -3,6 +3,7 @@ use crate::data::AppData;
 mod auth_panel;
 pub mod central_panel;
 pub mod collections_panel;
+mod cookies_windows;
 mod environment_windows;
 pub mod history_panel;
 pub mod left_panel;

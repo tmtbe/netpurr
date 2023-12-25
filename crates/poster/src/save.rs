@@ -32,24 +32,37 @@ impl Default for Persistence {
     }
 }
 
+impl Persistence {
+    pub fn encode(key: String) -> String {
+        key.as_str().replace(".", "%dot")
+    }
+    pub fn decode(key: String) -> String {
+        key.as_str().replace("%dot", ".")
+    }
+
+    pub fn decode_with_file_name(key: String) -> String {
+        Persistence::decode(key.trim_end_matches(".json").to_string())
+    }
+}
 impl PersistenceItem for Persistence {
     fn save<T: Serialize>(&self, path: PathBuf, key: String, data: &T) -> Result<(), Error> {
+        let save_key = Persistence::encode(key);
         if let Some(home_path) = self.root.clone() {
             let dir_path = home_path.join("Poster").join(path);
             fs::create_dir_all(dir_path.clone())?;
             let json = serde_json::to_string(data)?;
-            let mut json_path = dir_path.join(key.clone());
+            let mut json_path = dir_path.join(save_key);
             json_path.set_extension("json");
             let mut file = File::create(json_path.clone())?;
             file.write_all(json.as_bytes())?;
         }
         Ok(())
     }
-
     fn remove(&self, path: PathBuf, key: String) {
+        let save_key = Persistence::encode(key);
         if let Some(home_path) = self.root.clone() {
             let dir_path = home_path.join("Poster").join(path);
-            let mut json_path = dir_path.join(key.clone());
+            let mut json_path = dir_path.join(save_key);
             json_path.set_extension("json");
             fs::remove_file(json_path);
         }
