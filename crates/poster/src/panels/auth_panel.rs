@@ -7,6 +7,7 @@ use strum::IntoEnumIterator;
 
 use crate::data::{Auth, AuthType, Collection, CollectionFolder, EnvironmentItemValue};
 use crate::panels::{AlongDataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::utils;
 use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
@@ -132,7 +133,7 @@ impl AuthPanel {
                                 ui.horizontal(|ui| {
                                     ui.add_space(HORIZONTAL_GAP);
                                     ui.label("Token:");
-                                    ui.label(parent_auth.bearer_token.clone());
+                                    ui.label(utils::replace_variable(parent_auth.bearer_token.clone(), self.envs.clone()));
                                     ui.add_space(HORIZONTAL_GAP);
                                 });
                                 ui.add_space(VERTICAL_GAP * 5.0);
@@ -142,13 +143,13 @@ impl AuthPanel {
                                 ui.horizontal(|ui| {
                                     ui.add_space(HORIZONTAL_GAP);
                                     ui.label("Username:");
-                                    ui.label(parent_auth.basic_username.clone());
+                                    ui.label(utils::replace_variable(parent_auth.basic_username.clone(), self.envs.clone()));
                                 });
                                 ui.add_space(VERTICAL_GAP);
                                 ui.horizontal(|ui| {
                                     ui.add_space(HORIZONTAL_GAP);
                                     ui.label("Password: ");
-                                    ui.label(parent_auth.basic_password.clone());
+                                    ui.label(utils::replace_variable(parent_auth.basic_password.clone(), self.envs.clone()));
                                 });
                                 ui.add_space(VERTICAL_GAP * 2.0);
                             }
@@ -162,7 +163,7 @@ impl AuthPanel {
 impl AlongDataView for AuthPanel {
     type DataType = Auth;
 
-    fn set_and_render(&mut self, ui: &mut egui::Ui, data: &mut Self::DataType) {
+    fn set_and_render(&mut self, ui: &mut Ui, data: &mut Self::DataType) {
         ui.horizontal(|ui| {
             self.auth_left(data, ui);
             self.auth_right(data, ui);
