@@ -17,6 +17,7 @@ pub struct SaveWindows {
     add_folder: bool,
     add_name: String,
     title: String,
+    id: String,
 }
 
 impl SaveWindows {
@@ -39,7 +40,8 @@ impl SaveWindows {
                 self.title = "EDIT REQUEST".to_string();
             }
         }
-        self.select_collection_path = default_path;
+        self.select_collection_path = default_path.clone();
+        self.id = default_path.clone().unwrap_or("new".to_string());
     }
 
     fn render(&mut self, app_data: &mut AppData, ui: &mut Ui) {
@@ -206,7 +208,7 @@ impl SaveWindows {
     }
 
     fn render_save_bottom_panel(&mut self, app_data: &mut AppData, ui: &mut Ui) {
-        egui::TopBottomPanel::bottom("save_bottom_panel")
+        egui::TopBottomPanel::bottom("save_bottom_panel_".to_string() + self.id.as_str())
             .resizable(false)
             .min_height(0.0)
             .show_inside(ui, |ui| {
@@ -269,7 +271,10 @@ impl DataView for SaveWindows {
 
     fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
         let mut save_windows_open = self.save_windows_open;
-        app_data.lock_ui("save".to_string(), self.save_windows_open);
+        app_data.lock_ui(
+            "save_".to_string() + self.id.as_str(),
+            self.save_windows_open,
+        );
         egui::Window::new(self.title.clone())
             .default_open(true)
             .default_width(500.0)

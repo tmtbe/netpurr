@@ -28,7 +28,43 @@ pub struct AppData {
     pub history_data_list: HistoryDataList,
     pub environment: Environment,
     pub collections: Collections,
+    pub open_windows: OpenWindows,
     lock_ui: HashMap<String, bool>,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug)]
+pub struct OpenWindows {
+    pub save_opened: bool,
+    pub collection_opened: bool,
+    pub folder_opened: bool,
+    pub http_record: HttpRecord,
+    pub default_path: Option<String>,
+    pub collection: Option<Collection>,
+    pub parent_folder: Rc<RefCell<CollectionFolder>>,
+    pub folder: Option<Rc<RefCell<CollectionFolder>>>,
+}
+
+impl OpenWindows {
+    pub fn open_save(&mut self, http_record: HttpRecord, default_path: Option<String>) {
+        self.http_record = http_record;
+        self.default_path = default_path;
+        self.save_opened = true;
+    }
+    pub fn open_collection(&mut self, collection: Option<Collection>) {
+        self.collection = collection;
+        self.collection_opened = true;
+    }
+    pub fn open_folder(
+        &mut self,
+        collection: Collection,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
+        folder: Option<Rc<RefCell<CollectionFolder>>>,
+    ) {
+        self.collection = Some(collection);
+        self.parent_folder = parent_folder;
+        self.folder = folder;
+        self.folder_opened = true;
+    }
 }
 
 impl AppData {

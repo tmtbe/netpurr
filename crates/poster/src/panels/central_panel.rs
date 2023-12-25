@@ -2,7 +2,9 @@ use egui::{Response, Ui, WidgetText};
 
 use crate::data::{AppData, ENVIRONMENT_GLOBALS};
 use crate::panels::environment_windows::EnvironmentWindows;
+use crate::panels::new_collection_windows::NewCollectionWindows;
 use crate::panels::rest_panel::RestPanel;
+use crate::panels::save_windows::SaveWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::utils;
 
@@ -10,6 +12,8 @@ use crate::utils;
 pub struct MyCentralPanel {
     editor_panel: RestPanel,
     environment_windows: EnvironmentWindows,
+    save_windows: SaveWindows,
+    new_collection_windows: NewCollectionWindows,
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -25,12 +29,7 @@ impl Default for PanelEnum {
 
 impl DataView for MyCentralPanel {
     type CursorType = i32;
-    fn set_and_render(
-        &mut self,
-        ui: &mut egui::Ui,
-        app_data: &mut AppData,
-        cursor: Self::CursorType,
-    ) {
+    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
         ui.horizontal(|ui| {
             self.central_right(app_data, ui);
             self.central_left(app_data, ui);
@@ -52,6 +51,28 @@ impl DataView for MyCentralPanel {
                 app_data.environment.set_select(None)
             }
         });
+        if app_data.open_windows.save_opened {
+            self.save_windows.open(
+                app_data.open_windows.http_record.clone(),
+                app_data.open_windows.default_path.clone(),
+            );
+            app_data.open_windows.save_opened = false;
+        }
+        self.save_windows.set_and_render(ui, app_data, 0);
+        if app_data.open_windows.collection_opened {
+            self.new_collection_windows
+                .open_collection(app_data.open_windows.collection.clone());
+            app_data.open_windows.collection_opened = false;
+        }
+        if app_data.open_windows.folder_opened {
+            self.new_collection_windows.open_folder(
+                app_data.open_windows.collection.clone().unwrap(),
+                app_data.open_windows.parent_folder.clone(),
+                app_data.open_windows.folder.clone(),
+            );
+            app_data.open_windows.folder_opened = false;
+        }
+        self.new_collection_windows.set_and_render(ui, app_data, 0);
     }
 }
 

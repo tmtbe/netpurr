@@ -14,7 +14,6 @@ use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::response_panel::ResponsePanel;
-use crate::panels::save_windows::SaveWindows;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
@@ -29,7 +28,6 @@ pub struct RestPanel {
     response_panel: ResponsePanel,
     send_promise: Option<Promise<ehttp::Result<ehttp::Response>>>,
     send_instant: Option<Instant>,
-    save_windows: SaveWindows,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -103,8 +101,9 @@ impl RestPanel {
                         }
                     }
                     if ui.button("Save").clicked() {
-                        self.save_windows
-                            .open(data.rest.clone(), data.collection_path.clone());
+                        app_data
+                            .open_windows
+                            .open_save(data.rest.clone(), data.collection_path.clone());
                     }
                 });
             });
@@ -255,7 +254,6 @@ impl DataView for RestPanel {
         ui.separator();
         self.response_panel
             .set_and_render(ui, app_data, cursor.clone());
-        self.save_windows.set_and_render(ui, app_data, 0);
         app_data.central_request_data_list.refresh(data)
     }
 }

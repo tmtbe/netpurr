@@ -5,27 +5,20 @@ use std::rc::Rc;
 use egui::{CollapsingHeader, Response, RichText, Ui};
 
 use crate::data::{AppData, CentralRequestItem, Collection, CollectionFolder, HttpRecord};
-use crate::panels::new_collection_windows::NewCollectionWindows;
-use crate::panels::save_windows::SaveWindows;
 use crate::panels::DataView;
 use crate::utils;
 
 #[derive(Default)]
-pub struct CollectionsPanel {
-    new_collection_windows: NewCollectionWindows,
-    save_windows: SaveWindows,
-}
+pub struct CollectionsPanel {}
 
 impl DataView for CollectionsPanel {
     type CursorType = i32;
 
     fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
         if ui.link("+ New Collection").clicked() {
-            self.new_collection_windows.open_collection(None);
+            app_data.open_windows.open_collection(None);
         };
         self.render_collection_item(ui, app_data);
-        self.save_windows.set_and_render(ui, app_data, 0);
-        self.new_collection_windows.set_and_render(ui, app_data, 0);
     }
 }
 
@@ -86,7 +79,7 @@ impl CollectionsPanel {
     ) {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Edit").clicked() {
-                self.new_collection_windows.open_folder(
+                app_data.open_windows.open_folder(
                     collection.clone(),
                     parent_folder.clone(),
                     Some(folder.clone()),
@@ -94,7 +87,8 @@ impl CollectionsPanel {
                 ui.close_menu();
             }
             if utils::select_label(ui, "Add Folder").clicked() {
-                self.new_collection_windows
+                app_data
+                    .open_windows
                     .open_folder(collection.clone(), folder.clone(), None);
                 ui.close_menu();
             }
@@ -144,12 +138,13 @@ impl CollectionsPanel {
     ) {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Edit").clicked() {
-                self.new_collection_windows
+                app_data
+                    .open_windows
                     .open_collection(Some(collection.clone()));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Add Folder").clicked() {
-                self.new_collection_windows.open_folder(
+                app_data.open_windows.open_folder(
                     collection.clone(),
                     collection.folder.clone(),
                     None,
@@ -253,7 +248,9 @@ impl CollectionsPanel {
                 ui.close_menu();
             }
             if utils::select_label(ui, "Edit").clicked() {
-                self.save_windows.open(request.clone(), Some(path.clone()));
+                app_data
+                    .open_windows
+                    .open_save(request.clone(), Some(path.clone()));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Duplicate").clicked() {
