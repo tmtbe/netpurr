@@ -60,6 +60,12 @@ impl CookiesManager {
     pub fn contain_domain(&self, domain: String) -> bool {
         self.data_map.contains_key(domain.as_str())
     }
+    pub fn contain_domain_key(&self, domain: String, key: String) -> bool {
+        match self.data_map.get(domain.as_str()) {
+            None => false,
+            Some(d) => d.contains_key(key.as_str()),
+        }
+    }
     pub fn set_domain_cookies(&mut self, mut domain: String, cookies: BTreeMap<String, Cookie>) {
         domain = domain.trim_start_matches(".").to_string();
         self.data_map.insert(domain.clone(), cookies.clone());
@@ -1242,6 +1248,9 @@ impl Cookie {
         let s = raw.split(";");
         for (index, x) in s.into_iter().enumerate() {
             let one: Vec<&str> = x.splitn(2, "=").collect();
+            if one.len() < 2 {
+                continue;
+            }
             match one[0].trim() {
                 "expires" => cookie.expires = one[1].to_string(),
                 "path" => cookie.path = one[1].to_string(),
