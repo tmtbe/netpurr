@@ -51,7 +51,7 @@ impl DataView for RequestBodyXXXFormPanel {
                 });
             })
             .body(|mut body| {
-                self.build_body(data, &envs, delete_index, &mut body);
+                delete_index = self.build_body(data, &envs, &mut body);
                 self.build_new_body(envs, body);
             });
         if delete_index.is_some() {
@@ -76,9 +76,9 @@ impl RequestBodyXXXFormPanel {
         &self,
         data: &mut CentralRequestItem,
         envs: &BTreeMap<String, EnvironmentItemValue>,
-        mut delete_index: Option<usize>,
         mut body: &mut TableBody,
-    ) {
+    ) -> Option<usize> {
+        let mut delete_index: Option<usize> = None;
         for (index, param) in data.rest.request.body_xxx_form.iter_mut().enumerate() {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
@@ -116,6 +116,7 @@ impl RequestBodyXXXFormPanel {
                 });
             });
         }
+        delete_index
     }
 
     fn build_new_body(

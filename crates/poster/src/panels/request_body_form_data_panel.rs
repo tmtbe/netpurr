@@ -37,7 +37,7 @@ impl DataView for RequestBodyFormDataPanel {
             .column(Column::remainder())
             .max_scroll_height(100.0);
         table.header(20.0, self.build_header()).body(|mut body| {
-            self.build_body(data, delete_index, &mut body);
+            delete_index = self.build_body(data, &mut body);
             self.build_new_body(body);
         });
         if delete_index.is_some() {
@@ -81,12 +81,8 @@ impl RequestBodyFormDataPanel {
         }
     }
 
-    fn build_body(
-        &self,
-        data: &mut CentralRequestItem,
-        mut delete_index: Option<usize>,
-        mut body: &mut TableBody,
-    ) {
+    fn build_body(&self, data: &mut CentralRequestItem, mut body: &mut TableBody) -> Option<usize> {
+        let mut delete_index: Option<usize> = None;
         for (index, param) in data.rest.request.body_form_data.iter_mut().enumerate() {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
@@ -137,6 +133,7 @@ impl RequestBodyFormDataPanel {
                 });
             });
         }
+        delete_index
     }
 
     fn build_new_body(&mut self, mut body: TableBody) {
