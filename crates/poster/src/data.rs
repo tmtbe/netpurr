@@ -1033,7 +1033,7 @@ impl HttpRecord {
         &mut self,
         envs: BTreeMap<String, EnvironmentItemValue>,
         auth: Auth,
-        cookies_manager: &CookiesManager,
+        cookies_manager: CookiesManager,
     ) {
         self.request
             .auth

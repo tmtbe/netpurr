@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::time::Instant;
 
 use egui::{Button, Label, RichText, Ui, Widget};
@@ -6,9 +5,7 @@ use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{
-    AppData, CentralRequestItem, EnvironmentItemValue, Header, Method, Request, Response,
-};
+use crate::data::{AppData, Header, Method, Request, Response};
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
@@ -54,36 +51,38 @@ impl RestPanel {
         }
     }
 
-    fn render_name_label(&self, mut data: &mut CentralRequestItem, ui: &mut Ui) {
-        match &data.collection_path {
-            None => {
-                ui.horizontal(|ui| {
-                    ui.add_space(VERTICAL_GAP);
-                    ui.strong(data.rest.request.base_url.clone());
-                });
-            }
-            Some(collection_path) => {
-                ui.horizontal(|ui| {
-                    ui.add_space(VERTICAL_GAP);
-                    Label::new(
-                        RichText::new(collection_path)
-                            .strong()
-                            .background_color(ui.visuals().code_bg_color),
-                    )
-                    .ui(ui);
-                    ui.strong(data.rest.request.base_url.as_str());
-                });
+    fn render_name_label(&mut self, app_data: &mut AppData, cursor: String, ui: &mut Ui) {
+        let cookies_manager = app_data.rest_sender.cookies_manager.clone();
+        let (mut data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
+        data.rest.sync(envs.clone(), auth.clone(), cookies_manager);
+        if data.rest.request.base_url == "" {
+            ui.strong("Untitled Request");
+        } else {
+            match &data.collection_path {
+                None => {
+                    ui.horizontal(|ui| {
+                        ui.add_space(VERTICAL_GAP);
+                        ui.strong(data.rest.request.base_url.clone());
+                    });
+                }
+                Some(collection_path) => {
+                    ui.horizontal(|ui| {
+                        ui.add_space(VERTICAL_GAP);
+                        Label::new(
+                            RichText::new(collection_path)
+                                .strong()
+                                .background_color(ui.visuals().code_bg_color),
+                        )
+                        .ui(ui);
+                        ui.strong(data.rest.request.base_url.as_str());
+                    });
+                }
             }
         }
     }
 
-    fn render_editor_right_panel(
-        &mut self,
-        app_data: &mut AppData,
-        mut data: &mut CentralRequestItem,
-        envs: &BTreeMap<String, EnvironmentItemValue>,
-        ui: &mut Ui,
-    ) {
+    fn render_editor_right_panel(&mut self, app_data: &mut AppData, cursor: String, ui: &mut Ui) {
+        let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
         egui::SidePanel::right("editor_right_panel")
             .resizable(false)
             .show_inside(ui, |ui| {
@@ -107,15 +106,11 @@ impl RestPanel {
                     }
                 });
             });
+        app_data.central_request_data_list.refresh(data)
     }
 
-    fn render_editor_left_panel(
-        &self,
-        cursor: &String,
-        mut data: &mut CentralRequestItem,
-        envs: &BTreeMap<String, EnvironmentItemValue>,
-        ui: &mut Ui,
-    ) {
+    fn render_editor_left_panel(&self, app_data: &mut AppData, cursor: String, ui: &mut Ui) {
+        let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
         egui::SidePanel::left("editor_left_panel")
             .min_width(ui.available_width() - HORIZONTAL_GAP)
             .show_separator_line(false)
@@ -146,14 +141,8 @@ impl RestPanel {
             });
     }
 
-    fn render_request_open_panel(
-        &mut self,
-        app_data: &mut AppData,
-        cursor: &String,
-        ui: &mut Ui,
-        mut data: &mut CentralRequestItem,
-        envs: BTreeMap<String, EnvironmentItemValue>,
-    ) {
+    fn render_request_open_panel(&mut self, app_data: &mut AppData, cursor: String, ui: &mut Ui) {
+        let (data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
         match self.open_request_panel_enum {
             RequestPanelEnum::Params => {
                 self.request_params_panel
@@ -168,8 +157,11 @@ impl RestPanel {
                     }
                 }
                 self.auth_panel.set_envs(envs.clone(), parent_auth);
-                self.auth_panel
-                    .set_and_render(ui, &mut data.rest.request.auth);
+                {
+                    let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
+                    self.auth_panel
+                        .set_and_render(ui, &mut data.rest.request.auth);
+                }
             }
             RequestPanelEnum::Headers => {
                 self.request_headers_panel
@@ -182,7 +174,8 @@ impl RestPanel {
         }
     }
 
-    fn send_promise(&mut self, app_data: &mut AppData, data: &mut CentralRequestItem) {
+    fn send_promise(&mut self, app_data: &mut AppData, cursor: String) {
+        let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
         if let Some(promise) = &self.send_promise {
             if let Some(result) = promise.ready() {
                 data.rest.elapsed_time = Some(self.send_instant.unwrap().elapsed().as_millis());
@@ -213,70 +206,63 @@ impl RestPanel {
                 data.rest.pending()
             }
         }
+        app_data.central_request_data_list.refresh(data);
+    }
+
+    fn render_middle_select(&mut self, app_data: &mut AppData, cursor: String, ui: &mut Ui) {
+        let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
+        utils::left_right_panel(
+            ui,
+            "rest_middle_select_label".to_string(),
+            |ui| {
+                ui.horizontal(|ui| {
+                    for x in RequestPanelEnum::iter() {
+                        ui.selectable_value(
+                            &mut self.open_request_panel_enum,
+                            x.clone(),
+                            utils::build_with_count_ui_header(
+                                x.to_string(),
+                                RestPanel::get_count(&data.rest.request, x),
+                                ui,
+                            ),
+                        );
+                    }
+                });
+            },
+            |ui| {
+                ui.horizontal(|ui| {
+                    if ui.link("Cookies").clicked() {
+                        app_data.open_windows().open_cookies();
+                    };
+                    ui.link("Code");
+                });
+            },
+        );
     }
 }
 
 impl DataView for RestPanel {
     type CursorType = String;
     fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
-        let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
-        data.rest.sync(
-            envs.clone(),
-            auth.clone(),
-            &app_data.rest_sender.cookies_manager,
-        );
         ui.vertical(|ui| {
-            if data.rest.request.base_url == "" {
-                ui.strong("Untitled Request");
-            } else {
-                self.render_name_label(&mut data, ui);
-            }
+            self.render_name_label(app_data, cursor.clone(), ui);
             ui.separator();
             ui.add_space(VERTICAL_GAP);
             ui.horizontal(|ui| {
-                self.render_editor_right_panel(app_data, &mut data, &envs, ui);
-                self.render_editor_left_panel(&cursor, &mut data, &envs, ui);
+                self.render_editor_right_panel(app_data, cursor.clone(), ui);
+                self.render_editor_left_panel(app_data, cursor.clone(), ui);
             });
             ui.add_space(HORIZONTAL_GAP);
             ui.separator();
             ui.add_space(HORIZONTAL_GAP);
-
-            utils::left_right_panel(
-                ui,
-                "rest_middle_select_label".to_string(),
-                |ui| {
-                    ui.horizontal(|ui| {
-                        for x in RequestPanelEnum::iter() {
-                            ui.selectable_value(
-                                &mut self.open_request_panel_enum,
-                                x.clone(),
-                                utils::build_with_count_ui_header(
-                                    x.to_string(),
-                                    RestPanel::get_count(&data.rest.request, x),
-                                    ui,
-                                ),
-                            );
-                        }
-                    });
-                },
-                |ui| {
-                    ui.horizontal(|ui| {
-                        if ui.link("Cookies").clicked() {
-                            app_data.open_windows().open_cookies();
-                        };
-                        ui.link("Code");
-                    });
-                },
-            );
-
+            self.render_middle_select(app_data, cursor.clone(), ui);
             ui.separator();
             ui.add_space(HORIZONTAL_GAP);
         });
-        self.send_promise(app_data, &mut data);
-        self.render_request_open_panel(app_data, &cursor, ui, &mut data, envs);
+        self.send_promise(app_data, cursor.clone());
+        self.render_request_open_panel(app_data, cursor.clone(), ui);
         ui.separator();
         self.response_panel
             .set_and_render(ui, app_data, cursor.clone());
-        app_data.central_request_data_list.refresh(data)
     }
 }
