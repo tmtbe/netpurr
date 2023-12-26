@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
 use egui::ahash::HashSet;
+use egui::text::TextWrapping;
 use egui::{
     Area, FontSelection, Frame, Id, InnerResponse, Key, Layout, Order, Response, RichText, Style,
     TextBuffer, Ui, WidgetText,
@@ -13,7 +14,20 @@ use crate::data::{EnvironmentItemValue, HttpRecord};
 use crate::panels::HORIZONTAL_GAP;
 
 pub fn build_rest_ui_header(hr: HttpRecord, ui: &Ui) -> LayoutJob {
-    let mut lb = LayoutJob::default();
+    let mut lb = LayoutJob {
+        text: Default::default(),
+        sections: Default::default(),
+        wrap: TextWrapping {
+            max_width: 50.0,
+            max_rows: 1,
+            break_anywhere: true,
+            overflow_character: Some('…'),
+        },
+        first_row_min_height: 0.0,
+        break_on_newline: false,
+        halign: Align::LEFT,
+        justify: false,
+    };
     let style = Style::default();
     if hr.request.base_url != "" {
         RichText::new(hr.request.method.to_string() + " ")
@@ -35,9 +49,6 @@ pub fn build_rest_ui_header(hr: HttpRecord, ui: &Ui) -> LayoutJob {
             .color(ui.visuals().text_color())
             .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
     }
-    lb.break_on_newline = false;
-    lb.wrap.max_width = f32::INFINITY;
-    lb.wrap.max_rows = 2;
     lb
 }
 
@@ -149,12 +160,12 @@ pub fn select_label(ui: &mut Ui, text: impl Into<WidgetText>) -> Response {
 pub fn select_value<Value: PartialEq>(
     ui: &mut Ui,
     current_value: &mut Value,
-    select_value: Value,
+    selected_value: Value,
     text: impl Into<WidgetText>,
 ) -> Response {
     ui.with_layout(
         Layout::top_down(Align::LEFT).with_cross_justify(true),
-        |ui| ui.selectable_value(current_value, select_value, text),
+        |ui| ui.selectable_value(current_value, selected_value, text),
     )
     .inner
 }

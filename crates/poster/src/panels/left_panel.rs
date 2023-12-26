@@ -1,3 +1,5 @@
+use egui::ScrollArea;
+
 use crate::data::AppData;
 use crate::panels::collections_panel::CollectionsPanel;
 use crate::panels::history_panel::HistoryPanel;
@@ -42,14 +44,13 @@ impl DataView for MyLeftPanel {
             ui.selectable_value(&mut self.open_panel, Panel::History, "History");
             ui.selectable_value(&mut self.open_panel, Panel::Collections, "Collections");
         });
-
-        match self.open_panel {
+        ScrollArea::vertical().show(ui, |ui| match self.open_panel {
             Panel::History => {
                 self.history_panel.set_and_render(ui, app_data, 0);
             }
             Panel::Collections => {
                 self.collections_panel.set_and_render(ui, app_data, 0);
             }
-        }
+        });
     }
 }
