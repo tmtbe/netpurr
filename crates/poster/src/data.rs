@@ -752,7 +752,15 @@ impl CentralRequestDataList {
         let result: Result<CentralRequestDataListSaved, _> = self
             .persistence
             .load(Path::new("requests/data.json").to_path_buf());
-        result.map(|c| {
+        result.map(|mut c| {
+            match &c.select_id {
+                None => {}
+                Some(id) => {
+                    if !c.data_map.contains_key(id.as_str()) {
+                        c.select_id = None;
+                    }
+                }
+            }
             self.data_map = c.data_map;
             self.select_id = c.select_id;
             for (_, crt) in self.data_map.iter() {
