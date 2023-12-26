@@ -131,7 +131,6 @@ impl SaveWindows {
 
     fn render_add_folder(&mut self, app_data: &mut AppData, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.text_edit_singleline(&mut self.add_name);
             match &self.select_collection_path {
                 None => {}
                 Some(path) => {
@@ -146,7 +145,6 @@ impl SaveWindows {
                     }
                 }
             }
-
             if ui.button("+").clicked() {
                 match &self.select_collection_path {
                     None => {}
@@ -175,12 +173,12 @@ impl SaveWindows {
                 self.add_name = "".to_string();
                 self.add_folder = false;
             }
+            utils::text_edit_singleline_justify(ui, &mut self.add_name);
         });
     }
 
     fn render_add_collection(&mut self, app_data: &mut AppData, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.text_edit_singleline(&mut self.add_name);
             if app_data
                 .collections
                 .get_data()
@@ -204,6 +202,7 @@ impl SaveWindows {
                 self.add_collection = false;
             }
             ui.set_enabled(true);
+            utils::text_edit_singleline_justify(ui, &mut self.add_name);
         });
     }
 
@@ -277,8 +276,8 @@ impl DataView for SaveWindows {
         );
         egui::Window::new(self.title.clone())
             .default_open(true)
-            .default_width(500.0)
-            .default_height(300.0)
+            .max_width(500.0)
+            .default_height(400.0)
             .collapsible(false)
             .resizable(true)
             .open(&mut save_windows_open)
@@ -286,10 +285,10 @@ impl DataView for SaveWindows {
                 ui.label("Requests in Poster are saved in collections (a group of requests).");
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Request name");
-                utils::text_edit_singleline(ui, &mut self.http_record.name);
+                utils::text_edit_singleline_justify(ui, &mut self.http_record.name);
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Request description (Optional)");
-                utils::text_edit_multiline(ui, &mut self.http_record.desc);
+                utils::text_edit_multiline_justify(ui, &mut self.http_record.desc);
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Select a collection or folder to save to:");
                 ui.add_space(VERTICAL_GAP);

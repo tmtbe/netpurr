@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use eframe::emath::Align;
-use egui::{Layout, ScrollArea, Ui};
+use egui::{Button, Layout, ScrollArea, Ui};
 
 use crate::data::{AppData, Cookie};
 use crate::panels::{DataView, VERTICAL_GAP};
@@ -25,7 +25,7 @@ impl CookiesWindows {
     fn render_add(&mut self, app_data: &mut AppData, ui: &mut Ui) {
         ui.label("Add a cookie domain.");
         ui.horizontal(|ui| {
-            utils::text_edit_singleline(ui, &mut self.new_cookie_name);
+            utils::text_edit_singleline_justify(ui, &mut self.new_cookie_name);
             if self.new_cookie_name == ""
                 || app_data
                     .rest_sender
@@ -74,37 +74,37 @@ impl CookiesWindows {
                 None => {}
                 Some(domain) => {
                     ui.horizontal(|ui| {
-                        ui.text_edit_singleline(&mut self.new_key_name);
                         if self.new_key_name == ""
                             || app_data
                                 .rest_sender
                                 .cookies_manager
                                 .contain_domain_key(domain.clone(), self.new_key_name.clone())
                         {
-                            ui.set_enabled(false);
+                            ui.add_enabled(false, Button::new("+"));
+                        } else {
+                            if ui.button("+").clicked() {
+                                app_data.rest_sender.cookies_manager.add_domain_cookies(
+                                    domain.to_string(),
+                                    self.new_key_name.to_string(),
+                                    Cookie {
+                                        name: self.new_key_name.clone(),
+                                        value: "NONE".to_string(),
+                                        domain: domain.clone(),
+                                        path: "/".to_string(),
+                                        expires: "".to_string(),
+                                        max_age: "".to_string(),
+                                        raw: format!(
+                                            "{}={}; path=/; domain={}",
+                                            self.new_key_name, "NONE", domain
+                                        ),
+                                        http_only: false,
+                                        secure: false,
+                                    },
+                                );
+                                self.new_key_name = "".to_string();
+                            }
                         }
-                        if ui.button("Add").clicked() {
-                            app_data.rest_sender.cookies_manager.add_domain_cookies(
-                                domain.to_string(),
-                                self.new_key_name.to_string(),
-                                Cookie {
-                                    name: self.new_key_name.clone(),
-                                    value: "NONE".to_string(),
-                                    domain: domain.clone(),
-                                    path: "/".to_string(),
-                                    expires: "".to_string(),
-                                    max_age: "".to_string(),
-                                    raw: format!(
-                                        "{}={}; path=/; domain={}",
-                                        self.new_key_name, "NONE", domain
-                                    ),
-                                    http_only: false,
-                                    secure: false,
-                                },
-                            );
-                            self.new_key_name = "".to_string();
-                        }
-                        ui.set_enabled(true);
+                        utils::text_edit_singleline_justify(ui, &mut self.new_key_name);
                     });
                     let option_cookies = app_data
                         .rest_sender
@@ -156,7 +156,7 @@ impl CookiesWindows {
                     Some(key) => {
                         let cookie = map.get(key);
                         cookie.map(|c| {
-                            utils::text_edit_multiline(ui, &mut self.select_content);
+                            utils::text_edit_multiline_justify(ui, &mut self.select_content);
                             ui.add_space(VERTICAL_GAP);
                             ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
                                 let new_cookie = Cookie::from_raw(self.select_content.clone());

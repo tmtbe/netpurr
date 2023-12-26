@@ -170,7 +170,13 @@ pub fn select_value<Value: PartialEq>(
     .inner
 }
 
-pub fn text_edit_singleline<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
+pub fn text_edit_singleline_justify<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
+    let filtered_string: String = text
+        .as_str()
+        .chars()
+        .filter(|&c| c.is_ascii_alphabetic() || c.is_alphabetic())
+        .collect();
+    text.replace(filtered_string.as_str());
     ui.with_layout(
         Layout::top_down(Align::LEFT).with_cross_justify(true),
         |ui| ui.text_edit_singleline(text),
@@ -178,7 +184,17 @@ pub fn text_edit_singleline<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Respons
     .inner
 }
 
-pub fn text_edit_multiline<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
+pub fn text_edit_singleline_filter<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
+    let filtered_string: String = text
+        .as_str()
+        .chars()
+        .filter(|&c| c.is_ascii_alphabetic() || c.is_alphabetic())
+        .collect();
+    text.replace(filtered_string.as_str());
+    ui.text_edit_singleline(text)
+}
+
+pub fn text_edit_multiline_justify<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
     ui.with_layout(
         Layout::top_down(Align::LEFT).with_cross_justify(true),
         |ui| ui.text_edit_multiline(text),
