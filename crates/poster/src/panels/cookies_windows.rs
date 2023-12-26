@@ -35,11 +35,11 @@ impl CookiesWindows {
                 ui.set_enabled(false);
             }
             if ui.button("Add").clicked() {
-                self.new_cookie_name = "".to_string();
                 app_data
                     .rest_sender
                     .cookies_manager
                     .set_domain_cookies(self.new_cookie_name.clone(), BTreeMap::new());
+                self.new_cookie_name = "".to_string();
             }
             ui.set_enabled(true);
         });

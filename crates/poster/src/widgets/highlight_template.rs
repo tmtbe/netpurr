@@ -55,7 +55,12 @@ impl HighlightTemplate<'_> {
                 if len <= 1 || c.primary.ccursor.index > len {
                     return;
                 }
-                let before_cursor_text = &self.content.as_str()[0..c.primary.ccursor.index];
+                let before_cursor_text: &String = &self
+                    .content
+                    .as_str()
+                    .chars()
+                    .take(c.primary.ccursor.index)
+                    .collect();
                 let prompt_option = self.find_prompt(before_cursor_text.to_string());
                 if prompt_option.is_some() && self.envs.clone().len() > 0 {
                     let prompt = prompt_option.unwrap();

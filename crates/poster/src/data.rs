@@ -809,6 +809,9 @@ impl CentralRequestDataList {
             self.data_list.push(crt.clone())
         }
         self.select(crt.id.clone());
+        self.save();
+    }
+    fn save(&self) {
         self.persistence.save(
             Path::new("requests").to_path_buf(),
             "data".to_string(),
@@ -818,13 +821,16 @@ impl CentralRequestDataList {
             },
         );
     }
-
+    pub fn auto_save(&self) {
+        self.save();
+    }
     pub fn refresh(&mut self, crt: CentralRequestItem) {
         self.data_map.insert(crt.id.clone(), crt.clone());
         self.data_list.iter_mut().find(|c| c.id == crt.id).map(|c| {
             c.collection_path = crt.collection_path;
             c.rest = crt.rest;
         });
+        self.save();
     }
 }
 
