@@ -1063,39 +1063,41 @@ impl HttpRecord {
         }
         let base_url = utils::replace_variable(self.request.base_url.clone(), envs.clone());
         let base_url_splits: Vec<&str> = base_url.splitn(2, "//").collect();
-        let request_domain_and_path: Vec<&str> = base_url_splits[1].splitn(2, "/").collect();
-        let request_domain = request_domain_and_path[0];
-        let mut request_path = "/";
-        if request_domain_and_path.len() == 2 {
-            request_path = request_domain_and_path[1];
-        }
-        let cookies =
-            cookies_manager.get_match_cookie(request_domain.to_string(), request_path.to_string());
-        let mut cookie_str_list = vec![];
-        for cookie in cookies {
-            cookie_str_list.push(format!("{}={}", cookie.name, cookie.value))
-        }
-        if cookie_str_list.len() > 0 {
-            let mut has = false;
-            self.request
-                .headers
-                .iter_mut()
-                .filter(|h| h.key.to_lowercase() == "cookie")
-                .for_each(|h| {
-                    h.desc = "auto gen".to_string();
-                    h.lock = true;
-                    h.enable = true;
-                    h.value = cookie_str_list.join(";");
-                    has = true;
-                });
-            if !has {
-                self.request.headers.push(Header {
-                    key: "Cookie".to_string(),
-                    value: cookie_str_list.join(";"),
-                    desc: "auto gen".to_string(),
-                    enable: true,
-                    lock: true,
-                })
+        if base_url_splits.len() >= 2 {
+            let request_domain_and_path: Vec<&str> = base_url_splits[1].splitn(2, "/").collect();
+            let request_domain = request_domain_and_path[0];
+            let mut request_path = "/";
+            if request_domain_and_path.len() == 2 {
+                request_path = request_domain_and_path[1];
+            }
+            let cookies = cookies_manager
+                .get_match_cookie(request_domain.to_string(), request_path.to_string());
+            let mut cookie_str_list = vec![];
+            for cookie in cookies {
+                cookie_str_list.push(format!("{}={}", cookie.name, cookie.value))
+            }
+            if cookie_str_list.len() > 0 {
+                let mut has = false;
+                self.request
+                    .headers
+                    .iter_mut()
+                    .filter(|h| h.key.to_lowercase() == "cookie")
+                    .for_each(|h| {
+                        h.desc = "auto gen".to_string();
+                        h.lock = true;
+                        h.enable = true;
+                        h.value = cookie_str_list.join(";");
+                        has = true;
+                    });
+                if !has {
+                    self.request.headers.push(Header {
+                        key: "Cookie".to_string(),
+                        value: cookie_str_list.join(";"),
+                        desc: "auto gen".to_string(),
+                        enable: true,
+                        lock: true,
+                    })
+                }
             }
         }
     }
