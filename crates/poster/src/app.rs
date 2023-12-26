@@ -13,6 +13,10 @@ pub struct App {
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         Self::configure_fonts(&cc.egui_ctx);
+        &cc.egui_ctx.style_mut(|s| {
+            s.spacing.item_spacing.x = 7.0;
+            s.spacing.item_spacing.y = 7.0;
+        });
         let mut app = App::default();
         app.app_data.load_all();
         app
@@ -23,7 +27,9 @@ impl App {
         let font_name = font_file.split('/').last()?.split('.').next()?.to_string();
         let font_file_bytes = std::fs::read(font_file).ok()?;
 
-        let font_data = egui::FontData::from_owned(font_file_bytes);
+        let mut font_data = egui::FontData::from_owned(font_file_bytes);
+        font_data.tweak.baseline_offset_factor = 0.2;
+
         let mut font_def = eframe::egui::FontDefinitions::default();
         font_def.font_data.insert(font_name.to_string(), font_data);
 
