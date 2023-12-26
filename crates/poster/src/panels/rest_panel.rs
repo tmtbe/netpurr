@@ -1,5 +1,6 @@
 use std::time::Instant;
 
+use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
@@ -130,8 +131,13 @@ impl RestPanel {
                                 );
                             }
                         });
+                    let mut filter: HashSet<String> = HashSet::default();
+                    filter.insert("?".to_string());
+                    filter.insert(" ".to_string());
+                    filter.insert("&".to_string());
                     ui.centered_and_justified(|ui| {
                         HighlightTemplateSinglelineBuilder::default()
+                            .filter(filter)
                             .envs(envs.clone())
                             .all_space(false)
                             .build(cursor.clone() + "url", &mut data.rest.request.base_url)

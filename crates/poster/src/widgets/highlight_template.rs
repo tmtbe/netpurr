@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
 use eframe::emath::pos2;
+use egui::ahash::HashSet;
 use egui::text::{CCursor, CCursorRange};
 use egui::text_edit::{CursorRange, TextEditState};
 use egui::{Context, Id, Pos2, Response, RichText, TextBuffer, TextEdit, Ui, Widget};
@@ -20,6 +21,7 @@ pub struct HighlightTemplate<'t> {
     content: &'t mut dyn TextBuffer,
     popup_id: String,
     multiline: bool,
+    filter: HashSet<String>,
 }
 
 impl HighlightTemplate<'_> {
@@ -150,6 +152,13 @@ impl Widget for HighlightTemplate<'_> {
             let layout_job = highlight_template(string, self.size, ui, self.envs.clone());
             ui.fonts(|f| f.layout_job(layout_job))
         };
+        let filtered_string: String = self
+            .content
+            .as_str()
+            .chars()
+            .filter(|c| !self.filter.contains(c.to_string().as_str()))
+            .collect();
+        self.content.replace(filtered_string.as_str());
         let mut text_edit = TextEdit::singleline(self.content).layouter(&mut layouter);
         if self.multiline {
             text_edit = TextEdit::multiline(self.content).layouter(&mut layouter);
@@ -185,6 +194,7 @@ pub struct HighlightTemplateSinglelineBuilder {
     all_space: bool,
     size: f32,
     multiline: bool,
+    filter: HashSet<String>,
     envs: BTreeMap<String, EnvironmentItemValue>,
 }
 
@@ -195,6 +205,7 @@ impl Default for HighlightTemplateSinglelineBuilder {
             all_space: true,
             size: 12.0,
             multiline: false,
+            filter: Default::default(),
             envs: BTreeMap::default(),
         }
     }
@@ -226,6 +237,10 @@ impl HighlightTemplateSinglelineBuilder {
         self
     }
 
+    pub fn filter(&mut self, filter: HashSet<String>) -> &mut HighlightTemplateSinglelineBuilder {
+        self.filter = filter;
+        self
+    }
     pub fn build<'t>(&'t self, id: String, content: &'t mut dyn TextBuffer) -> HighlightTemplate {
         HighlightTemplate {
             enable: self.enable,
@@ -235,6 +250,7 @@ impl HighlightTemplateSinglelineBuilder {
             content: content,
             popup_id: id,
             multiline: self.multiline,
+            filter: self.filter.clone(),
         }
     }
 }
