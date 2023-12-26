@@ -1,7 +1,7 @@
 use crate::data::AppData;
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::panels::{DataView, HORIZONTAL_GAP};
 
 #[derive(Default)]
 pub struct App {
@@ -98,19 +98,17 @@ impl eframe::App for App {
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 });
-                ui.add_space(VERTICAL_GAP);
                 ui.menu_button("View", |ui| {
                     if ui.button("Zoom In").clicked() {}
                     if ui.button("Zoom Out").clicked() {}
                 });
-                ui.add_space(VERTICAL_GAP);
                 egui::widgets::global_dark_light_mode_buttons(ui);
             });
             ui.add_space(HORIZONTAL_GAP);
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.horizontal(|ui| {
                     if ui.button("New").clicked() {}
-                    ui.add_space(VERTICAL_GAP);
+                    ui.add_space(HORIZONTAL_GAP);
                     if ui.button("Import").clicked() {}
                 });
             });

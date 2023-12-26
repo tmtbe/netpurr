@@ -45,7 +45,7 @@ impl AuthPanel {
     fn auth_left(&mut self, data: &mut Auth, ui: &mut Ui) {
         egui::SidePanel::left(self.name.clone() + "auth_left")
             .resizable(true)
-            .show_separator_line(false)
+            .show_separator_line(true)
             .show_inside(ui, |ui| {
                 ui.strong("AUTH");
                 ui.add_space(VERTICAL_GAP);
@@ -70,7 +70,7 @@ impl AuthPanel {
     fn auth_right(&mut self, data: &mut Auth, ui: &mut Ui) {
         egui::SidePanel::right(self.name.clone() + "auth_right")
             .resizable(true)
-            .show_separator_line(true)
+            .show_separator_line(false)
             .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
             .show_inside(ui, |ui| match data.auth_type {
                 AuthType::NoAuth => {

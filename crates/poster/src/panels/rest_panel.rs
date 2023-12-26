@@ -12,7 +12,7 @@ use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::response_panel::ResponsePanel;
-use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP};
 use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
@@ -62,13 +62,11 @@ impl RestPanel {
             match &data.collection_path {
                 None => {
                     ui.horizontal(|ui| {
-                        ui.add_space(VERTICAL_GAP);
                         ui.strong(data.rest.request.base_url.clone());
                     });
                 }
                 Some(collection_path) => {
                     ui.horizontal(|ui| {
-                        ui.add_space(VERTICAL_GAP);
                         Label::new(
                             RichText::new(collection_path)
                                 .strong()
@@ -253,17 +251,13 @@ impl DataView for RestPanel {
         ui.vertical(|ui| {
             self.render_name_label(app_data, cursor.clone(), ui);
             ui.separator();
-            ui.add_space(VERTICAL_GAP);
             ui.horizontal(|ui| {
                 self.render_editor_right_panel(app_data, cursor.clone(), ui);
                 self.render_editor_left_panel(app_data, cursor.clone(), ui);
             });
-            ui.add_space(HORIZONTAL_GAP);
             ui.separator();
-            ui.add_space(HORIZONTAL_GAP);
             self.render_middle_select(app_data, cursor.clone(), ui);
             ui.separator();
-            ui.add_space(HORIZONTAL_GAP);
         });
         self.send_promise(app_data, cursor.clone());
         self.render_request_open_panel(app_data, cursor.clone(), ui);

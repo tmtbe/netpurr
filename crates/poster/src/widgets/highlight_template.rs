@@ -81,7 +81,7 @@ impl HighlightTemplate<'_> {
                             ui.horizontal(|ui| {
                                 egui::ScrollArea::vertical()
                                     .max_width(150.0)
-                                    .max_height(200.0)
+                                    .max_height(400.0)
                                     .show(ui, |ui| {
                                         ui.vertical(|ui| {
                                             for (key, _) in self.envs.clone().iter() {
