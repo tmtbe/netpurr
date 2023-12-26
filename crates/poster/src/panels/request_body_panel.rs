@@ -1,10 +1,11 @@
-use egui::Ui;
+use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
 use crate::data::{AppData, BodyRawType, BodyType};
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
 use crate::panels::{DataView, VERTICAL_GAP};
+use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
 pub struct RequestBodyPanel {
@@ -38,11 +39,6 @@ impl DataView for RequestBodyPanel {
             }
         });
         ui.add_space(VERTICAL_GAP);
-        let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
-            let layout_job =
-                crate::widgets::highlight::highlight_template(string, 12.0, ui, envs.clone());
-            ui.fonts(|f| f.layout_job(layout_job))
-        };
         match data.rest.request.body_type {
             BodyType::NONE => {
                 ui.label("This request does not have a body");
@@ -58,15 +54,12 @@ impl DataView for RequestBodyPanel {
                     egui::ScrollArea::vertical()
                         .max_height(200.0)
                         .show(ui, |ui| {
-                            ui.add(
-                                egui::TextEdit::multiline(&mut data.rest.request.body_str)
-                                    .font(egui::TextStyle::Monospace) // for cursor height
-                                    .desired_rows(10)
-                                    .code_editor()
-                                    .lock_focus(true)
-                                    .desired_width(f32::INFINITY)
-                                    .layouter(&mut layouter),
-                            );
+                            HighlightTemplateSinglelineBuilder::default()
+                                .multiline()
+                                .envs(envs)
+                                .all_space(true)
+                                .build("request_body".to_string(), &mut data.rest.request.body_str)
+                                .ui(ui);
                         });
                 });
             }

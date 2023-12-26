@@ -8,7 +8,7 @@ use strum::IntoEnumIterator;
 use crate::data::{Auth, AuthType, Collection, CollectionFolder, EnvironmentItemValue};
 use crate::panels::{AlongDataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
-use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
+use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
 pub struct AuthPanel {

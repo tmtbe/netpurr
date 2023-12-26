@@ -6,7 +6,7 @@ use egui_extras::{Column, TableBody, TableBuilder};
 
 use crate::data::{AppData, CentralRequestItem, EnvironmentItemValue, Header};
 use crate::panels::DataView;
-use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
+use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
 pub struct RequestHeadersPanel {

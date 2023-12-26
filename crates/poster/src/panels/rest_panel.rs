@@ -13,7 +13,7 @@ use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
-use crate::widgets::highlight_template_singleline::HighlightTemplateSinglelineBuilder;
+use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
 pub struct RestPanel {

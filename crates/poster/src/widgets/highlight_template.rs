@@ -10,17 +10,19 @@ use crate::data::EnvironmentItemValue;
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
 use crate::utils::{popup_widget, replace_variable};
+use crate::widgets::highlight::highlight_template;
 
-pub struct HighlightTemplateSingleline<'t> {
+pub struct HighlightTemplate<'t> {
     enable: bool,
     all_space: bool,
     size: f32,
     envs: BTreeMap<String, EnvironmentItemValue>,
     content: &'t mut dyn TextBuffer,
     popup_id: String,
+    multiline: bool,
 }
 
-impl HighlightTemplateSingleline<'_> {
+impl HighlightTemplate<'_> {
     fn find_prompt(&self, input_string: String) -> Option<(String)> {
         if let Some(start_index) = input_string.rfind("{{") {
             if let Some(_) = input_string[start_index + 2..].find("}}") {
@@ -142,18 +144,16 @@ impl HighlightTemplateSingleline<'_> {
     }
 }
 
-impl Widget for HighlightTemplateSingleline<'_> {
+impl Widget for HighlightTemplate<'_> {
     fn ui(self, ui: &mut Ui) -> Response {
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
-            let layout_job = crate::widgets::highlight::highlight_template(
-                string,
-                self.size,
-                ui,
-                self.envs.clone(),
-            );
+            let layout_job = highlight_template(string, self.size, ui, self.envs.clone());
             ui.fonts(|f| f.layout_job(layout_job))
         };
         let mut text_edit = TextEdit::singleline(self.content).layouter(&mut layouter);
+        if self.multiline {
+            text_edit = TextEdit::multiline(self.content).layouter(&mut layouter);
+        }
         if self.all_space {
             text_edit = text_edit.desired_width(f32::INFINITY);
         }
@@ -184,6 +184,7 @@ pub struct HighlightTemplateSinglelineBuilder {
     enable: bool,
     all_space: bool,
     size: f32,
+    multiline: bool,
     envs: BTreeMap<String, EnvironmentItemValue>,
 }
 
@@ -193,6 +194,7 @@ impl Default for HighlightTemplateSinglelineBuilder {
             enable: true,
             all_space: true,
             size: 12.0,
+            multiline: false,
             envs: BTreeMap::default(),
         }
     }
@@ -219,18 +221,20 @@ impl HighlightTemplateSinglelineBuilder {
         self
     }
 
-    pub fn build<'t>(
-        &'t self,
-        id: String,
-        content: &'t mut dyn TextBuffer,
-    ) -> HighlightTemplateSingleline {
-        HighlightTemplateSingleline {
+    pub fn multiline(&mut self) -> &mut HighlightTemplateSinglelineBuilder {
+        self.multiline = true;
+        self
+    }
+
+    pub fn build<'t>(&'t self, id: String, content: &'t mut dyn TextBuffer) -> HighlightTemplate {
+        HighlightTemplate {
             enable: self.enable,
             all_space: self.all_space,
             size: self.size,
             envs: self.envs.clone(),
             content: content,
             popup_id: id,
+            multiline: self.multiline,
         }
     }
 }
