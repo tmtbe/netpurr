@@ -1,4 +1,4 @@
-use egui::TextBuffer;
+use egui::{Image, TextBuffer};
 
 use crate::data::{AppData, Response};
 use crate::panels::DataView;
@@ -50,27 +50,44 @@ impl DataView for ResponseBodyPanel {
             layout_job.wrap.max_width = wrap_width;
             ui.fonts(|f| f.layout_job(layout_job))
         };
-
-        match String::from_utf8(data.rest.response.body.to_vec()) {
-            Ok(s) => {
-                ui.push_id("response_body", |ui| {
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        ui.add(
-                            egui::TextEdit::multiline(&mut s.as_str())
-                                .font(egui::TextStyle::Monospace) // for cursor height
-                                .code_editor()
-                                .desired_rows(10)
-                                .lock_focus(true)
-                                .desired_width(f32::INFINITY)
-                                .layouter(&mut layouter),
-                        );
-                    });
-                });
-            }
-            Err(e) => {
-                ui.centered_and_justified(|ui| {
-                    ui.label("Error String");
-                });
+        match data.rest.get_response_content_type() {
+            None => {}
+            Some(content_type) => {
+                if content_type.value.starts_with("image") {
+                    let image = Image::from_bytes(
+                        data.rest.request.base_url.clone(),
+                        data.rest.response.body.to_vec(),
+                    );
+                    ui.add(image);
+                } else {
+                    match String::from_utf8(data.rest.response.body.to_vec()) {
+                        Ok(s) => {
+                            let tooltip = "Click to copy the response body";
+                            if ui.button("📋").on_hover_text(tooltip).clicked() {
+                                ui.output_mut(|o| o.copied_text = s.to_owned());
+                            }
+                            let mut content = s;
+                            ui.push_id("response_body", |ui| {
+                                egui::ScrollArea::vertical().show(ui, |ui| {
+                                    ui.add(
+                                        egui::TextEdit::multiline(&mut content)
+                                            .font(egui::TextStyle::Monospace) // for cursor height
+                                            .code_editor()
+                                            .desired_rows(10)
+                                            .lock_focus(true)
+                                            .desired_width(f32::INFINITY)
+                                            .layouter(&mut layouter),
+                                    );
+                                });
+                            });
+                        }
+                        Err(e) => {
+                            ui.centered_and_justified(|ui| {
+                                ui.label("Error String");
+                            });
+                        }
+                    }
+                }
             }
         }
     }

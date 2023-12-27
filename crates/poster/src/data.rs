@@ -635,7 +635,7 @@ impl RestSender {
         }
         let content_type = rest.request.body.build_body(&envs);
         content_type.map(|c| {
-            rest.set_content_type(c);
+            rest.set_request_content_type(c);
         });
         let headers = self.build_header(rest, &envs);
         let request = ehttp::Request {
@@ -996,17 +996,21 @@ impl HttpRecord {
             }
             BodyType::X_WWW_FROM_URLENCODED => {
                 self.request.method = Method::POST;
-                self.set_content_type("application/x-www-form-urlencoded".to_string());
+                self.set_request_content_type("application/x-www-form-urlencoded".to_string());
             }
             BodyType::RAW => {
                 self.request.method = Method::POST;
                 match self.request.body.body_raw_type {
-                    BodyRawType::TEXT => self.set_content_type("text/plain".to_string()),
-                    BodyRawType::JSON => self.set_content_type("application/json".to_string()),
-                    BodyRawType::HTML => self.set_content_type("text/html".to_string()),
-                    BodyRawType::XML => self.set_content_type("application/xml".to_string()),
+                    BodyRawType::TEXT => self.set_request_content_type("text/plain".to_string()),
+                    BodyRawType::JSON => {
+                        self.set_request_content_type("application/json".to_string())
+                    }
+                    BodyRawType::HTML => self.set_request_content_type("text/html".to_string()),
+                    BodyRawType::XML => {
+                        self.set_request_content_type("application/xml".to_string())
+                    }
                     BodyRawType::JavaScript => {
-                        self.set_content_type("application/javascript".to_string())
+                        self.set_request_content_type("application/javascript".to_string())
                     }
                 }
             }
@@ -1053,7 +1057,15 @@ impl HttpRecord {
         }
     }
 
-    pub fn set_content_type(&mut self, value: String) {
+    pub fn get_response_content_type(&self) -> Option<Header> {
+        self.response
+            .headers
+            .iter()
+            .find(|h| h.key.to_lowercase() == "content-type")
+            .cloned()
+    }
+
+    pub fn set_request_content_type(&mut self, value: String) {
         let mut need_add = false;
         let mut find = false;
         for (index, header) in self.request.headers.clone().iter().enumerate() {

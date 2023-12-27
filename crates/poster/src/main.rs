@@ -15,7 +15,10 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Poster",
         native_options,
-        Box::new(|cc| Box::new(poster::App::new(cc))),
+        Box::new(|cc| {
+            egui_extras::install_image_loaders(&cc.egui_ctx);
+            Box::new(poster::App::new(cc))
+        }),
     )
 }
 

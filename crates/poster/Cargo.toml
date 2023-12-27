@@ -10,7 +10,7 @@ default-run = "poster"
 all-features = true
 
 [features]
-default = ["glow", "persistence","http"]
+default = ["glow", "persistence", "http", "image_viewer"]
 # image_viewer adds about 0.9 MB of WASM
 web_app = ["http", "persistence"]
 http = ["ehttp", "image", "poll-promise", "egui_extras/image"]
