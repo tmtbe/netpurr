@@ -101,9 +101,16 @@ impl RestPanel {
                         }
                     }
                     if ui.button("Save").clicked() {
-                        app_data
-                            .open_windows()
-                            .open_save(data.rest.clone(), data.collection_path.clone());
+                        match data.collection_path {
+                            None => {
+                                app_data.open_windows().open_save(data.rest.clone(), None);
+                            }
+                            Some(collection_path) => {
+                                app_data
+                                    .open_windows()
+                                    .open_edit(data.rest.clone(), collection_path);
+                            }
+                        }
                     }
                 });
             });

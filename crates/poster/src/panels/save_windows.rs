@@ -18,12 +18,20 @@ pub struct SaveWindows {
     add_name: String,
     title: String,
     id: String,
+    edit: bool,
+    old_name: String,
 }
 
 impl SaveWindows {
-    pub(crate) fn open(&mut self, http_record: HttpRecord, default_path: Option<String>) {
+    pub(crate) fn open(
+        &mut self,
+        http_record: HttpRecord,
+        default_path: Option<String>,
+        edit: bool,
+    ) {
         self.save_windows_open = true;
         self.http_record = http_record;
+        self.old_name = self.http_record.name.clone();
         if self.http_record.name == "" {
             self.http_record.name = self.http_record.request.base_url.clone();
         } else {
@@ -32,12 +40,17 @@ impl SaveWindows {
         self.add_folder = false;
         self.add_collection = false;
         self.add_name = "".to_string();
+        self.edit = edit;
         match &default_path {
             None => {
                 self.title = "SAVE REQUEST".to_string();
             }
             Some(_) => {
-                self.title = "EDIT REQUEST".to_string();
+                if !edit {
+                    self.title = "SAVE AS REQUEST".to_string();
+                } else {
+                    self.title = "EDIT REQUEST".to_string();
+                }
             }
         }
         self.select_collection_path = default_path.clone();
@@ -84,8 +97,6 @@ impl SaveWindows {
                 self.render_add_folder(app_data, ui);
             }
             self.render_list(app_data, ui);
-            ui.add_space(VERTICAL_GAP);
-            self.render_save_bottom_panel(app_data, ui);
         });
     }
 
@@ -224,25 +235,32 @@ impl SaveWindows {
                                 "Save to ".to_string() + path.split("/").last().unwrap();
                             let (collection_name, option) =
                                 app_data.collections.get_mut_folder_with_path(path.clone());
-                            let mut need_replace = false;
                             match &option {
                                 None => {}
                                 Some(cf) => {
-                                    if cf
-                                        .borrow()
-                                        .requests
-                                        .contains_key(self.http_record.name.as_str())
-                                    {
-                                        button_name = "⚠ ".to_string() + button_name.as_str();
-                                        need_replace = true;
+                                    if self.edit && self.old_name == self.http_record.name {
+                                        ui.set_enabled(true);
+                                    } else {
+                                        if cf
+                                            .borrow()
+                                            .requests
+                                            .contains_key(self.http_record.name.as_str())
+                                        {
+                                            ui.set_enabled(false);
+                                        }
                                     }
                                 }
                             }
+
                             let save_button = ui.button(button_name);
+                            ui.set_enabled(true);
                             if save_button.clicked() {
                                 match &option {
                                     None => {}
                                     Some(cf) => {
+                                        if self.edit {
+                                            cf.borrow_mut().requests.remove(self.old_name.as_str());
+                                        }
                                         cf.borrow_mut().requests.insert(
                                             self.http_record.name.clone(),
                                             self.http_record.clone(),
@@ -252,9 +270,7 @@ impl SaveWindows {
                                 }
                                 self.save_windows_open = false;
                             }
-                            if need_replace {
-                                save_button.on_hover_text("The request will be replaced.");
-                            }
+
                             if ui.button("Cancel").clicked() {
                                 self.save_windows_open = false;
                             }
@@ -290,9 +306,13 @@ impl DataView for SaveWindows {
                 ui.label("Request description (Optional)");
                 utils::text_edit_multiline_justify(ui, &mut self.http_record.desc);
                 ui.add_space(VERTICAL_GAP);
-                ui.label("Select a collection or folder to save to:");
-                ui.add_space(VERTICAL_GAP);
-                self.render(app_data, ui);
+                if !self.edit {
+                    ui.label("Select a collection or folder to save to:");
+                    ui.add_space(VERTICAL_GAP);
+                    self.render(app_data, ui);
+                    ui.add_space(VERTICAL_GAP);
+                }
+                self.render_save_bottom_panel(app_data, ui);
             });
         if !save_windows_open {
             self.save_windows_open = save_windows_open;

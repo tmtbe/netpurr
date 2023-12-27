@@ -155,6 +155,7 @@ impl CookiesManager {
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct OpenWindows {
     pub save_opened: bool,
+    pub edit: bool,
     pub collection_opened: bool,
     pub folder_opened: bool,
     pub cookies_opened: bool,
@@ -170,6 +171,13 @@ impl OpenWindows {
         self.http_record = http_record;
         self.default_path = default_path;
         self.save_opened = true;
+        self.edit = false;
+    }
+    pub fn open_edit(&mut self, http_record: HttpRecord, default_path: String) {
+        self.http_record = http_record;
+        self.default_path = Some(default_path);
+        self.save_opened = true;
+        self.edit = true
     }
     pub fn open_collection(&mut self, collection: Option<Collection>) {
         self.collection = collection;

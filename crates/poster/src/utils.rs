@@ -171,10 +171,17 @@ pub fn select_value<Value: PartialEq>(
 }
 
 pub fn text_edit_singleline_justify<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
+    text.replace(
+        text.as_str()
+            .replace("/", "_")
+            .as_str()
+            .replace(" ", "_")
+            .as_str(),
+    );
     let filtered_string: String = text
         .as_str()
         .chars()
-        .filter(|&c| c.is_ascii_alphabetic() || c.is_alphabetic())
+        .filter(|&c| c.is_ascii_alphabetic() || c.is_alphabetic() || c.is_numeric() || c == '_')
         .collect();
     text.replace(filtered_string.as_str());
     ui.with_layout(
@@ -185,10 +192,17 @@ pub fn text_edit_singleline_justify<S: TextBuffer>(ui: &mut Ui, text: &mut S) ->
 }
 
 pub fn text_edit_singleline_filter<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
+    text.replace(
+        text.as_str()
+            .replace("/", "_")
+            .as_str()
+            .replace(" ", "_")
+            .as_str(),
+    );
     let filtered_string: String = text
         .as_str()
         .chars()
-        .filter(|&c| c.is_ascii_alphabetic() || c.is_alphabetic())
+        .filter(|&c| c.is_ascii_alphabetic() || c.is_alphabetic() || c.is_numeric() || c == '_')
         .collect();
     text.replace(filtered_string.as_str());
     ui.text_edit_singleline(text)

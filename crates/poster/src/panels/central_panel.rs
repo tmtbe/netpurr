@@ -57,6 +57,7 @@ impl DataView for MyCentralPanel {
             self.save_windows.open(
                 app_data.open_windows().http_record.clone(),
                 app_data.open_windows().default_path.clone(),
+                app_data.open_windows().edit,
             );
             app_data.open_windows().save_opened = false;
         }

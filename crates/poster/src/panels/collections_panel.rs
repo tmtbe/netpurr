@@ -247,10 +247,16 @@ impl CollectionsPanel {
                     });
                 ui.close_menu();
             }
-            if utils::select_label(ui, "Edit").clicked() {
+            if utils::select_label(ui, "Save as").clicked() {
                 app_data
                     .open_windows()
                     .open_save(request.clone(), Some(path.clone()));
+                ui.close_menu();
+            }
+            if utils::select_label(ui, "Edit").clicked() {
+                app_data
+                    .open_windows()
+                    .open_edit(request.clone(), path.clone());
                 ui.close_menu();
             }
             if utils::select_label(ui, "Duplicate").clicked() {
