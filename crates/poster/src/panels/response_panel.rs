@@ -82,7 +82,7 @@ impl ResponsePanel {
                     }
                     ui.label("Size:");
                     ui.label(
-                        RichText::new(ResponsePanel::get_byte_size(data.rest.response.body.len()))
+                        RichText::new(data.rest.response.body.get_byte_size())
                             .color(ui.visuals().warn_fg_color)
                             .strong(),
                     );
@@ -144,18 +144,6 @@ impl DataView for ResponsePanel {
                     ui.label("Could not get any response");
                 });
             }
-        }
-    }
-}
-
-impl ResponsePanel {
-    fn get_byte_size(size: usize) -> String {
-        if size > 1000000 {
-            return (size / 1000000).to_string() + " MB";
-        } else if size > 1000 {
-            return (size / 1000).to_string() + " KB";
-        } else {
-            return size.to_string() + " B";
         }
     }
 }

@@ -20,17 +20,21 @@ impl DataView for RequestBodyPanel {
         let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
         ui.horizontal(|ui| {
             for x in BodyType::iter() {
-                ui.selectable_value(&mut data.rest.request.body_type, x.clone(), x.to_string());
+                ui.selectable_value(
+                    &mut data.rest.request.body.body_type,
+                    x.clone(),
+                    x.to_string(),
+                );
             }
-            if data.rest.request.body_type == BodyType::RAW {
+            if data.rest.request.body.body_type == BodyType::RAW {
                 egui::ComboBox::from_id_source("body_raw_type")
-                    .selected_text(data.rest.request.body_raw_type.clone().to_string())
+                    .selected_text(data.rest.request.body.body_raw_type.clone().to_string())
                     .show_ui(ui, |ui| {
                         ui.style_mut().wrap = Some(false);
                         ui.set_min_width(60.0);
                         for x in BodyRawType::iter() {
                             ui.selectable_value(
-                                &mut data.rest.request.body_raw_type,
+                                &mut data.rest.request.body.body_raw_type,
                                 x.clone(),
                                 x.to_string(),
                             );
@@ -39,7 +43,7 @@ impl DataView for RequestBodyPanel {
             }
         });
         ui.add_space(VERTICAL_GAP);
-        match data.rest.request.body_type {
+        match data.rest.request.body.body_type {
             BodyType::NONE => {
                 ui.label("This request does not have a body");
             }
@@ -58,7 +62,10 @@ impl DataView for RequestBodyPanel {
                                 .multiline()
                                 .envs(envs)
                                 .all_space(true)
-                                .build("request_body".to_string(), &mut data.rest.request.body_str)
+                                .build(
+                                    "request_body".to_string(),
+                                    &mut data.rest.request.body.body_str,
+                                )
                                 .ui(ui);
                         });
                 });

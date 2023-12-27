@@ -57,12 +57,17 @@ impl DataView for RequestBodyXXXFormPanel {
         if delete_index.is_some() {
             data.rest
                 .request
+                .body
                 .body_xxx_form
                 .remove(delete_index.unwrap());
         }
         if self.new_form.key != "" || self.new_form.value != "" || self.new_form.desc != "" {
             self.new_form.enable = true;
-            data.rest.request.body_xxx_form.push(self.new_form.clone());
+            data.rest
+                .request
+                .body
+                .body_xxx_form
+                .push(self.new_form.clone());
             self.new_form.key = "".to_string();
             self.new_form.value = "".to_string();
             self.new_form.desc = "".to_string();
@@ -79,7 +84,7 @@ impl RequestBodyXXXFormPanel {
         mut body: &mut TableBody,
     ) -> Option<usize> {
         let mut delete_index: Option<usize> = None;
-        for (index, param) in data.rest.request.body_xxx_form.iter_mut().enumerate() {
+        for (index, param) in data.rest.request.body.body_xxx_form.iter_mut().enumerate() {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
                     ui.checkbox(&mut param.enable, "");

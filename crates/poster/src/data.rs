@@ -633,65 +633,15 @@ impl RestSender {
         {
             rest.request.base_url = "http://".to_string() + rest.request.base_url.as_str();
         }
-        match rest.request.body_type {
-            BodyType::NONE => {}
-            BodyType::FROM_DATA => {
-                let mut multipart = MultipartBuilder::new();
-                for x in rest.request.body_form_data.iter_mut() {
-                    if !x.enable {
-                        continue;
-                    }
-                    match x.data_type {
-                        MultipartDataType::File => {
-                            let file = PathBuf::from(x.value.as_str());
-                            if !file.is_file() {
-                                x.enable = false;
-                                continue;
-                            }
-                            multipart = multipart.add_file(x.key.as_str(), file);
-                        }
-                        MultipartDataType::Text => {
-                            multipart = multipart.add_text(
-                                x.key.as_str(),
-                                utils::replace_variable(x.value.clone(), envs.clone()).as_str(),
-                            );
-                        }
-                    }
-                }
-                let (content_type, data) = multipart.build();
-                rest.set_content_type(content_type);
-                rest.request.body = data
-            }
-            BodyType::X_WWW_FROM_URLENCODED => {
-                let body_part: Vec<String> = rest
-                    .request
-                    .body_xxx_form
-                    .iter()
-                    .filter(|x| x.enable)
-                    .map(|x| MultipartData {
-                        data_type: x.data_type.clone(),
-                        key: x.key.clone(),
-                        value: utils::replace_variable(x.value.clone(), envs.clone()),
-                        desc: x.desc.clone(),
-                        enable: x.enable,
-                    })
-                    .map(|x| format!("{}={}", encode(x.key.as_str()), encode(x.value.as_str())))
-                    .collect();
-                rest.request.body = body_part.join("&").as_bytes().to_vec();
-            }
-            BodyType::RAW => {
-                rest.request.body =
-                    utils::replace_variable(rest.request.body_str.clone(), envs.clone())
-                        .as_bytes()
-                        .to_vec();
-            }
-            BodyType::BINARY => {}
-        }
+        let content_type = rest.request.body.build_body(&envs);
+        content_type.map(|c| {
+            rest.set_content_type(c);
+        });
         let headers = self.build_header(rest, &envs);
         let request = ehttp::Request {
             method: rest.request.method.to_string(),
             url: self.build_url(&rest, envs.clone()),
-            body: rest.request.body.clone(),
+            body: rest.request.body.to_vec(),
             headers,
         };
         println!("{:?}", request);
@@ -958,12 +908,7 @@ pub struct Request {
     pub base_url: String,
     pub params: Vec<QueryParam>,
     pub headers: Vec<Header>,
-    pub body: Vec<u8>,
-    pub body_str: String,
-    pub body_type: BodyType,
-    pub body_raw_type: BodyRawType,
-    pub body_form_data: Vec<MultipartData>,
-    pub body_xxx_form: Vec<MultipartData>,
+    pub body: HttpBody,
     pub auth: Auth,
 }
 
@@ -1044,7 +989,7 @@ impl HttpRecord {
         self.request
             .auth
             .build_head(&mut self.request.headers, envs.clone(), auth);
-        match self.request.body_type {
+        match self.request.body.body_type {
             BodyType::NONE => {}
             BodyType::FROM_DATA => {
                 self.request.method = Method::POST;
@@ -1055,7 +1000,7 @@ impl HttpRecord {
             }
             BodyType::RAW => {
                 self.request.method = Method::POST;
-                match self.request.body_raw_type {
+                match self.request.body.body_raw_type {
                     BodyRawType::TEXT => self.set_content_type("text/plain".to_string()),
                     BodyRawType::JSON => self.set_content_type("application/json".to_string()),
                     BodyRawType::HTML => self.set_content_type("text/html".to_string()),
@@ -1218,7 +1163,7 @@ impl Header {
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Response {
-    pub body: Rc<Vec<u8>>,
+    pub body: Rc<HttpBody>,
     pub headers: Vec<Header>,
     pub url: String,
     pub ok: bool,
@@ -1226,6 +1171,103 @@ pub struct Response {
     pub status_text: String,
 }
 
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct HttpBody {
+    pub base64: String,
+    pub size: usize,
+    pub body_str: String,
+    pub body_type: BodyType,
+    pub body_raw_type: BodyRawType,
+    pub body_form_data: Vec<MultipartData>,
+    pub body_xxx_form: Vec<MultipartData>,
+}
+
+impl HttpBody {
+    pub fn to_vec(&self) -> Vec<u8> {
+        general_purpose::STANDARD.decode(&self.base64).unwrap()
+    }
+    pub fn get_byte_size(&self) -> String {
+        if self.size > 1000000 {
+            return (self.size / 1000000).to_string() + " MB";
+        } else if self.size > 1000 {
+            return (self.size / 1000).to_string() + " KB";
+        } else {
+            return self.size.to_string() + " B";
+        }
+    }
+
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self {
+            base64: general_purpose::STANDARD.encode(&bytes).to_string(),
+            size: bytes.len(),
+            body_str: "".to_string(),
+            body_type: Default::default(),
+            body_raw_type: Default::default(),
+            body_form_data: vec![],
+            body_xxx_form: vec![],
+        }
+    }
+
+    pub fn build_body(&mut self, envs: &BTreeMap<String, EnvironmentItemValue>) -> Option<String> {
+        match self.body_type {
+            BodyType::NONE => None,
+            BodyType::FROM_DATA => {
+                let mut multipart = MultipartBuilder::new();
+                for x in self.body_form_data.iter_mut() {
+                    if !x.enable {
+                        continue;
+                    }
+                    match x.data_type {
+                        MultipartDataType::File => {
+                            let file = PathBuf::from(x.value.as_str());
+                            if !file.is_file() {
+                                x.enable = false;
+                                continue;
+                            }
+                            multipart = multipart.add_file(x.key.as_str(), file);
+                        }
+                        MultipartDataType::Text => {
+                            multipart = multipart.add_text(
+                                x.key.as_str(),
+                                utils::replace_variable(x.value.clone(), envs.clone()).as_str(),
+                            );
+                        }
+                    }
+                }
+                let (content_type, data) = multipart.build();
+                self.base64 = general_purpose::STANDARD.encode(data);
+                Some(content_type)
+            }
+            BodyType::X_WWW_FROM_URLENCODED => {
+                let body_part: Vec<String> = self
+                    .body_xxx_form
+                    .iter()
+                    .filter(|x| x.enable)
+                    .map(|x| MultipartData {
+                        data_type: x.data_type.clone(),
+                        key: x.key.clone(),
+                        value: utils::replace_variable(x.value.clone(), envs.clone()),
+                        desc: x.desc.clone(),
+                        enable: x.enable,
+                    })
+                    .map(|x| format!("{}={}", encode(x.key.as_str()), encode(x.value.as_str())))
+                    .collect();
+                self.base64 =
+                    general_purpose::STANDARD.encode(body_part.join("&").as_bytes().to_vec());
+                None
+            }
+            BodyType::RAW => {
+                self.base64 = general_purpose::STANDARD.encode(
+                    utils::replace_variable(self.body_str.clone(), envs.clone())
+                        .as_bytes()
+                        .to_vec(),
+                );
+                None
+            }
+            BodyType::BINARY => None,
+        }
+    }
+}
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Cookie {
     pub name: String,

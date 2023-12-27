@@ -7,7 +7,7 @@ use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, Header, Method, Request, Response};
+use crate::data::{AppData, Header, HttpBody, Method, Request, Response};
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
@@ -187,7 +187,7 @@ impl RestPanel {
                 match result {
                     Ok(r) => {
                         data.rest.response = Response {
-                            body: Rc::new(r.bytes.clone()),
+                            body: Rc::new(HttpBody::new(r.bytes.clone())),
                             headers: Header::new_from_tuple(r.headers.clone()),
                             url: r.url.clone(),
                             ok: r.ok.clone(),
