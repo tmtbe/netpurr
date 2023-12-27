@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::time::Instant;
 
 use egui::ahash::HashSet;
@@ -95,7 +96,8 @@ impl RestPanel {
                                 app_data.rest_sender.send(&mut data.rest, envs.clone());
                             self.send_promise = Some(send_response.0);
                             self.send_instant = Some(send_response.1);
-                            app_data.history_data_list.record(data.rest.clone())
+                            app_data.history_data_list.record(data.rest.clone());
+                            app_data.central_request_data_list.refresh(data.clone());
                         }
                     }
                     if ui.button("Save").clicked() {
@@ -105,7 +107,6 @@ impl RestPanel {
                     }
                 });
             });
-        app_data.central_request_data_list.refresh(data)
     }
 
     fn render_editor_left_panel(&self, app_data: &mut AppData, cursor: String, ui: &mut Ui) {
@@ -179,14 +180,14 @@ impl RestPanel {
     }
 
     fn send_promise(&mut self, app_data: &mut AppData, cursor: String) {
-        let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
         if let Some(promise) = &self.send_promise {
+            let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
             if let Some(result) = promise.ready() {
                 data.rest.elapsed_time = Some(self.send_instant.unwrap().elapsed().as_millis());
                 match result {
                     Ok(r) => {
                         data.rest.response = Response {
-                            body: r.bytes.clone(),
+                            body: Rc::new(r.bytes.clone()),
                             headers: Header::new_from_tuple(r.headers.clone()),
                             url: r.url.clone(),
                             ok: r.ok.clone(),
@@ -209,8 +210,8 @@ impl RestPanel {
             } else {
                 data.rest.pending()
             }
+            app_data.central_request_data_list.refresh(data);
         }
-        app_data.central_request_data_list.refresh(data);
     }
 
     fn render_middle_select(&mut self, app_data: &mut AppData, cursor: String, ui: &mut Ui) {

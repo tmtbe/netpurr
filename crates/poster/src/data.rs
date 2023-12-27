@@ -1218,7 +1218,7 @@ impl Header {
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Response {
-    pub body: Vec<u8>,
+    pub body: Rc<Vec<u8>>,
     pub headers: Vec<Header>,
     pub url: String,
     pub ok: bool,

@@ -51,7 +51,7 @@ impl DataView for ResponseBodyPanel {
             ui.fonts(|f| f.layout_job(layout_job))
         };
 
-        match String::from_utf8(data.rest.response.body.clone()) {
+        match String::from_utf8(data.rest.response.body.to_vec()) {
             Ok(s) => {
                 ui.push_id("response_body", |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| {
