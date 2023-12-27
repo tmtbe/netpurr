@@ -8,6 +8,8 @@ pub struct App {
     left_panel: MyLeftPanel,
     central_panel: MyCentralPanel,
     app_data: AppData,
+    show_confirmation_dialog: bool,
+    allowed_to_close: bool,
 }
 
 impl App {
@@ -123,5 +125,33 @@ impl eframe::App for App {
             ui.set_enabled(!self.app_data.get_ui_lock());
             self.central_panel.set_and_render(ui, &mut self.app_data, 0);
         });
+
+        if ctx.input(|i| i.viewport().close_requested()) {
+            if !self.allowed_to_close {
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                self.show_confirmation_dialog = true;
+            }
+        }
+        if self.show_confirmation_dialog {
+            self.app_data.lock_ui("Quit".to_string(), true);
+            egui::Window::new("Do you want to quit?")
+                .collapsible(false)
+                .resizable(false)
+                .show(ctx, |ui| {
+                    ui.horizontal(|ui| {
+                        if ui.button("No").clicked() {
+                            self.show_confirmation_dialog = false;
+                            self.allowed_to_close = false;
+                        }
+
+                        if ui.button("Yes").clicked() {
+                            self.show_confirmation_dialog = false;
+                            self.allowed_to_close = true;
+                            self.app_data.central_request_data_list.auto_save();
+                            ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
+                    });
+                });
+        }
     }
 }
