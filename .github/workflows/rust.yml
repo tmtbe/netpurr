@@ -45,10 +45,13 @@ jobs:
           # Make Rust compile to our target (defined in the matrix)
           targets: ${{ matrix.target }}
 
+      - name: Add target
+        run: rustup target add aarch64-apple-darwin
+
       - name: Build
         uses: actions-rs/cargo@v1
         with:
-          use-cross: true
+          #          use-cross: true
           command: build
           args: --verbose --release --target ${{ matrix.target }}
 
