@@ -1,2 +1,3 @@
 #!/usr/bin/env bash
-cargo build --release
+cd ./crates/poster
+cargo bundle --release

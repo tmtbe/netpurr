@@ -48,31 +48,32 @@ jobs:
       - name: Add target
         run: rustup target add aarch64-apple-darwin
 
+      #      - name: Build
+      #        uses: actions-rs/cargo@v1
+      #        with:
+      #          #          use-cross: true
+      #          command: build
+      #          args: --verbose --release --target ${{ matrix.target }}
+      - name: Add Bundle
+        run: cargo install cargo-bundle
+
       - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          #          use-cross: true
-          command: build
-          args: --verbose --release --target ${{ matrix.target }}
+        working-directory: ./crates/poster
+        run: cargo bundle --release --target ${{ matrix.target }}
 
       - name: Build archive
         shell: bash
         run: |
           # Replace with the name of your binary
-          binary_name="poster"
+          binary_name="Poster"
 
           dirname="${binary_name}-${{ env.VERSION }}-${{ matrix.target }}"
           mkdir "$dirname"
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            mv "target/${{ matrix.target }}/release/$binary_name.exe" "$dirname"
-          else
-            mv "target/${{ matrix.target }}/release/$binary_name" "$dirname"
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            mv "target/${{ matrix.target }}/release/bundle/osx/$binary_name.app" "$dirname"
           fi
 
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            7z a "$dirname.zip" "$dirname"
-            echo "ASSET=$dirname.zip" >> $GITHUB_ENV
-          else
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
             tar -czf "$dirname.tar.gz" "$dirname"
             echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
           fi
