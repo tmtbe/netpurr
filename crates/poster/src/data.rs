@@ -249,47 +249,45 @@ pub struct Collections {
 
 impl Collections {
     fn load_all(&mut self) {
-        for collection_dir in self
+        for collection_file in self
             .persistence
             .load_list(Path::new("collections").to_path_buf())
             .iter()
         {
-            if let Some(collection_dir_str) = collection_dir.file_name() {
-                if let Some(collection_name) = collection_dir_str.to_str() {
-                    if let Ok(history_rest_item) = self.persistence.load(collection_dir.clone()) {
-                        self.data.insert(
-                            Persistence::decode_with_file_name(collection_name.to_string()),
-                            history_rest_item,
-                        );
-                    }
+            if collection_file.is_file() {
+                let mut collection = Collection::default();
+                collection.load(
+                    self.persistence.clone(),
+                    Path::new("collections").to_path_buf(),
+                    collection_file.clone(),
+                );
+                if collection.folder.borrow().name != "" {
+                    self.data
+                        .insert(collection.folder.borrow().name.clone(), collection.clone());
                 }
             }
         }
     }
-    pub fn insert_or_update(&mut self, collection: Collection) {
+    pub fn insert_collection(&mut self, collection: Collection) {
+        collection.folder.borrow_mut().fix_path(".".to_string());
         self.data
             .insert(collection.folder.borrow().name.clone(), collection.clone());
-        self.persistence.save(
+        collection.save(
+            self.persistence.clone(),
             Path::new("collections").to_path_buf(),
-            collection.folder.borrow().name.clone(),
-            &collection,
         );
     }
+
     pub fn remove(&mut self, collection_name: String) {
         self.data.remove(collection_name.as_str());
         self.persistence
-            .remove(Path::new("collections").to_path_buf(), collection_name)
+            .remove_dir(Path::new("collections").join(collection_name.clone()));
+        self.persistence.remove(
+            Path::new("collections").to_path_buf(),
+            collection_name + "@info",
+        );
     }
 
-    pub fn update(&mut self, collection_name: String) {
-        self.data.get(collection_name.as_str()).map(|c| {
-            self.persistence.save(
-                Path::new("collections").to_path_buf(),
-                c.folder.borrow().name.clone(),
-                c,
-            );
-        });
-    }
     pub fn get_data(&self) -> BTreeMap<String, Collection> {
         self.data.clone()
     }
@@ -368,6 +366,7 @@ impl Collections {
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Collection {
     pub envs: EnvironmentConfig,
+    #[serde(skip)]
     pub folder: Rc<RefCell<CollectionFolder>>,
 }
 
@@ -377,6 +376,7 @@ impl Default for Collection {
             envs: Default::default(),
             folder: Rc::new(RefCell::new(CollectionFolder {
                 name: "".to_string(),
+                parent_path: "".to_string(),
                 desc: "".to_string(),
                 auth: Auth {
                     auth_type: AuthType::NoAuth,
@@ -406,16 +406,129 @@ impl Collection {
         }
         result
     }
+    fn save(&self, persistence: Persistence, path: PathBuf) {
+        persistence.save(
+            path.clone(),
+            self.folder.borrow().name.clone() + "@info",
+            self,
+        );
+        self.folder.borrow().save(persistence, path.clone());
+    }
+    fn load(&mut self, persistence: Persistence, dir_path: PathBuf, file_path: PathBuf) {
+        file_path.clone().file_name().map(|file_name_os| {
+            file_name_os.to_str().map(|file_name| {
+                file_name.split("@info").next().map(|folder_name| {
+                    let collection: Result<Collection, _> = persistence.load(file_path);
+                    collection.map(|c| {
+                        self.envs = c.envs;
+                        let mut folder = CollectionFolder::default();
+                        folder.load(persistence, dir_path.join(folder_name));
+                        self.folder = Rc::new(RefCell::new(folder));
+                    });
+                });
+            })
+        });
+    }
+
+    pub fn update(&self) {
+        self.save(
+            Persistence::default(),
+            Path::new("collections").to_path_buf(),
+        )
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct CollectionFolder {
     pub name: String,
+    pub parent_path: String,
     pub desc: String,
     pub auth: Auth,
     pub is_root: bool,
+    #[serde(skip)]
     pub requests: BTreeMap<String, HttpRecord>,
+    #[serde(skip)]
     pub folders: BTreeMap<String, Rc<RefCell<CollectionFolder>>>,
+}
+
+impl CollectionFolder {
+    pub fn load(&mut self, persistence: Persistence, path: PathBuf) {
+        let collection_folder: Result<CollectionFolder, _> =
+            persistence.load(path.join("folder@info.json").to_path_buf());
+        collection_folder.map(|cf| {
+            self.name = cf.name;
+            self.parent_path = cf.parent_path;
+            self.desc = cf.desc;
+            self.auth = cf.auth;
+            self.is_root = cf.is_root;
+        });
+        for item in persistence.load_list(path.clone()).iter() {
+            if item.is_file() {
+                let request: Result<HttpRecord, _> = persistence.load(item.clone());
+                request.map(|r| {
+                    self.requests.insert(r.name.clone(), r);
+                });
+            } else if item.is_dir() {
+                let mut child_folder = CollectionFolder::default();
+                child_folder.load(persistence.clone(), item.clone());
+                self.folders.insert(
+                    child_folder.name.clone(),
+                    Rc::new(RefCell::new(child_folder)),
+                );
+            }
+        }
+    }
+    pub fn save(&self, persistence: Persistence, path: PathBuf) {
+        let path = Path::new(&path).join(self.name.clone()).to_path_buf();
+        for (name, request) in self.requests.iter() {
+            persistence.save(path.clone(), name.clone(), request);
+        }
+        for (_, folder) in self.folders.iter() {
+            folder.borrow().save(persistence.clone(), path.clone());
+        }
+        persistence.save(path.clone(), "folder@info".to_string(), self);
+    }
+
+    pub fn fix_path(&mut self, parent_path: String) {
+        self.parent_path = parent_path;
+        for (_, f) in self.folders.iter_mut() {
+            f.borrow_mut()
+                .fix_path(self.parent_path.clone() + "/" + self.name.as_str());
+        }
+    }
+
+    pub fn update(&self) {
+        self.save(
+            Persistence::default(),
+            Path::new("collections")
+                .join(self.parent_path.as_str())
+                .to_path_buf(),
+        )
+    }
+
+    pub fn insert_http_record(&mut self, record: HttpRecord) {
+        self.requests.insert(record.name.clone(), record.clone());
+        Persistence::default().save(
+            Path::new("collections")
+                .join(self.parent_path.as_str())
+                .join(self.name.as_str()),
+            record.name.clone(),
+            &record,
+        );
+    }
+
+    pub fn insert_folder(&mut self, folder: Rc<RefCell<CollectionFolder>>) {
+        self.folders
+            .insert(folder.borrow().name.clone(), folder.clone());
+        folder
+            .borrow_mut()
+            .fix_path(self.parent_path.clone() + "/" + self.name.as_str());
+        folder.borrow().update();
+    }
+
+    pub fn get_path(&self) -> String {
+        self.parent_path.clone() + "/" + self.name.as_str()
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]

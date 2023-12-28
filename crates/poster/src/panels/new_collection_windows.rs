@@ -46,6 +46,8 @@ impl NewCollectionWindows {
         match collection {
             None => {
                 self.new_collection = Collection::default();
+                self.new_collection.folder.borrow_mut().is_root = true;
+                self.new_collection.folder.borrow_mut().parent_path = ".".to_string();
                 self.title_name = "CREATE A NEW COLLECTION".to_string();
             }
             Some(collection) => {
@@ -72,6 +74,7 @@ impl NewCollectionWindows {
                 self.title_name = "CREATE A NEW FOLDER".to_string();
                 self.folder = Rc::new(RefCell::new(CollectionFolder {
                     name: "".to_string(),
+                    parent_path: "".to_string(),
                     desc: "".to_string(),
                     auth: Default::default(),
                     is_root: false,
@@ -85,6 +88,7 @@ impl NewCollectionWindows {
                 self.title_name = "EDIT FOLDER".to_string();
                 self.folder = Rc::new(RefCell::new(CollectionFolder {
                     name: cf.borrow().name.clone(),
+                    parent_path: "".to_string(),
                     desc: cf.borrow().desc.clone(),
                     auth: cf.borrow().auth.clone(),
                     is_root: cf.borrow().is_root,
@@ -214,7 +218,8 @@ impl NewCollectionWindows {
                     if ui.button("Cancel").clicked() {
                         self.new_collection_windows_open = false;
                     }
-                    if self.new_collection.folder.borrow().name != "" {
+                    let name = self.new_collection.folder.borrow().name.clone();
+                    if name != "" {
                         match &self.parent_folder {
                             None => match &self.old_collection_name {
                                 None => {
@@ -269,7 +274,11 @@ impl NewCollectionWindows {
                                 }
                             }
                             match &self.parent_folder {
-                                None => {}
+                                None => {
+                                    app_data
+                                        .collections
+                                        .insert_collection(self.new_collection.clone());
+                                }
                                 Some(parent_folder) => {
                                     match &self.old_folder_name {
                                         None => {}
@@ -281,11 +290,11 @@ impl NewCollectionWindows {
                                         self.folder.borrow().name.clone(),
                                         self.folder.clone(),
                                     );
+                                    self.folder.borrow_mut().parent_path =
+                                        parent_folder.borrow().get_path();
+                                    self.folder.borrow().update();
                                 }
                             }
-                            app_data
-                                .collections
-                                .insert_or_update(self.new_collection.clone());
                         }
                         ui.set_enabled(true);
                     } else {

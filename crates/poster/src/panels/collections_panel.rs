@@ -116,19 +116,14 @@ impl CollectionsPanel {
                 );
                 let new_folder = Rc::new(RefCell::new(CollectionFolder {
                     name: new_name.clone(),
+                    parent_path: folder.borrow().parent_path.clone(),
                     desc: folder.borrow().desc.clone(),
                     auth: folder.borrow().auth.clone(),
                     is_root: folder.borrow().is_root,
                     requests: folder.borrow().requests.clone(),
                     folders: folder.borrow().folders.clone(),
                 }));
-                parent_folder
-                    .borrow_mut()
-                    .folders
-                    .insert(new_name.clone(), new_folder);
-                app_data
-                    .collections
-                    .update(collection.folder.borrow().name.clone());
+                parent_folder.borrow_mut().insert_folder(new_folder);
                 ui.close_menu();
             }
             if utils::select_label(ui, "Remove").clicked() {
@@ -176,7 +171,7 @@ impl CollectionsPanel {
                         .collect(),
                 );
                 new_collections.folder.borrow_mut().name = new_name;
-                app_data.collections.insert_or_update(new_collections);
+                app_data.collections.insert_collection(new_collections);
                 ui.close_menu();
             }
             if utils::select_label(ui, "Remove").clicked() {
@@ -293,10 +288,7 @@ impl CollectionsPanel {
                             f.borrow().requests.iter().map(|(k, v)| k.clone()).collect(),
                         );
                         new_request.name = new_name.to_string();
-                        f.borrow_mut()
-                            .requests
-                            .insert(new_name.to_string(), new_request);
-                        app_data.collections.update(collection_name.to_string());
+                        f.borrow_mut().insert_http_record(new_request);
                     });
                 });
                 ui.close_menu();

@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use egui::{Align, Layout, ScrollArea, Ui};
+use egui::{Align, Button, Layout, ScrollArea, Ui};
 
 use crate::data::{AppData, Collection, CollectionFolder, HttpRecord};
 use crate::operation::Operation;
@@ -166,18 +166,17 @@ impl SaveWindows {
                         match option {
                             None => {}
                             Some(folder) => {
-                                folder.borrow_mut().folders.insert(
-                                    self.add_name.clone(),
-                                    Rc::new(RefCell::new(CollectionFolder {
+                                folder.borrow_mut().insert_folder(Rc::new(RefCell::new(
+                                    CollectionFolder {
                                         name: self.add_name.to_string(),
+                                        parent_path: path.clone(),
                                         desc: "".to_string(),
                                         auth: Default::default(),
                                         is_root: false,
                                         requests: Default::default(),
                                         folders: Default::default(),
-                                    })),
-                                );
-                                app_data.collections.update(collection_name);
+                                    },
+                                )));
                             }
                         }
                     }
@@ -196,24 +195,25 @@ impl SaveWindows {
                 .get_data()
                 .contains_key(self.add_name.as_str())
             {
-                ui.set_enabled(false);
+                ui.add_enabled(false, Button::new("+"));
+            } else {
+                if ui.button("+").clicked() {
+                    app_data.collections.insert_collection(Collection {
+                        envs: Default::default(),
+                        folder: Rc::new(RefCell::new(CollectionFolder {
+                            name: self.add_name.clone(),
+                            parent_path: ".".to_string(),
+                            desc: "".to_string(),
+                            auth: Default::default(),
+                            is_root: true,
+                            requests: Default::default(),
+                            folders: BTreeMap::default(),
+                        })),
+                    });
+                    self.add_name = "".to_string();
+                    self.add_collection = false;
+                }
             }
-            if ui.button("+").clicked() {
-                app_data.collections.insert_or_update(Collection {
-                    envs: Default::default(),
-                    folder: Rc::new(RefCell::new(CollectionFolder {
-                        name: self.add_name.clone(),
-                        desc: "".to_string(),
-                        auth: Default::default(),
-                        is_root: true,
-                        requests: Default::default(),
-                        folders: BTreeMap::default(),
-                    })),
-                });
-                self.add_name = "".to_string();
-                self.add_collection = false;
-            }
-            ui.set_enabled(true);
             utils::text_edit_singleline_justify(ui, &mut self.add_name);
         });
     }
@@ -227,12 +227,13 @@ impl SaveWindows {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     match &self.select_collection_path {
                         None => {
-                            ui.set_enabled(false);
-                            ui.button("Save");
-                            ui.set_enabled(true);
+                            ui.add_enabled_ui(false, |ui| {
+                                ui.button("Save");
+                            });
                         }
                         Some(path) => {
-                            let mut button_name =
+                            let mut ui_enable = true;
+                            let button_name =
                                 "Save to ".to_string() + path.split("/").last().unwrap();
                             let (collection_name, option) =
                                 app_data.collections.get_mut_folder_with_path(path.clone());
@@ -240,37 +241,35 @@ impl SaveWindows {
                                 None => {}
                                 Some(cf) => {
                                     if self.edit && self.old_name == self.http_record.name {
-                                        ui.set_enabled(true);
+                                        ui_enable = true;
                                     } else {
                                         if cf
                                             .borrow()
                                             .requests
                                             .contains_key(self.http_record.name.as_str())
                                         {
-                                            ui.set_enabled(false);
+                                            ui_enable = false;
                                         }
                                     }
                                 }
                             }
-
-                            let save_button = ui.button(button_name);
-                            ui.set_enabled(true);
-                            if save_button.clicked() {
-                                match &option {
-                                    None => {}
-                                    Some(cf) => {
-                                        if self.edit {
-                                            cf.borrow_mut().requests.remove(self.old_name.as_str());
+                            ui.add_enabled_ui(ui_enable, |ui| {
+                                if ui.button(button_name).clicked() {
+                                    match &option {
+                                        None => {}
+                                        Some(cf) => {
+                                            if self.edit {
+                                                cf.borrow_mut()
+                                                    .requests
+                                                    .remove(self.old_name.as_str());
+                                            }
+                                            cf.borrow_mut()
+                                                .insert_http_record(self.http_record.clone());
                                         }
-                                        cf.borrow_mut().requests.insert(
-                                            self.http_record.name.clone(),
-                                            self.http_record.clone(),
-                                        );
-                                        app_data.collections.update(collection_name);
                                     }
+                                    self.save_windows_open = false;
                                 }
-                                self.save_windows_open = false;
-                            }
+                            });
 
                             if ui.button("Cancel").clicked() {
                                 self.save_windows_open = false;

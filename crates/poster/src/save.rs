@@ -13,6 +13,7 @@ pub trait PersistenceItem {
     fn load<T: DeserializeOwned>(&self, path: PathBuf) -> Result<T, Error>;
     fn load_list(&self, path: PathBuf) -> Vec<PathBuf>;
     fn remove(&self, path: PathBuf, key: String);
+    fn remove_dir(&self, path: PathBuf);
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -58,11 +59,25 @@ impl PersistenceItem for Persistence {
         }
         Ok(())
     }
+    fn remove_dir(&self, path: PathBuf) {
+        if let Some(home_path) = self.root.clone() {
+            let dir_path = home_path.join("Poster");
+            let mut rel_path = path.clone();
+            if !rel_path.starts_with(dir_path.clone()) {
+                rel_path = dir_path.join(rel_path.clone());
+            }
+            fs::remove_dir_all(rel_path);
+        }
+    }
     fn remove(&self, path: PathBuf, key: String) {
         let save_key = Persistence::encode(key);
         if let Some(home_path) = self.root.clone() {
-            let dir_path = home_path.join("Poster").join(path);
-            let mut json_path = dir_path.join(save_key);
+            let dir_path = home_path.join("Poster");
+            let mut rel_path = path.clone();
+            if !rel_path.starts_with(dir_path.clone()) {
+                rel_path = dir_path.join(rel_path.clone());
+            }
+            let mut json_path = rel_path.join(save_key);
             json_path.set_extension("json");
             fs::remove_file(json_path);
         }
@@ -73,8 +88,12 @@ impl PersistenceItem for Persistence {
             .root
             .clone()
             .ok_or(Error::new(ErrorKind::Unsupported, "load failed"))?;
-        let dir_path = home_path.join("Poster").join(path);
-        let mut file = File::open(dir_path)?;
+        let dir_path = home_path.join("Poster");
+        let mut rel_path = path.clone();
+        if !rel_path.starts_with(dir_path.clone()) {
+            rel_path = dir_path.join(rel_path.clone());
+        }
+        let mut file = File::open(rel_path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
         let result: serde_json::Result<T> = serde_json::from_str(content.as_str());
@@ -92,13 +111,7 @@ impl PersistenceItem for Persistence {
             if let Ok(entries) = fs::read_dir(dir_path) {
                 for entry in entries {
                     if let Ok(entry) = entry {
-                        result.push(
-                            entry
-                                .path()
-                                .strip_prefix(home_path.join("Poster"))
-                                .unwrap()
-                                .to_path_buf(),
-                        );
+                        result.push(entry.path().to_path_buf());
                     }
                 }
             }
