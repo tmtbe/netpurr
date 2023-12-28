@@ -1,10 +1,16 @@
 [package]
 name = "poster"
-version.workspace = true
-authors = ["Emil Ernerfeldt <emil.ernerfeldt@gmail.com>"]
+version = "1.0.0"
+description = "This is a rest api request tools"
+authors = ["Emil <jincheng.zhang@thoughtworks.com>"]
 edition.workspace = true
 rust-version.workspace = true
 default-run = "poster"
+
+[package.metadata.bundle]
+name = "Poster"
+identifier = "com.thoughtworks.poster"
+
 
 [package.metadata.docs.rs]
 all-features = true
