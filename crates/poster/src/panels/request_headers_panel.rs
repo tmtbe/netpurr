@@ -5,6 +5,7 @@ use egui::{Button, Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder};
 
 use crate::data::{AppData, CentralRequestItem, EnvironmentItemValue, Header};
+use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
@@ -18,6 +19,7 @@ impl DataView for RequestHeadersPanel {
     fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
+        operation: &mut Operation,
         app_data: &mut AppData,
         cursor: Self::CursorType,
     ) {

@@ -4,6 +4,7 @@ use eframe::emath::Align;
 use egui::{Button, Layout, ScrollArea, Ui};
 
 use crate::data::{AppData, Cookie};
+use crate::operation::Operation;
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;
 
@@ -28,7 +29,6 @@ impl CookiesWindows {
             utils::text_edit_singleline_justify(ui, &mut self.new_cookie_name);
             if self.new_cookie_name == ""
                 || app_data
-                    .rest_sender
                     .cookies_manager
                     .contain_domain(self.new_cookie_name.clone())
             {
@@ -36,7 +36,6 @@ impl CookiesWindows {
             }
             if ui.button("Add").clicked() {
                 app_data
-                    .rest_sender
                     .cookies_manager
                     .set_domain_cookies(self.new_cookie_name.clone(), BTreeMap::new());
                 self.new_cookie_name = "".to_string();
@@ -47,7 +46,7 @@ impl CookiesWindows {
 
     fn render_domain_list(&mut self, app_data: &mut AppData, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            let names = app_data.rest_sender.cookies_manager.get_cookies_names();
+            let names = app_data.cookies_manager.get_cookies_names();
             for name in names {
                 let response = ui.selectable_value(
                     &mut self.select_domain_name,
@@ -56,10 +55,7 @@ impl CookiesWindows {
                 );
                 response.context_menu(|ui| {
                     if ui.button("Remove").clicked() {
-                        app_data
-                            .rest_sender
-                            .cookies_manager
-                            .remove_domain(name.clone());
+                        app_data.cookies_manager.remove_domain(name.clone());
                         ui.close_menu();
                     }
                 });
@@ -76,14 +72,13 @@ impl CookiesWindows {
                     ui.horizontal(|ui| {
                         if self.new_key_name == ""
                             || app_data
-                                .rest_sender
                                 .cookies_manager
                                 .contain_domain_key(domain.clone(), self.new_key_name.clone())
                         {
                             ui.add_enabled(false, Button::new("+"));
                         } else {
                             if ui.button("+").clicked() {
-                                app_data.rest_sender.cookies_manager.add_domain_cookies(
+                                app_data.cookies_manager.add_domain_cookies(
                                     domain.to_string(),
                                     self.new_key_name.to_string(),
                                     Cookie {
@@ -107,7 +102,6 @@ impl CookiesWindows {
                         utils::text_edit_singleline_justify(ui, &mut self.new_key_name);
                     });
                     let option_cookies = app_data
-                        .rest_sender
                         .cookies_manager
                         .get_domain_cookies(domain.to_string());
                     match option_cookies {
@@ -128,7 +122,7 @@ impl CookiesWindows {
                                     }
                                     response.context_menu(|ui| {
                                         if ui.button("Remove").clicked() {
-                                            app_data.rest_sender.cookies_manager.remove_domain_key(
+                                            app_data.cookies_manager.remove_domain_key(
                                                 domain.to_string(),
                                                 name.clone(),
                                             );
@@ -148,7 +142,6 @@ impl CookiesWindows {
             None => {}
             Some(domain) => {
                 let option_map = app_data
-                    .rest_sender
                     .cookies_manager
                     .get_domain_cookies(domain.to_string());
                 option_map.map(|map| match &self.select_key_name {
@@ -164,7 +157,7 @@ impl CookiesWindows {
                                     ui.set_enabled(false);
                                 }
                                 if ui.button("Save").clicked() {
-                                    app_data.rest_sender.cookies_manager.update_domain_key(
+                                    app_data.cookies_manager.update_domain_key(
                                         domain.to_string(),
                                         key.to_string(),
                                         new_cookie,
@@ -172,7 +165,6 @@ impl CookiesWindows {
                                 }
                                 if ui.button("Remove").clicked() {
                                     app_data
-                                        .rest_sender
                                         .cookies_manager
                                         .remove_domain_key(domain.to_string(), key.to_string());
                                 }
@@ -189,8 +181,14 @@ impl CookiesWindows {
 impl DataView for CookiesWindows {
     type CursorType = i32;
 
-    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
-        app_data.lock_ui("env".to_string(), self.cookies_windows_open);
+    fn set_and_render(
+        &mut self,
+        ui: &mut Ui,
+        operation: &mut Operation,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
+        operation.lock_ui("env".to_string(), self.cookies_windows_open);
         let mut cookies_windows_open = self.cookies_windows_open;
         egui::Window::new("MANAGE COOKIES")
             .default_open(true)

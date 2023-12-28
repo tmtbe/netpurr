@@ -5,6 +5,7 @@ use std::rc::Rc;
 use egui::{Align, Layout, ScrollArea, Ui};
 
 use crate::data::{AppData, Collection, CollectionFolder, HttpRecord};
+use crate::operation::Operation;
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;
 
@@ -284,9 +285,15 @@ impl SaveWindows {
 impl DataView for SaveWindows {
     type CursorType = i32;
 
-    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut Ui,
+        operation: &mut Operation,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         let mut save_windows_open = self.save_windows_open;
-        app_data.lock_ui(
+        operation.lock_ui(
             "save_".to_string() + self.id.as_str(),
             self.save_windows_open,
         );

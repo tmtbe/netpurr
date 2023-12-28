@@ -8,6 +8,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{AppData, Collection, CollectionFolder, EnvironmentItem};
+use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::{AlongDataView, DataView, VERTICAL_GAP};
 use crate::utils;
@@ -302,11 +303,12 @@ impl DataView for NewCollectionWindows {
 
     fn set_and_render(
         &mut self,
-        ui: &mut egui::Ui,
+        ui: &mut Ui,
+        operation: &mut Operation,
         app_data: &mut AppData,
         cursor: Self::CursorType,
     ) {
-        app_data.lock_ui(
+        operation.lock_ui(
             "new_collection".to_string(),
             self.new_collection_windows_open,
         );

@@ -1,6 +1,7 @@
 use egui::{Image, TextBuffer};
 
 use crate::data::{AppData, Response};
+use crate::operation::Operation;
 use crate::panels::DataView;
 
 #[derive(Default)]
@@ -31,6 +32,7 @@ impl DataView for ResponseBodyPanel {
     fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
+        operation: &mut Operation,
         app_data: &mut AppData,
         cursor: Self::CursorType,
     ) {

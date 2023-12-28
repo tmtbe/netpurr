@@ -2,6 +2,7 @@ use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
 use crate::data::{AppData, BodyRawType, BodyType};
+use crate::operation::Operation;
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
 use crate::panels::{DataView, VERTICAL_GAP};
@@ -16,7 +17,13 @@ pub struct RequestBodyPanel {
 impl DataView for RequestBodyPanel {
     type CursorType = String;
 
-    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut Ui,
+        operation: &mut Operation,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
         ui.horizontal(|ui| {
             for x in BodyType::iter() {
@@ -49,10 +56,10 @@ impl DataView for RequestBodyPanel {
             }
             BodyType::FROM_DATA => self
                 .request_body_form_data_panel
-                .set_and_render(ui, app_data, cursor),
+                .set_and_render(ui, operation, app_data, cursor),
             BodyType::X_WWW_FROM_URLENCODED => self
                 .request_body_xxx_form_panel
-                .set_and_render(ui, app_data, cursor),
+                .set_and_render(ui, operation, app_data, cursor),
             BodyType::RAW => {
                 ui.push_id("request_body", |ui| {
                     egui::ScrollArea::vertical()

@@ -3,6 +3,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{AppData, CentralRequestItem, Response, ResponseStatus};
+use crate::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
 use crate::panels::response_headers_panel::ResponseHeadersPanel;
@@ -41,6 +42,7 @@ impl ResponsePanel {
 
     fn build_ready_panel(
         &mut self,
+        operation: &mut Operation,
         app_data: &mut AppData,
         cursor: String,
         ui: &mut Ui,
@@ -93,15 +95,15 @@ impl ResponsePanel {
         match self.open_panel_enum {
             ResponsePanelEnum::Body => {
                 self.response_body_panel
-                    .set_and_render(ui, app_data, cursor);
+                    .set_and_render(ui, operation, app_data, cursor);
             }
             ResponsePanelEnum::Cookies => {
                 self.response_cookies_panel
-                    .set_and_render(ui, app_data, cursor);
+                    .set_and_render(ui, operation, app_data, cursor);
             }
             ResponsePanelEnum::Headers => {
                 self.response_headers_panel
-                    .set_and_render(ui, app_data, cursor);
+                    .set_and_render(ui, operation, app_data, cursor);
             }
         }
     }
@@ -112,7 +114,8 @@ impl DataView for ResponsePanel {
 
     fn set_and_render(
         &mut self,
-        ui: &mut egui::Ui,
+        ui: &mut Ui,
+        operation: &mut Operation,
         app_data: &mut AppData,
         cursor: Self::CursorType,
     ) {
@@ -137,7 +140,7 @@ impl DataView for ResponsePanel {
             }
 
             ResponseStatus::Ready => {
-                self.build_ready_panel(app_data, cursor, ui, &data);
+                self.build_ready_panel(operation, app_data, cursor, ui, &data);
             }
             ResponseStatus::Error => {
                 ui.centered_and_justified(|ui| {

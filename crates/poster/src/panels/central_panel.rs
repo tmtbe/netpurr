@@ -1,6 +1,7 @@
 use egui::{Response, Ui, WidgetText};
 
 use crate::data::{AppData, ENVIRONMENT_GLOBALS};
+use crate::operation::Operation;
 use crate::panels::cookies_windows::CookiesWindows;
 use crate::panels::environment_windows::EnvironmentWindows;
 use crate::panels::new_collection_windows::NewCollectionWindows;
@@ -31,7 +32,13 @@ impl Default for PanelEnum {
 
 impl DataView for MyCentralPanel {
     type CursorType = i32;
-    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut Ui,
+        operation: &mut Operation,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         ui.horizontal(|ui| {
             self.central_right(app_data, ui);
             self.central_left(app_data, ui);
@@ -42,45 +49,47 @@ impl DataView for MyCentralPanel {
         match &app_data.central_request_data_list.select_id {
             Some(request_id) => {
                 self.editor_panel
-                    .set_and_render(ui, app_data, request_id.clone());
+                    .set_and_render(ui, operation, app_data, request_id.clone());
             }
             _ => {}
         }
         self.environment_windows
-            .set_and_render(ui, app_data, cursor);
+            .set_and_render(ui, operation, app_data, cursor);
         app_data.environment.select().clone().map(|s| {
             if !app_data.environment.get_data().contains_key(s.as_str()) {
                 app_data.environment.set_select(None)
             }
         });
-        if app_data.open_windows().save_opened {
+        if operation.open_windows().save_opened {
             self.save_windows.open(
-                app_data.open_windows().http_record.clone(),
-                app_data.open_windows().default_path.clone(),
-                app_data.open_windows().edit,
+                operation.open_windows().http_record.clone(),
+                operation.open_windows().default_path.clone(),
+                operation.open_windows().edit,
             );
-            app_data.open_windows().save_opened = false;
+            operation.open_windows().save_opened = false;
         }
-        self.save_windows.set_and_render(ui, app_data, 0);
-        if app_data.open_windows().collection_opened {
+        self.save_windows.set_and_render(ui, operation, app_data, 0);
+        if operation.open_windows().collection_opened {
             self.new_collection_windows
-                .open_collection(app_data.open_windows().collection.clone());
-            app_data.open_windows().collection_opened = false;
+                .open_collection(operation.open_windows().collection.clone());
+            operation.open_windows().collection_opened = false;
         }
-        if app_data.open_windows().folder_opened {
+        if operation.open_windows().folder_opened {
             self.new_collection_windows.open_folder(
-                app_data.open_windows().collection.clone().unwrap(),
-                app_data.open_windows().parent_folder.clone(),
-                app_data.open_windows().folder.clone(),
+                operation.open_windows().collection.clone().unwrap(),
+                operation.open_windows().parent_folder.clone(),
+                operation.open_windows().folder.clone(),
             );
-            app_data.open_windows().folder_opened = false;
+            operation.open_windows().folder_opened = false;
         }
-        self.new_collection_windows.set_and_render(ui, app_data, 0);
-        if app_data.open_windows().cookies_opened {
+        self.new_collection_windows
+            .set_and_render(ui, operation, app_data, 0);
+        if operation.open_windows().cookies_opened {
             self.cookies_windows.open();
-            app_data.open_windows().cookies_opened = false;
+            operation.open_windows().cookies_opened = false;
         }
-        self.cookies_windows.set_and_render(ui, app_data, 0);
+        self.cookies_windows
+            .set_and_render(ui, operation, app_data, 0);
     }
 }
 

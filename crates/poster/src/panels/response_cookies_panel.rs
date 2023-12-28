@@ -3,6 +3,7 @@ use egui::{Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::AppData;
+use crate::operation::Operation;
 use crate::panels::DataView;
 
 #[derive(Default)]
@@ -13,6 +14,7 @@ impl DataView for ResponseCookiesPanel {
     fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
+        operation: &mut Operation,
         app_data: &mut AppData,
         cursor: Self::CursorType,
     ) {

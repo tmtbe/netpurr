@@ -1,4 +1,5 @@
 use crate::data::AppData;
+use crate::operation::Operation;
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
@@ -8,6 +9,7 @@ pub struct App {
     left_panel: MyLeftPanel,
     central_panel: MyCentralPanel,
     app_data: AppData,
+    operation: Operation,
     show_confirmation_dialog: bool,
     allowed_to_close: bool,
 }
@@ -90,7 +92,7 @@ impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            ui.set_enabled(!self.app_data.get_ui_lock());
+            ui.set_enabled(!self.operation.get_ui_lock());
             // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
@@ -117,13 +119,15 @@ impl eframe::App for App {
             ui.add_space(HORIZONTAL_GAP);
         });
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
-            ui.set_enabled(!self.app_data.get_ui_lock());
-            self.left_panel.set_and_render(ui, &mut self.app_data, 0);
+            ui.set_enabled(!self.operation.get_ui_lock());
+            self.left_panel
+                .set_and_render(ui, &mut self.operation, &mut self.app_data, 0);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.set_enabled(!self.app_data.get_ui_lock());
-            self.central_panel.set_and_render(ui, &mut self.app_data, 0);
+            ui.set_enabled(!self.operation.get_ui_lock());
+            self.central_panel
+                .set_and_render(ui, &mut self.operation, &mut self.app_data, 0);
         });
 
         if ctx.input(|i| i.viewport().close_requested()) {
@@ -133,7 +137,7 @@ impl eframe::App for App {
             }
         }
         if self.show_confirmation_dialog {
-            self.app_data.lock_ui("Quit".to_string(), true);
+            self.operation.lock_ui("Quit".to_string(), true);
             egui::Window::new("Do you want to quit?")
                 .collapsible(false)
                 .resizable(false)

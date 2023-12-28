@@ -1,6 +1,7 @@
 use egui::CollapsingHeader;
 
 use crate::data::{AppData, CentralRequestItem};
+use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::utils;
 
@@ -12,6 +13,7 @@ impl DataView for HistoryPanel {
     fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
+        operation: &mut Operation,
         app_data: &mut AppData,
         cursor: Self::CursorType,
     ) {

@@ -5,6 +5,7 @@ use std::rc::Rc;
 use egui::{CollapsingHeader, Response, RichText, Ui};
 
 use crate::data::{AppData, CentralRequestItem, Collection, CollectionFolder, HttpRecord};
+use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::utils;
 
@@ -14,11 +15,17 @@ pub struct CollectionsPanel {}
 impl DataView for CollectionsPanel {
     type CursorType = i32;
 
-    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
+    fn set_and_render(
+        &mut self,
+        ui: &mut Ui,
+        operation: &mut Operation,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
         if ui.link("+ New Collection").clicked() {
-            app_data.open_windows().open_collection(None);
+            operation.open_windows().open_collection(None);
         };
-        self.render_collection_item(ui, app_data);
+        self.render_collection_item(ui, operation, app_data);
     }
 }
 
@@ -26,6 +33,7 @@ impl CollectionsPanel {
     fn set_folder(
         &mut self,
         ui: &mut Ui,
+        operation: &mut Operation,
         app_data: &mut AppData,
         collection: Collection,
         parent_folder: Rc<RefCell<CollectionFolder>>,
@@ -40,6 +48,7 @@ impl CollectionsPanel {
                 for (name, cf) in folders.iter() {
                     self.set_folder(
                         ui,
+                        operation,
                         app_data,
                         collection.clone(),
                         parent_folder.clone(),
@@ -50,6 +59,7 @@ impl CollectionsPanel {
                 let requests = folder.borrow().requests.clone();
                 self.render_request(
                     ui,
+                    operation,
                     app_data,
                     collection.folder.borrow().name.clone(),
                     &path,
@@ -59,6 +69,7 @@ impl CollectionsPanel {
             .header_response;
 
         self.popup_folder_item(
+            operation,
             app_data,
             collection,
             parent_folder,
@@ -70,6 +81,7 @@ impl CollectionsPanel {
 
     fn popup_folder_item(
         &mut self,
+        operation: &mut Operation,
         app_data: &mut AppData,
         collection: Collection,
         parent_folder: Rc<RefCell<CollectionFolder>>,
@@ -79,7 +91,7 @@ impl CollectionsPanel {
     ) {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Edit").clicked() {
-                app_data.open_windows().open_folder(
+                operation.open_windows().open_folder(
                     collection.clone(),
                     parent_folder.clone(),
                     Some(folder.clone()),
@@ -87,7 +99,7 @@ impl CollectionsPanel {
                 ui.close_menu();
             }
             if utils::select_label(ui, "Add Folder").clicked() {
-                app_data
+                operation
                     .open_windows()
                     .open_folder(collection.clone(), folder.clone(), None);
                 ui.close_menu();
@@ -131,6 +143,7 @@ impl CollectionsPanel {
 
     fn popup_collection_item(
         &mut self,
+        operation: &mut Operation,
         app_data: &mut AppData,
         response: Response,
         collection_name: &String,
@@ -138,13 +151,13 @@ impl CollectionsPanel {
     ) {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Edit").clicked() {
-                app_data
+                operation
                     .open_windows()
                     .open_collection(Some(collection.clone()));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Add Folder").clicked() {
-                app_data.open_windows().open_folder(
+                operation.open_windows().open_folder(
                     collection.clone(),
                     collection.folder.clone(),
                     None,
@@ -175,7 +188,12 @@ impl CollectionsPanel {
         });
     }
 
-    fn render_collection_item(&mut self, ui: &mut Ui, app_data: &mut AppData) {
+    fn render_collection_item(
+        &mut self,
+        ui: &mut Ui,
+        operation: &mut Operation,
+        app_data: &mut AppData,
+    ) {
         fn circle_icon(ui: &mut Ui, openness: f32, response: &Response) {
             let stroke = ui.style().interact(&response).fg_stroke;
             let radius = egui::lerp(2.0..=3.0, openness);
@@ -191,6 +209,7 @@ impl CollectionsPanel {
                     for (cf_name, cf) in folders.iter() {
                         self.set_folder(
                             ui,
+                            operation,
                             app_data,
                             collection.clone(),
                             collection.folder.clone(),
@@ -201,6 +220,7 @@ impl CollectionsPanel {
                     let requests = collection.folder.borrow().requests.clone();
                     self.render_request(
                         ui,
+                        operation,
                         app_data,
                         collection_name.to_string(),
                         collection_name,
@@ -208,12 +228,13 @@ impl CollectionsPanel {
                     );
                 })
                 .header_response;
-            self.popup_collection_item(app_data, response, collection_name, collection);
+            self.popup_collection_item(operation, app_data, response, collection_name, collection);
         }
     }
 
     fn popup_request_item(
         &mut self,
+        operation: &mut Operation,
         app_data: &mut AppData,
         collection_name: String,
         response: Response,
@@ -248,13 +269,13 @@ impl CollectionsPanel {
                 ui.close_menu();
             }
             if utils::select_label(ui, "Save as").clicked() {
-                app_data
+                operation
                     .open_windows()
                     .open_save(request.clone(), Some(path.clone()));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Edit").clicked() {
-                app_data
+                operation
                     .open_windows()
                     .open_edit(request.clone(), path.clone());
                 ui.close_menu();
@@ -293,6 +314,7 @@ impl CollectionsPanel {
     fn render_request(
         &mut self,
         ui: &mut Ui,
+        operation: &mut Operation,
         app_data: &mut AppData,
         collection_name: String,
         path: &String,
@@ -310,7 +332,14 @@ impl CollectionsPanel {
                         rest: hr.clone(),
                     })
             }
-            self.popup_request_item(app_data, collection_name.clone(), button, &hr, path)
+            self.popup_request_item(
+                operation,
+                app_data,
+                collection_name.clone(),
+                button,
+                &hr,
+                path,
+            )
         }
     }
 }

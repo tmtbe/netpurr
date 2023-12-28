@@ -2,6 +2,7 @@ use egui::{Align, Button, Checkbox, Layout, ScrollArea, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::{AppData, EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
+use crate::operation::Operation;
 use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 
@@ -194,8 +195,14 @@ impl EnvironmentWindows {
 impl DataView for EnvironmentWindows {
     type CursorType = i32;
 
-    fn set_and_render(&mut self, ui: &mut Ui, app_data: &mut AppData, cursor: Self::CursorType) {
-        app_data.lock_ui("env".to_string(), self.environment_windows_open);
+    fn set_and_render(
+        &mut self,
+        ui: &mut Ui,
+        operation: &mut Operation,
+        app_data: &mut AppData,
+        cursor: Self::CursorType,
+    ) {
+        operation.lock_ui("env".to_string(), self.environment_windows_open);
         let mut environment_windows_open = self.environment_windows_open;
         egui::Window::new("MANAGE ENVIRONMENTS")
             .default_open(true)
