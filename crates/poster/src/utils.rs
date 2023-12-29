@@ -59,7 +59,12 @@ pub fn build_with_count_ui_header(name: String, count: usize, ui: &Ui) -> Layout
         .color(ui.visuals().text_color())
         .strong()
         .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
-    if count > 0 {
+    if count == usize::MAX {
+        RichText::new("●")
+            .color(ui.visuals().warn_fg_color)
+            .strong()
+            .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+    } else if count > 0 {
         RichText::new("(".to_string() + count.to_string().as_str() + ")")
             .color(ui.visuals().warn_fg_color)
             .strong()

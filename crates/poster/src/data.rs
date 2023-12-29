@@ -902,6 +902,19 @@ pub enum AuthType {
 }
 
 impl Auth {
+    pub fn get_final_type(&self, auth: Auth) -> AuthType {
+        match self.auth_type {
+            AuthType::NoAuth => AuthType::NoAuth,
+            AuthType::BearerToken => AuthType::BearerToken,
+            AuthType::BasicAuth => AuthType::BasicAuth,
+            AuthType::InheritAuthFromParent => auth.get_final_type(Auth {
+                auth_type: AuthType::NoAuth,
+                basic_username: "".to_string(),
+                basic_password: "".to_string(),
+                bearer_token: "".to_string(),
+            }),
+        }
+    }
     pub fn build_head(
         &self,
         headers: &mut Vec<Header>,
