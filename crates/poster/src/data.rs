@@ -1,5 +1,7 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::fs::File;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::FromStr;
@@ -962,30 +964,24 @@ impl HttpRecord {
             .build_head(&mut self.request.headers, envs.clone(), auth);
         match self.request.body.body_type {
             BodyType::NONE => {}
-            BodyType::FROM_DATA => {
-                self.request.method = Method::POST;
-            }
+            BodyType::FROM_DATA => {}
             BodyType::X_WWW_FROM_URLENCODED => {
-                self.request.method = Method::POST;
                 self.set_request_content_type("application/x-www-form-urlencoded".to_string());
             }
-            BodyType::RAW => {
-                self.request.method = Method::POST;
-                match self.request.body.body_raw_type {
-                    BodyRawType::TEXT => self.set_request_content_type("text/plain".to_string()),
-                    BodyRawType::JSON => {
-                        self.set_request_content_type("application/json".to_string())
-                    }
-                    BodyRawType::HTML => self.set_request_content_type("text/html".to_string()),
-                    BodyRawType::XML => {
-                        self.set_request_content_type("application/xml".to_string())
-                    }
-                    BodyRawType::JavaScript => {
-                        self.set_request_content_type("application/javascript".to_string())
-                    }
+            BodyType::RAW => match self.request.body.body_raw_type {
+                BodyRawType::TEXT => self.set_request_content_type("text/plain".to_string()),
+                BodyRawType::JSON => self.set_request_content_type("application/json".to_string()),
+                BodyRawType::HTML => self.set_request_content_type("text/html".to_string()),
+                BodyRawType::XML => self.set_request_content_type("application/xml".to_string()),
+                BodyRawType::JavaScript => {
+                    self.set_request_content_type("application/javascript".to_string())
                 }
+            },
+            BodyType::BINARY => {
+                let path = Path::new(&self.request.body.body_file);
+                let content_type = mime_guess::from_path(path);
+                self.set_request_content_type(content_type.first_or_octet_stream().to_string());
             }
-            BodyType::BINARY => {}
         }
         let base_url = utils::replace_variable(self.request.base_url.clone(), envs.clone());
         let base_url_splits: Vec<&str> = base_url.splitn(2, "//").collect();
@@ -1159,6 +1155,7 @@ pub struct HttpBody {
     pub base64: String,
     pub size: usize,
     pub body_str: String,
+    pub body_file: String,
     pub body_type: BodyType,
     pub body_raw_type: BodyRawType,
     pub body_form_data: Vec<MultipartData>,
@@ -1184,6 +1181,7 @@ impl HttpBody {
             base64: general_purpose::STANDARD.encode(&bytes).to_string(),
             size: bytes.len(),
             body_str: "".to_string(),
+            body_file: "".to_string(),
             body_type: Default::default(),
             body_raw_type: Default::default(),
             body_form_data: vec![],
@@ -1247,7 +1245,17 @@ impl HttpBody {
                 );
                 None
             }
-            BodyType::BINARY => None,
+            BodyType::BINARY => {
+                let path = Path::new(&self.body_file);
+                let content_type = mime_guess::from_path(path);
+                let file_name = path.file_name().and_then(|filename| filename.to_str());
+                let mut file =
+                    File::open(path).expect(format!("open {:?} error", file_name).as_str());
+                let mut inner: Vec<u8> = vec![];
+                io::copy(&mut file, &mut inner).expect("add_stream io copy error");
+                self.base64 = general_purpose::STANDARD.encode(inner);
+                Some(content_type.first_or_octet_stream().to_string())
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::operation::Operation;
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
 use crate::panels::{DataView, VERTICAL_GAP};
+use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
@@ -77,7 +78,19 @@ impl DataView for RequestBodyPanel {
                         });
                 });
             }
-            BodyType::BINARY => {}
+            BodyType::BINARY => {
+                let mut button_name =
+                    utils::build_with_count_ui_header("Select File".to_string(), 0, ui);
+                if data.rest.request.body.body_file != "" {
+                    button_name =
+                        utils::build_with_count_ui_header("Select File".to_string(), 1, ui);
+                }
+                if ui.button(button_name).clicked() {
+                    if let Some(path) = rfd::FileDialog::new().pick_file() {
+                        data.rest.request.body.body_file = path.display().to_string();
+                    }
+                }
+            }
         }
     }
 }
