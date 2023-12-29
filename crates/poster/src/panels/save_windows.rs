@@ -132,7 +132,7 @@ impl SaveWindows {
                             for (_, hr) in cf.borrow().requests.iter() {
                                 utils::select_label(
                                     ui,
-                                    utils::build_rest_ui_header(hr.clone(), ui),
+                                    utils::build_rest_ui_header(hr.clone(), None, ui),
                                 );
                             }
                         });
@@ -184,7 +184,7 @@ impl SaveWindows {
                 self.add_name = "".to_string();
                 self.add_folder = false;
             }
-            utils::text_edit_singleline_justify(ui, &mut self.add_name);
+            utils::text_edit_singleline_filter_justify(ui, &mut self.add_name);
         });
     }
 
@@ -214,7 +214,7 @@ impl SaveWindows {
                     self.add_collection = false;
                 }
             }
-            utils::text_edit_singleline_justify(ui, &mut self.add_name);
+            utils::text_edit_singleline_filter_justify(ui, &mut self.add_name);
         });
     }
 
@@ -307,7 +307,7 @@ impl DataView for SaveWindows {
                 ui.label("Requests in Poster are saved in collections (a group of requests).");
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Request name");
-                utils::text_edit_singleline_justify(ui, &mut self.http_record.name);
+                utils::text_edit_singleline_filter_justify(ui, &mut self.http_record.name);
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Request description (Optional)");
                 utils::text_edit_multiline_justify(ui, &mut self.http_record.desc);

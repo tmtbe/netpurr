@@ -1,6 +1,7 @@
 use egui::{Response, Ui, WidgetText};
+use uuid::Uuid;
 
-use crate::data::{AppData, ENVIRONMENT_GLOBALS};
+use crate::data::{AppData, CentralRequestItem, ENVIRONMENT_GLOBALS};
 use crate::operation::Operation;
 use crate::panels::cookies_windows::CookiesWindows;
 use crate::panels::environment_windows::EnvironmentWindows;
@@ -40,12 +41,10 @@ impl DataView for MyCentralPanel {
         cursor: Self::CursorType,
     ) {
         ui.horizontal(|ui| {
-            self.central_right(app_data, ui);
-            self.central_left(app_data, ui);
+            self.central_environment(app_data, ui);
+            self.central_request_table(app_data, ui);
         });
-
         ui.separator();
-        ui.add_space(HORIZONTAL_GAP);
         match &app_data.central_request_data_list.select_id {
             Some(request_id) => {
                 self.editor_panel
@@ -110,8 +109,8 @@ impl MyCentralPanel {
         response
     }
 
-    fn central_right(&mut self, app_data: &mut AppData, ui: &mut Ui) {
-        egui::SidePanel::right("central_right_panel")
+    fn central_environment(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+        egui::SidePanel::right("central_right_environment_panel")
             .resizable(true)
             .show_separator_line(false)
             .show_inside(ui, |ui| {
@@ -147,38 +146,55 @@ impl MyCentralPanel {
             });
     }
 
-    fn central_left(&self, app_data: &mut AppData, ui: &mut Ui) {
-        egui::SidePanel::left("central_left_panel")
+    fn central_request_table(&self, app_data: &mut AppData, ui: &mut Ui) {
+        egui::SidePanel::left("central_request_table_panel")
             .resizable(true)
             .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
             .show_inside(ui, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     for request_data in app_data.central_request_data_list.data_list.clone().iter()
                     {
-                        let lb = utils::build_rest_ui_header(request_data.rest.clone(), ui);
-                        if ui
-                            .selectable_value(
-                                &mut app_data.central_request_data_list.select_id,
-                                Some(request_data.id.clone()),
-                                lb,
-                            )
-                            .double_clicked()
-                        {
-                            app_data
-                                .central_request_data_list
-                                .remove(request_data.id.clone());
-                            if app_data.central_request_data_list.select_id.is_some() {
-                                if app_data
-                                    .central_request_data_list
-                                    .select_id
-                                    .clone()
-                                    .unwrap()
-                                    == request_data.id
-                                {
-                                    app_data.central_request_data_list.select_id = None;
-                                }
+                        let lb =
+                            utils::build_rest_ui_header(request_data.rest.clone(), Some(15), ui);
+                        let response = ui.selectable_value(
+                            &mut app_data.central_request_data_list.select_id,
+                            Some(request_data.id.clone()),
+                            lb,
+                        );
+                        response.context_menu(|ui| {
+                            if ui.button("Duplicate Tab").clicked() {
+                                let mut duplicate = request_data.clone();
+                                duplicate.id = Uuid::new_v4().to_string();
+                                app_data.central_request_data_list.add_crt(duplicate);
+                                ui.close_menu();
                             }
-                        }
+                            ui.separator();
+                            if ui.button("Close").clicked() {
+                                self.close_tab(app_data, request_data);
+                                ui.close_menu();
+                            }
+                            if ui.button("Force Close").clicked() {
+                                self.close_tab(app_data, request_data);
+                                ui.close_menu();
+                            }
+                            if ui.button("Close Other Tabs").clicked() {
+                                app_data.central_request_data_list.clear();
+                                app_data
+                                    .central_request_data_list
+                                    .add_crt(request_data.clone());
+                                ui.close_menu();
+                            }
+                            if ui.button("Close All Tabs").clicked() {
+                                app_data.central_request_data_list.clear();
+                                app_data.central_request_data_list.select_id = None;
+                                ui.close_menu();
+                            }
+                            if ui.button("Force Close All Tabs").clicked() {
+                                app_data.central_request_data_list.clear();
+                                app_data.central_request_data_list.select_id = None;
+                                ui.close_menu();
+                            }
+                        });
                     }
                     if ui.button("+").clicked() {
                         app_data.central_request_data_list.add_new()
@@ -186,5 +202,22 @@ impl MyCentralPanel {
                     if ui.button("...").clicked() {}
                 });
             });
+    }
+
+    fn close_tab(&self, app_data: &mut AppData, request_data: &CentralRequestItem) {
+        app_data
+            .central_request_data_list
+            .remove(request_data.id.clone());
+        if app_data.central_request_data_list.select_id.is_some() {
+            if app_data
+                .central_request_data_list
+                .select_id
+                .clone()
+                .unwrap()
+                == request_data.id
+            {
+                app_data.central_request_data_list.select_id = None;
+            }
+        }
     }
 }

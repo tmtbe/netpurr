@@ -705,6 +705,18 @@ impl CentralRequestDataList {
             }
         });
     }
+    pub fn clear(&mut self) {
+        self.data_map.clear();
+        self.data_list.clear();
+        self.persistence.save(
+            Path::new("requests").to_path_buf(),
+            "data".to_string(),
+            &CentralRequestDataListSaved {
+                select_id: self.select_id.clone(),
+                data_map: self.data_map.clone(),
+            },
+        );
+    }
     pub fn remove(&mut self, id: String) {
         self.data_map.remove(id.as_str());
         self.data_list

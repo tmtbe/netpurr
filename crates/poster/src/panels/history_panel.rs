@@ -22,7 +22,8 @@ impl DataView for HistoryPanel {
                 .default_open(false)
                 .show(ui, |ui| {
                     for history_rest_item in date_history_data.history_list.iter().rev() {
-                        let lb = utils::build_rest_ui_header(history_rest_item.rest.clone(), ui);
+                        let lb =
+                            utils::build_rest_ui_header(history_rest_item.rest.clone(), None, ui);
                         let button = ui.button(lb);
                         if button.clicked() {
                             app_data

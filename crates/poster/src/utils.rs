@@ -1,3 +1,4 @@
+use std::cmp::min;
 use std::collections::BTreeMap;
 
 use eframe::emath::{Align, Pos2};
@@ -13,7 +14,7 @@ use regex::Regex;
 use crate::data::{EnvironmentItemValue, HttpRecord};
 use crate::panels::HORIZONTAL_GAP;
 
-pub fn build_rest_ui_header(hr: HttpRecord, ui: &Ui) -> LayoutJob {
+pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) -> LayoutJob {
     let mut lb = LayoutJob {
         text: Default::default(),
         sections: Default::default(),
@@ -29,20 +30,36 @@ pub fn build_rest_ui_header(hr: HttpRecord, ui: &Ui) -> LayoutJob {
         justify: false,
     };
     let style = Style::default();
-    if hr.request.base_url != "" {
+    let base_url = hr
+        .request
+        .base_url
+        .trim()
+        .trim_start_matches("http://")
+        .trim_start_matches("https://")
+        .to_string();
+    if base_url != "" {
         RichText::new(hr.request.method.to_string() + " ")
             .color(ui.visuals().warn_fg_color)
             .strong()
             .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+        let mut new_name = "".to_string();
         if hr.name != "" {
-            RichText::new(hr.name.to_string())
-                .color(ui.visuals().text_color())
-                .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+            new_name = hr.name.to_string();
         } else {
-            RichText::new(hr.request.base_url.to_string())
-                .color(ui.visuals().text_color())
-                .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+            new_name = base_url;
         }
+        match max_char {
+            None => {}
+            Some(size) => {
+                if new_name.len() > size {
+                    let len = min(new_name.len() - 1, size);
+                    new_name = new_name.as_str()[0..len].to_string() + "...";
+                }
+            }
+        }
+        RichText::new(new_name)
+            .color(ui.visuals().text_color())
+            .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
     } else {
         RichText::new("Untitled Request")
             .strong()
@@ -176,6 +193,14 @@ pub fn select_value<Value: PartialEq>(
 }
 
 pub fn text_edit_singleline_justify<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
+    ui.with_layout(
+        Layout::top_down(Align::LEFT).with_cross_justify(true),
+        |ui| ui.text_edit_singleline(text),
+    )
+    .inner
+}
+
+pub fn text_edit_singleline_filter_justify<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
     text.replace(
         text.as_str()
             .replace("/", "_")
@@ -230,4 +255,18 @@ pub fn build_copy_name(mut name: String, names: HashSet<String>) -> String {
         index += 1;
     }
     return new_name;
+}
+
+pub fn selectable_check<Value: PartialEq>(
+    ui: &mut Ui,
+    current_value: &mut Value,
+    selected_value: Value,
+    text: impl Into<WidgetText>,
+) -> Response {
+    let mut response = ui.checkbox(&mut (*current_value == selected_value), text);
+    if response.clicked() && *current_value != selected_value {
+        *current_value = selected_value;
+        response.mark_changed();
+    }
+    response
 }

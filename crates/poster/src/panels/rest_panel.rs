@@ -81,7 +81,15 @@ impl RestPanel {
         let cookies_manager = app_data.cookies_manager.clone();
         let (mut data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
         data.rest.sync(envs.clone(), auth.clone(), cookies_manager);
-        if data.rest.request.base_url == "" {
+        if data
+            .rest
+            .request
+            .base_url
+            .trim()
+            .trim_start_matches("https://")
+            .trim_start_matches("http://")
+            == ""
+        {
             ui.strong("Untitled Request");
         } else {
             match &data.collection_path {
@@ -310,7 +318,10 @@ impl DataView for RestPanel {
         cursor: Self::CursorType,
     ) {
         ui.vertical(|ui| {
-            self.render_name_label(app_data, cursor.clone(), ui);
+            ui.horizontal(|ui| {
+                ui.add_space(HORIZONTAL_GAP);
+                self.render_name_label(app_data, cursor.clone(), ui);
+            });
             ui.separator();
             ui.horizontal(|ui| {
                 self.render_editor_right_panel(operation, app_data, cursor.clone(), ui);

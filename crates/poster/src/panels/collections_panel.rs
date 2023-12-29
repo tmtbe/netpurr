@@ -313,7 +313,7 @@ impl CollectionsPanel {
         requests: BTreeMap<String, HttpRecord>,
     ) {
         for (_, hr) in requests.iter() {
-            let lb = utils::build_rest_ui_header(hr.clone(), ui);
+            let lb = utils::build_rest_ui_header(hr.clone(), None, ui);
             let button = ui.button(lb);
             if button.clicked() {
                 app_data

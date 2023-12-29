@@ -332,7 +332,7 @@ impl DataView for NewCollectionWindows {
             .open(&mut new_collection_windows_open)
             .show(ui.ctx(), |ui| {
                 ui.label("Name");
-                utils::text_edit_singleline_justify(ui, &mut self.folder.borrow_mut().name);
+                utils::text_edit_singleline_filter_justify(ui, &mut self.folder.borrow_mut().name);
                 ui.horizontal(|ui| {
                     for x in NewCollectionContentType::iter() {
                         if x == NewCollectionContentType::Variables && self.parent_folder.is_some()

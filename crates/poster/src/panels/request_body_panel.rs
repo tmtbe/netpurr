@@ -5,7 +5,7 @@ use crate::data::{AppData, BodyRawType, BodyType};
 use crate::operation::Operation;
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
-use crate::panels::{DataView, VERTICAL_GAP};
+use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
@@ -27,8 +27,10 @@ impl DataView for RequestBodyPanel {
     ) {
         let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
         ui.horizontal(|ui| {
+            ui.add_space(HORIZONTAL_GAP);
             for x in BodyType::iter() {
-                ui.selectable_value(
+                utils::selectable_check(
+                    ui,
                     &mut data.rest.request.body.body_type,
                     x.clone(),
                     x.to_string(),
@@ -85,11 +87,15 @@ impl DataView for RequestBodyPanel {
                     button_name =
                         utils::build_with_count_ui_header("Select File".to_string(), 1, ui);
                 }
-                if ui.button(button_name).clicked() {
-                    if let Some(path) = rfd::FileDialog::new().pick_file() {
-                        data.rest.request.body.body_file = path.display().to_string();
+                ui.horizontal(|ui| {
+                    if ui.button(button_name).clicked() {
+                        if let Some(path) = rfd::FileDialog::new().pick_file() {
+                            data.rest.request.body.body_file = path.display().to_string();
+                        }
                     }
-                }
+                    let mut path = data.rest.request.body.body_file.clone();
+                    utils::text_edit_singleline_justify(ui, &mut path);
+                });
             }
         }
     }

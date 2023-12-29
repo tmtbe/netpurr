@@ -26,7 +26,7 @@ impl CookiesWindows {
     fn render_add(&mut self, app_data: &mut AppData, ui: &mut Ui) {
         ui.label("Add a cookie domain.");
         ui.horizontal(|ui| {
-            utils::text_edit_singleline_justify(ui, &mut self.new_cookie_name);
+            utils::text_edit_singleline_filter_justify(ui, &mut self.new_cookie_name);
             if self.new_cookie_name == ""
                 || app_data
                     .cookies_manager
@@ -99,7 +99,7 @@ impl CookiesWindows {
                                 self.new_key_name = "".to_string();
                             }
                         }
-                        utils::text_edit_singleline_justify(ui, &mut self.new_key_name);
+                        utils::text_edit_singleline_filter_justify(ui, &mut self.new_key_name);
                     });
                     let option_cookies = app_data
                         .cookies_manager
