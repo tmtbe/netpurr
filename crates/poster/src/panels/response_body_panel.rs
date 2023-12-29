@@ -1,6 +1,6 @@
 use egui::{Image, TextBuffer};
 
-use crate::data::{AppData, Response};
+use crate::data::{Response, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::DataView;
 
@@ -33,10 +33,10 @@ impl DataView for ResponseBodyPanel {
         &mut self,
         ui: &mut egui::Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        let data = app_data
+        let data = workspace_data
             .central_request_data_list
             .data_map
             .get(cursor.as_str())

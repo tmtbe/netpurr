@@ -1,4 +1,4 @@
-use crate::data::AppData;
+use crate::data::WorkspaceData;
 use crate::operation::Operation;
 
 mod auth_panel;
@@ -35,7 +35,7 @@ pub trait DataView {
         &mut self,
         ui: &mut egui::Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     );
 }

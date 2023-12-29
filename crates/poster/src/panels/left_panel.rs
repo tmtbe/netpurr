@@ -1,6 +1,6 @@
 use egui::ScrollArea;
 
-use crate::data::AppData;
+use crate::data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::collections_panel::CollectionsPanel;
 use crate::panels::history_panel::HistoryPanel;
@@ -32,7 +32,7 @@ impl DataView for MyLeftPanel {
         &mut self,
         ui: &mut egui::Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
         ui.horizontal(|ui| {
@@ -49,11 +49,11 @@ impl DataView for MyLeftPanel {
         ScrollArea::vertical().show(ui, |ui| match self.open_panel {
             Panel::History => {
                 self.history_panel
-                    .set_and_render(ui, operation, app_data, 0);
+                    .set_and_render(ui, operation, workspace_data, 0);
             }
             Panel::Collections => {
                 self.collections_panel
-                    .set_and_render(ui, operation, app_data, 0);
+                    .set_and_render(ui, operation, workspace_data, 0);
             }
         });
     }

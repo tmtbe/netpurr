@@ -1,7 +1,7 @@
 use egui::{Response, Ui, WidgetText};
 use uuid::Uuid;
 
-use crate::data::{AppData, CentralRequestItem, ENVIRONMENT_GLOBALS};
+use crate::data::{CentralRequestItem, WorkspaceData, ENVIRONMENT_GLOBALS};
 use crate::operation::Operation;
 use crate::panels::cookies_windows::CookiesWindows;
 use crate::panels::environment_windows::EnvironmentWindows;
@@ -37,26 +37,30 @@ impl DataView for MyCentralPanel {
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
         ui.horizontal(|ui| {
-            self.central_environment(app_data, ui);
-            self.central_request_table(app_data, ui);
+            self.central_environment(workspace_data, ui);
+            self.central_request_table(workspace_data, ui);
         });
         ui.separator();
-        match &app_data.central_request_data_list.select_id {
+        match &workspace_data.central_request_data_list.select_id {
             Some(request_id) => {
                 self.editor_panel
-                    .set_and_render(ui, operation, app_data, request_id.clone());
+                    .set_and_render(ui, operation, workspace_data, request_id.clone());
             }
             _ => {}
         }
         self.environment_windows
-            .set_and_render(ui, operation, app_data, cursor);
-        app_data.environment.select().clone().map(|s| {
-            if !app_data.environment.get_data().contains_key(s.as_str()) {
-                app_data.environment.set_select(None)
+            .set_and_render(ui, operation, workspace_data, cursor);
+        workspace_data.environment.select().clone().map(|s| {
+            if !workspace_data
+                .environment
+                .get_data()
+                .contains_key(s.as_str())
+            {
+                workspace_data.environment.set_select(None)
             }
         });
         if operation.open_windows().save_opened {
@@ -67,7 +71,8 @@ impl DataView for MyCentralPanel {
             );
             operation.open_windows().save_opened = false;
         }
-        self.save_windows.set_and_render(ui, operation, app_data, 0);
+        self.save_windows
+            .set_and_render(ui, operation, workspace_data, 0);
         if operation.open_windows().collection_opened {
             self.new_collection_windows
                 .open_collection(operation.open_windows().collection.clone());
@@ -82,13 +87,13 @@ impl DataView for MyCentralPanel {
             operation.open_windows().folder_opened = false;
         }
         self.new_collection_windows
-            .set_and_render(ui, operation, app_data, 0);
+            .set_and_render(ui, operation, workspace_data, 0);
         if operation.open_windows().cookies_opened {
             self.cookies_windows.open();
             operation.open_windows().cookies_opened = false;
         }
         self.cookies_windows
-            .set_and_render(ui, operation, app_data, 0);
+            .set_and_render(ui, operation, workspace_data, 0);
     }
 }
 
@@ -96,20 +101,20 @@ impl MyCentralPanel {
     pub fn selectable_value(
         &mut self,
         ui: &mut Ui,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         selected_value: Option<String>,
         text: impl Into<WidgetText>,
     ) -> Response {
         let mut response =
-            ui.selectable_label(app_data.environment.select() == selected_value, text);
-        if response.clicked() && app_data.environment.select() != selected_value {
-            app_data.environment.set_select(selected_value);
+            ui.selectable_label(workspace_data.environment.select() == selected_value, text);
+        if response.clicked() && workspace_data.environment.select() != selected_value {
+            workspace_data.environment.set_select(selected_value);
             response.mark_changed();
         }
         response
     }
 
-    fn central_environment(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn central_environment(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         egui::SidePanel::right("central_right_environment_panel")
             .resizable(true)
             .show_separator_line(false)
@@ -118,7 +123,7 @@ impl MyCentralPanel {
                     ui.add_space(HORIZONTAL_GAP * 2.0);
                     egui::ComboBox::from_id_source("env")
                         .selected_text(
-                            app_data
+                            workspace_data
                                 .environment
                                 .select()
                                 .unwrap_or("No Environment".to_string()),
@@ -126,14 +131,14 @@ impl MyCentralPanel {
                         .show_ui(ui, |ui| {
                             ui.style_mut().wrap = Some(false);
                             ui.set_min_width(60.0);
-                            self.selectable_value(ui, app_data, None, "No Environment");
-                            for (name, _) in &app_data.environment.get_data() {
+                            self.selectable_value(ui, workspace_data, None, "No Environment");
+                            for (name, _) in &workspace_data.environment.get_data() {
                                 if name == ENVIRONMENT_GLOBALS {
                                     continue;
                                 }
                                 self.selectable_value(
                                     ui,
-                                    app_data,
+                                    workspace_data,
                                     Some(name.clone()),
                                     name.clone(),
                                 );
@@ -146,18 +151,22 @@ impl MyCentralPanel {
             });
     }
 
-    fn central_request_table(&self, app_data: &mut AppData, ui: &mut Ui) {
+    fn central_request_table(&self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         egui::SidePanel::left("central_request_table_panel")
             .resizable(true)
             .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
             .show_inside(ui, |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    for request_data in app_data.central_request_data_list.data_list.clone().iter()
+                    for request_data in workspace_data
+                        .central_request_data_list
+                        .data_list
+                        .clone()
+                        .iter()
                     {
                         let lb =
                             utils::build_rest_ui_header(request_data.rest.clone(), Some(15), ui);
                         let response = ui.selectable_value(
-                            &mut app_data.central_request_data_list.select_id,
+                            &mut workspace_data.central_request_data_list.select_id,
                             Some(request_data.id.clone()),
                             lb,
                         );
@@ -165,58 +174,58 @@ impl MyCentralPanel {
                             if ui.button("Duplicate Tab").clicked() {
                                 let mut duplicate = request_data.clone();
                                 duplicate.id = Uuid::new_v4().to_string();
-                                app_data.central_request_data_list.add_crt(duplicate);
+                                workspace_data.central_request_data_list.add_crt(duplicate);
                                 ui.close_menu();
                             }
                             ui.separator();
                             if ui.button("Close").clicked() {
-                                self.close_tab(app_data, request_data);
+                                self.close_tab(workspace_data, request_data);
                                 ui.close_menu();
                             }
                             if ui.button("Force Close").clicked() {
-                                self.close_tab(app_data, request_data);
+                                self.close_tab(workspace_data, request_data);
                                 ui.close_menu();
                             }
                             if ui.button("Close Other Tabs").clicked() {
-                                app_data.central_request_data_list.clear();
-                                app_data
+                                workspace_data.central_request_data_list.clear();
+                                workspace_data
                                     .central_request_data_list
                                     .add_crt(request_data.clone());
                                 ui.close_menu();
                             }
                             if ui.button("Close All Tabs").clicked() {
-                                app_data.central_request_data_list.clear();
-                                app_data.central_request_data_list.select_id = None;
+                                workspace_data.central_request_data_list.clear();
+                                workspace_data.central_request_data_list.select_id = None;
                                 ui.close_menu();
                             }
                             if ui.button("Force Close All Tabs").clicked() {
-                                app_data.central_request_data_list.clear();
-                                app_data.central_request_data_list.select_id = None;
+                                workspace_data.central_request_data_list.clear();
+                                workspace_data.central_request_data_list.select_id = None;
                                 ui.close_menu();
                             }
                         });
                     }
                     if ui.button("+").clicked() {
-                        app_data.central_request_data_list.add_new()
+                        workspace_data.central_request_data_list.add_new()
                     }
                     if ui.button("...").clicked() {}
                 });
             });
     }
 
-    fn close_tab(&self, app_data: &mut AppData, request_data: &CentralRequestItem) {
-        app_data
+    fn close_tab(&self, workspace_data: &mut WorkspaceData, request_data: &CentralRequestItem) {
+        workspace_data
             .central_request_data_list
             .remove(request_data.id.clone());
-        if app_data.central_request_data_list.select_id.is_some() {
-            if app_data
+        if workspace_data.central_request_data_list.select_id.is_some() {
+            if workspace_data
                 .central_request_data_list
                 .select_id
                 .clone()
                 .unwrap()
                 == request_data.id
             {
-                app_data.central_request_data_list.select_id = None;
+                workspace_data.central_request_data_list.select_id = None;
             }
         }
     }

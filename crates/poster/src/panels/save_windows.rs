@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use egui::{Align, Button, Layout, ScrollArea, Ui};
 
-use crate::data::{AppData, Collection, CollectionFolder, HttpRecord};
+use crate::data::{Collection, CollectionFolder, HttpRecord, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;
@@ -58,7 +58,7 @@ impl SaveWindows {
         self.id = default_path.clone().unwrap_or("new".to_string());
     }
 
-    fn render(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn render(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.horizontal(|ui| match &self.select_collection_path {
                 None => {
@@ -91,21 +91,21 @@ impl SaveWindows {
             ui.add_space(VERTICAL_GAP);
             if self.add_collection {
                 self.add_folder = false;
-                self.render_add_collection(app_data, ui);
+                self.render_add_collection(workspace_data, ui);
             }
             if self.add_folder {
                 self.add_collection = false;
-                self.render_add_folder(app_data, ui);
+                self.render_add_folder(workspace_data, ui);
             }
-            self.render_list(app_data, ui);
+            self.render_list(workspace_data, ui);
         });
     }
 
-    fn render_list(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn render_list(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
             match self.select_collection_path.clone() {
                 None => {
-                    for (name, collection) in app_data.collections.get_data().iter() {
+                    for (name, collection) in workspace_data.collections.get_data().iter() {
                         if utils::select_label(ui, name).clicked() {
                             self.add_folder = false;
                             self.add_collection = false;
@@ -115,7 +115,7 @@ impl SaveWindows {
                     }
                 }
                 Some(path) => {
-                    app_data
+                    workspace_data
                         .collections
                         .get_mut_folder_with_path(path.clone())
                         .1
@@ -141,12 +141,14 @@ impl SaveWindows {
         });
     }
 
-    fn render_add_folder(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn render_add_folder(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.horizontal(|ui| {
             match &self.select_collection_path {
                 None => {}
                 Some(path) => {
-                    let (_, option) = app_data.collections.get_folder_with_path(path.clone());
+                    let (_, option) = workspace_data
+                        .collections
+                        .get_folder_with_path(path.clone());
                     match option {
                         None => {}
                         Some(folder) => {
@@ -161,13 +163,15 @@ impl SaveWindows {
                 match &self.select_collection_path {
                     None => {}
                     Some(path) => {
-                        let (collection_name, option) =
-                            app_data.collections.get_mut_folder_with_path(path.clone());
+                        let (collection_name, option) = workspace_data
+                            .collections
+                            .get_mut_folder_with_path(path.clone());
                         match option {
                             None => {}
                             Some(folder) => {
-                                folder.borrow_mut().insert_folder(Rc::new(RefCell::new(
-                                    CollectionFolder {
+                                workspace_data.collections.insert_folder(
+                                    folder.clone(),
+                                    Rc::new(RefCell::new(CollectionFolder {
                                         name: self.add_name.to_string(),
                                         parent_path: path.clone(),
                                         desc: "".to_string(),
@@ -175,8 +179,8 @@ impl SaveWindows {
                                         is_root: false,
                                         requests: Default::default(),
                                         folders: Default::default(),
-                                    },
-                                )));
+                                    })),
+                                );
                             }
                         }
                     }
@@ -188,9 +192,9 @@ impl SaveWindows {
         });
     }
 
-    fn render_add_collection(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn render_add_collection(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            if app_data
+            if workspace_data
                 .collections
                 .get_data()
                 .contains_key(self.add_name.as_str())
@@ -198,7 +202,7 @@ impl SaveWindows {
                 ui.add_enabled(false, Button::new("+"));
             } else {
                 if ui.button("+").clicked() {
-                    app_data.collections.insert_collection(Collection {
+                    workspace_data.collections.insert_collection(Collection {
                         envs: Default::default(),
                         folder: Rc::new(RefCell::new(CollectionFolder {
                             name: self.add_name.clone(),
@@ -218,7 +222,7 @@ impl SaveWindows {
         });
     }
 
-    fn render_save_bottom_panel(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn render_save_bottom_panel(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         egui::TopBottomPanel::bottom("save_bottom_panel_".to_string() + self.id.as_str())
             .resizable(false)
             .min_height(0.0)
@@ -235,8 +239,9 @@ impl SaveWindows {
                             let mut ui_enable = true;
                             let button_name =
                                 "Save to ".to_string() + path.split("/").last().unwrap();
-                            let (collection_name, option) =
-                                app_data.collections.get_mut_folder_with_path(path.clone());
+                            let (collection_name, option) = workspace_data
+                                .collections
+                                .get_mut_folder_with_path(path.clone());
                             match &option {
                                 None => {}
                                 Some(cf) => {
@@ -263,8 +268,10 @@ impl SaveWindows {
                                                     .requests
                                                     .remove(self.old_name.as_str());
                                             }
-                                            cf.borrow_mut()
-                                                .insert_http_record(self.http_record.clone());
+                                            workspace_data.collections.insert_http_record(
+                                                cf.clone(),
+                                                self.http_record.clone(),
+                                            );
                                         }
                                     }
                                     self.save_windows_open = false;
@@ -288,7 +295,7 @@ impl DataView for SaveWindows {
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
         let mut save_windows_open = self.save_windows_open;
@@ -315,10 +322,10 @@ impl DataView for SaveWindows {
                 if !self.edit {
                     ui.label("Select a collection or folder to save to:");
                     ui.add_space(VERTICAL_GAP);
-                    self.render(app_data, ui);
+                    self.render(workspace_data, ui);
                     ui.add_space(VERTICAL_GAP);
                 }
-                self.render_save_bottom_panel(app_data, ui);
+                self.render_save_bottom_panel(workspace_data, ui);
             });
         if !save_windows_open {
             self.save_windows_open = save_windows_open;

@@ -4,7 +4,7 @@ use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder};
 
-use crate::data::{AppData, CentralRequestItem, EnvironmentItemValue, Header};
+use crate::data::{CentralRequestItem, EnvironmentItemValue, Header, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
@@ -20,10 +20,10 @@ impl DataView for RequestHeadersPanel {
         &mut self,
         ui: &mut egui::Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
+        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
         ui.label("Headers");
         let mut delete_index = None;
         ui.push_id("request_headers_table", |ui| {

@@ -7,7 +7,9 @@ use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, Auth, AuthType, BodyType, Header, HttpBody, Method, Request, Response};
+use crate::data::{
+    Auth, AuthType, BodyType, Header, HttpBody, Method, Request, Response, WorkspaceData,
+};
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
@@ -77,9 +79,14 @@ impl RestPanel {
         }
     }
 
-    fn render_name_label(&mut self, app_data: &mut AppData, cursor: String, ui: &mut Ui) {
-        let cookies_manager = app_data.cookies_manager.clone();
-        let (mut data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
+    fn render_name_label(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        cursor: String,
+        ui: &mut Ui,
+    ) {
+        let cookies_manager = workspace_data.cookies_manager.clone();
+        let (mut data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
         data.rest.sync(envs.clone(), auth.clone(), cookies_manager);
         if data
             .rest
@@ -116,12 +123,12 @@ impl RestPanel {
     fn render_editor_right_panel(
         &mut self,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: String,
         ui: &mut Ui,
     ) {
         let mut send_rest = None;
-        let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
+        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
         egui::SidePanel::right("editor_right_panel")
             .resizable(false)
             .show_inside(ui, |ui| {
@@ -153,12 +160,17 @@ impl RestPanel {
                 });
             });
         send_rest.map(|r| {
-            app_data.history_data_list.record(r);
+            workspace_data.history_data_list.record(r);
         });
     }
 
-    fn render_editor_left_panel(&self, app_data: &mut AppData, cursor: String, ui: &mut Ui) {
-        let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
+    fn render_editor_left_panel(
+        &self,
+        workspace_data: &mut WorkspaceData,
+        cursor: String,
+        ui: &mut Ui,
+    ) {
+        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
         egui::SidePanel::left("editor_left_panel")
             .min_width(ui.available_width() - HORIZONTAL_GAP)
             .show_separator_line(false)
@@ -198,45 +210,53 @@ impl RestPanel {
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: String,
     ) {
-        let (data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
+        let (data, envs, auth) = workspace_data.get_crt_and_envs_auth(cursor.clone());
         match self.open_request_panel_enum {
-            RequestPanelEnum::Params => {
-                self.request_params_panel
-                    .set_and_render(ui, operation, app_data, cursor.clone())
-            }
+            RequestPanelEnum::Params => self.request_params_panel.set_and_render(
+                ui,
+                operation,
+                workspace_data,
+                cursor.clone(),
+            ),
             RequestPanelEnum::Authorization => {
                 let mut parent_auth = None;
                 match &data.collection_path {
                     None => {}
                     Some(collection_path) => {
-                        parent_auth = Some(app_data.collections.get_auth(collection_path.clone()));
+                        parent_auth =
+                            Some(workspace_data.collections.get_auth(collection_path.clone()));
                     }
                 }
                 self.auth_panel.set_envs(envs.clone(), parent_auth);
                 {
-                    let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
+                    let (data, envs, auth) =
+                        workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
                     self.auth_panel
                         .set_and_render(ui, &mut data.rest.request.auth);
                 }
             }
-            RequestPanelEnum::Headers => {
-                self.request_headers_panel
-                    .set_and_render(ui, operation, app_data, cursor.clone())
-            }
-            RequestPanelEnum::Body => {
-                self.request_body_panel
-                    .set_and_render(ui, operation, app_data, cursor.clone())
-            }
+            RequestPanelEnum::Headers => self.request_headers_panel.set_and_render(
+                ui,
+                operation,
+                workspace_data,
+                cursor.clone(),
+            ),
+            RequestPanelEnum::Body => self.request_body_panel.set_and_render(
+                ui,
+                operation,
+                workspace_data,
+                cursor.clone(),
+            ),
         }
     }
 
-    fn send_promise(&mut self, app_data: &mut AppData, cursor: String) {
+    fn send_promise(&mut self, workspace_data: &mut WorkspaceData, cursor: String) {
         let mut option_response_cookies = None;
         if let Some(promise) = &self.send_promise {
-            let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
+            let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
             if let Some(result) = promise.ready() {
                 data.rest.elapsed_time = Some(self.send_instant.unwrap().elapsed().as_millis());
                 match result {
@@ -261,7 +281,7 @@ impl RestPanel {
         }
         option_response_cookies.map(|cookies| {
             for (_, c) in cookies.iter() {
-                app_data.cookies_manager.add_domain_cookies(
+                workspace_data.cookies_manager.add_domain_cookies(
                     c.domain.clone(),
                     c.name.clone(),
                     c.clone(),
@@ -273,11 +293,11 @@ impl RestPanel {
     fn render_middle_select(
         &mut self,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: String,
         ui: &mut Ui,
     ) {
-        let (mut data, envs, auth) = app_data.get_crt_and_envs_auth(cursor.clone());
+        let (mut data, envs, auth) = workspace_data.get_crt_and_envs_auth(cursor.clone());
         utils::left_right_panel(
             ui,
             "rest_middle_select_label".to_string(),
@@ -314,27 +334,27 @@ impl DataView for RestPanel {
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
                 ui.add_space(HORIZONTAL_GAP);
-                self.render_name_label(app_data, cursor.clone(), ui);
+                self.render_name_label(workspace_data, cursor.clone(), ui);
             });
             ui.separator();
             ui.horizontal(|ui| {
-                self.render_editor_right_panel(operation, app_data, cursor.clone(), ui);
-                self.render_editor_left_panel(app_data, cursor.clone(), ui);
+                self.render_editor_right_panel(operation, workspace_data, cursor.clone(), ui);
+                self.render_editor_left_panel(workspace_data, cursor.clone(), ui);
             });
             ui.separator();
-            self.render_middle_select(operation, app_data, cursor.clone(), ui);
+            self.render_middle_select(operation, workspace_data, cursor.clone(), ui);
             ui.separator();
         });
-        self.send_promise(app_data, cursor.clone());
-        self.render_request_open_panel(ui, operation, app_data, cursor.clone());
+        self.send_promise(workspace_data, cursor.clone());
+        self.render_request_open_panel(ui, operation, workspace_data, cursor.clone());
         ui.separator();
         self.response_panel
-            .set_and_render(ui, operation, app_data, cursor.clone());
+            .set_and_render(ui, operation, workspace_data, cursor.clone());
     }
 }

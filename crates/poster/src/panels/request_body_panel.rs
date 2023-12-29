@@ -1,7 +1,7 @@
 use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
-use crate::data::{AppData, BodyRawType, BodyType};
+use crate::data::{BodyRawType, BodyType, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
@@ -22,10 +22,10 @@ impl DataView for RequestBodyPanel {
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        let (data, envs, auth) = app_data.get_mut_crt_and_envs_auth(cursor.clone());
+        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
         ui.horizontal(|ui| {
             ui.add_space(HORIZONTAL_GAP);
             for x in BodyType::iter() {
@@ -57,12 +57,18 @@ impl DataView for RequestBodyPanel {
             BodyType::NONE => {
                 ui.label("This request does not have a body");
             }
-            BodyType::FROM_DATA => self
-                .request_body_form_data_panel
-                .set_and_render(ui, operation, app_data, cursor),
-            BodyType::X_WWW_FROM_URLENCODED => self
-                .request_body_xxx_form_panel
-                .set_and_render(ui, operation, app_data, cursor),
+            BodyType::FROM_DATA => self.request_body_form_data_panel.set_and_render(
+                ui,
+                operation,
+                workspace_data,
+                cursor,
+            ),
+            BodyType::X_WWW_FROM_URLENCODED => self.request_body_xxx_form_panel.set_and_render(
+                ui,
+                operation,
+                workspace_data,
+                cursor,
+            ),
             BodyType::RAW => {
                 ui.push_id("request_body", |ui| {
                     egui::ScrollArea::vertical()

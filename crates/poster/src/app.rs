@@ -1,4 +1,6 @@
-use crate::data::AppData;
+use std::io::Read;
+
+use crate::data::{ConfigData, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
@@ -8,10 +10,12 @@ use crate::panels::{DataView, HORIZONTAL_GAP};
 pub struct App {
     left_panel: MyLeftPanel,
     central_panel: MyCentralPanel,
-    app_data: AppData,
+    workspace_data: WorkspaceData,
+    config_data: ConfigData,
     operation: Operation,
     show_confirmation_dialog: bool,
     allowed_to_close: bool,
+    current_workspace: String,
 }
 
 impl App {
@@ -22,7 +26,10 @@ impl App {
             s.spacing.item_spacing.y = 7.0;
         });
         let mut app = App::default();
-        app.app_data.load_all();
+        app.config_data = ConfigData::load();
+        app.workspace_data
+            .load_all(app.config_data.select_workspace().to_string())
+            .expect("app start error");
         app
     }
 
@@ -114,6 +121,27 @@ impl eframe::App for App {
                     if ui.button("New").clicked() {}
                     ui.add_space(HORIZONTAL_GAP);
                     if ui.button("Import").clicked() {}
+                    ui.add_space(HORIZONTAL_GAP);
+                    self.current_workspace = self.config_data.select_workspace().to_string();
+                    egui::ComboBox::from_id_source("workspace")
+                        .selected_text("WorkSpace: ".to_string() + self.current_workspace.as_str())
+                        .show_ui(ui, |ui| {
+                            ui.style_mut().wrap = Some(false);
+                            ui.set_min_width(60.0);
+                            for workspace in self.config_data.workspaces().iter() {
+                                ui.selectable_value(
+                                    &mut self.current_workspace,
+                                    workspace.to_string(),
+                                    workspace,
+                                );
+                            }
+                        });
+                    if self.current_workspace != self.config_data.select_workspace() {
+                        self.config_data
+                            .set_select_workspace(self.current_workspace.clone());
+                        self.workspace_data = WorkspaceData::default();
+                        self.workspace_data.load_all(self.current_workspace.clone());
+                    }
                 });
             });
             ui.add_space(HORIZONTAL_GAP);
@@ -121,13 +149,13 @@ impl eframe::App for App {
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
             ui.set_enabled(!self.operation.get_ui_lock());
             self.left_panel
-                .set_and_render(ui, &mut self.operation, &mut self.app_data, 0);
+                .set_and_render(ui, &mut self.operation, &mut self.workspace_data, 0);
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.set_enabled(!self.operation.get_ui_lock());
             self.central_panel
-                .set_and_render(ui, &mut self.operation, &mut self.app_data, 0);
+                .set_and_render(ui, &mut self.operation, &mut self.workspace_data, 0);
         });
 
         if ctx.input(|i| i.viewport().close_requested()) {
@@ -151,7 +179,7 @@ impl eframe::App for App {
                         if ui.button("Yes").clicked() {
                             self.show_confirmation_dialog = false;
                             self.allowed_to_close = true;
-                            self.app_data.central_request_data_list.auto_save();
+                            self.workspace_data.central_request_data_list.auto_save();
                             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                         }
                     });

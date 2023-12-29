@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use eframe::emath::Align;
 use egui::{Button, Layout, ScrollArea, Ui};
 
-use crate::data::{AppData, Cookie};
+use crate::data::{Cookie, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;
@@ -23,19 +23,19 @@ impl CookiesWindows {
         self.cookies_windows_open = true;
     }
 
-    fn render_add(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn render_add(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.label("Add a cookie domain.");
         ui.horizontal(|ui| {
             utils::text_edit_singleline_filter_justify(ui, &mut self.new_cookie_name);
             if self.new_cookie_name == ""
-                || app_data
+                || workspace_data
                     .cookies_manager
                     .contain_domain(self.new_cookie_name.clone())
             {
                 ui.set_enabled(false);
             }
             if ui.button("Add").clicked() {
-                app_data
+                workspace_data
                     .cookies_manager
                     .set_domain_cookies(self.new_cookie_name.clone(), BTreeMap::new());
                 self.new_cookie_name = "".to_string();
@@ -44,9 +44,9 @@ impl CookiesWindows {
         });
     }
 
-    fn render_domain_list(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn render_domain_list(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            let names = app_data.cookies_manager.get_cookies_names();
+            let names = workspace_data.cookies_manager.get_cookies_names();
             for name in names {
                 let response = ui.selectable_value(
                     &mut self.select_domain_name,
@@ -55,7 +55,7 @@ impl CookiesWindows {
                 );
                 response.context_menu(|ui| {
                     if ui.button("Remove").clicked() {
-                        app_data.cookies_manager.remove_domain(name.clone());
+                        workspace_data.cookies_manager.remove_domain(name.clone());
                         ui.close_menu();
                     }
                 });
@@ -63,7 +63,7 @@ impl CookiesWindows {
         });
     }
 
-    fn render_key_list(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn render_key_list(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ScrollArea::vertical()
             .max_height(200.0)
             .show(ui, |ui| match &self.select_domain_name {
@@ -71,14 +71,14 @@ impl CookiesWindows {
                 Some(domain) => {
                     ui.horizontal(|ui| {
                         if self.new_key_name == ""
-                            || app_data
+                            || workspace_data
                                 .cookies_manager
                                 .contain_domain_key(domain.clone(), self.new_key_name.clone())
                         {
                             ui.add_enabled(false, Button::new("+"));
                         } else {
                             if ui.button("+").clicked() {
-                                app_data.cookies_manager.add_domain_cookies(
+                                workspace_data.cookies_manager.add_domain_cookies(
                                     domain.to_string(),
                                     self.new_key_name.to_string(),
                                     Cookie {
@@ -101,7 +101,7 @@ impl CookiesWindows {
                         }
                         utils::text_edit_singleline_filter_justify(ui, &mut self.new_key_name);
                     });
-                    let option_cookies = app_data
+                    let option_cookies = workspace_data
                         .cookies_manager
                         .get_domain_cookies(domain.to_string());
                     match option_cookies {
@@ -122,7 +122,7 @@ impl CookiesWindows {
                                     }
                                     response.context_menu(|ui| {
                                         if ui.button("Remove").clicked() {
-                                            app_data.cookies_manager.remove_domain_key(
+                                            workspace_data.cookies_manager.remove_domain_key(
                                                 domain.to_string(),
                                                 name.clone(),
                                             );
@@ -137,11 +137,11 @@ impl CookiesWindows {
             });
     }
 
-    fn render_content(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn render_content(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         match &self.select_domain_name {
             None => {}
             Some(domain) => {
-                let option_map = app_data
+                let option_map = workspace_data
                     .cookies_manager
                     .get_domain_cookies(domain.to_string());
                 option_map.map(|map| match &self.select_key_name {
@@ -157,14 +157,14 @@ impl CookiesWindows {
                                     ui.set_enabled(false);
                                 }
                                 if ui.button("Save").clicked() {
-                                    app_data.cookies_manager.update_domain_key(
+                                    workspace_data.cookies_manager.update_domain_key(
                                         domain.to_string(),
                                         key.to_string(),
                                         new_cookie,
                                     );
                                 }
                                 if ui.button("Remove").clicked() {
-                                    app_data
+                                    workspace_data
                                         .cookies_manager
                                         .remove_domain_key(domain.to_string(), key.to_string());
                                 }
@@ -185,7 +185,7 @@ impl DataView for CookiesWindows {
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
         operation.lock_ui("env".to_string(), self.cookies_windows_open);
@@ -201,16 +201,16 @@ impl DataView for CookiesWindows {
             .show(ui.ctx(), |ui| {
                 ui.vertical(|ui| {
                     ui.add_space(VERTICAL_GAP);
-                    self.render_add(app_data, ui);
+                    self.render_add(workspace_data, ui);
                     ui.add_space(VERTICAL_GAP);
                     ui.separator();
-                    self.render_domain_list(app_data, ui);
+                    self.render_domain_list(workspace_data, ui);
                     ui.add_space(VERTICAL_GAP);
                     ui.separator();
-                    self.render_key_list(app_data, ui);
+                    self.render_key_list(workspace_data, ui);
                     ui.add_space(VERTICAL_GAP);
                     ui.separator();
-                    self.render_content(app_data, ui);
+                    self.render_content(workspace_data, ui);
                 });
             });
         self.cookies_windows_open = cookies_windows_open;

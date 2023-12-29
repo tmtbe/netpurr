@@ -2,7 +2,7 @@ use eframe::emath::Align;
 use egui::{Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBuilder};
 
-use crate::data::AppData;
+use crate::data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::DataView;
 
@@ -15,10 +15,10 @@ impl DataView for ResponseCookiesPanel {
         &mut self,
         ui: &mut egui::Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        let data = app_data
+        let data = workspace_data
             .central_request_data_list
             .data_map
             .get_mut(cursor.as_str())

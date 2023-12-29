@@ -7,7 +7,7 @@ use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, Collection, CollectionFolder, EnvironmentItem};
+use crate::data::{Collection, CollectionFolder, EnvironmentItem, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::{AlongDataView, DataView, VERTICAL_GAP};
@@ -208,7 +208,7 @@ impl NewCollectionWindows {
         ui.add_space(VERTICAL_GAP);
     }
 
-    fn bottom_panel(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn bottom_panel(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         egui::TopBottomPanel::bottom("new_collection_bottom_panel")
             .resizable(false)
             .min_height(0.0)
@@ -223,7 +223,7 @@ impl NewCollectionWindows {
                         match &self.parent_folder {
                             None => match &self.old_collection_name {
                                 None => {
-                                    if app_data
+                                    if workspace_data
                                         .collections
                                         .get_data()
                                         .contains_key(self.folder.borrow().name.as_str())
@@ -233,7 +233,7 @@ impl NewCollectionWindows {
                                 }
                                 Some(old_name) => {
                                     if old_name != self.folder.borrow().name.as_str()
-                                        && app_data
+                                        && workspace_data
                                             .collections
                                             .get_data()
                                             .contains_key(self.folder.borrow().name.as_str())
@@ -270,12 +270,14 @@ impl NewCollectionWindows {
                             match &self.old_collection_name {
                                 None => {}
                                 Some(old_name) => {
-                                    app_data.collections.remove(old_name.clone());
+                                    workspace_data
+                                        .collections
+                                        .remove_collection(old_name.clone());
                                 }
                             }
                             match &self.parent_folder {
                                 None => {
-                                    app_data
+                                    workspace_data
                                         .collections
                                         .insert_collection(self.new_collection.clone());
                                 }
@@ -292,7 +294,9 @@ impl NewCollectionWindows {
                                     );
                                     self.folder.borrow_mut().parent_path =
                                         parent_folder.borrow().get_path();
-                                    self.folder.borrow().update();
+                                    workspace_data
+                                        .collections
+                                        .update_folder(self.folder.clone());
                                 }
                             }
                         }
@@ -314,7 +318,7 @@ impl DataView for NewCollectionWindows {
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
         operation.lock_ui(
@@ -358,7 +362,7 @@ impl DataView for NewCollectionWindows {
                         self.build_variables(ui);
                     }
                 }
-                self.bottom_panel(app_data, ui);
+                self.bottom_panel(workspace_data, ui);
             });
         if !new_collection_windows_open {
             self.new_collection_windows_open = new_collection_windows_open;

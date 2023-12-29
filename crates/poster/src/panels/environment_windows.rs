@@ -1,7 +1,7 @@
 use egui::{Align, Button, Checkbox, Layout, ScrollArea, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
-use crate::data::{AppData, EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
+use crate::data::{EnvironmentConfig, EnvironmentItem, WorkspaceData, ENVIRONMENT_GLOBALS};
 use crate::operation::Operation;
 use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
@@ -20,11 +20,11 @@ impl EnvironmentWindows {
         self.environment_windows_open = true;
     }
 
-    fn env_list(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn env_list(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.label("An environment is a set of variables that allow you to switch the context of your requests. Environments can be shared between multiple workspaces.");
         ui.add_space(VERTICAL_GAP * 2.0);
         ScrollArea::vertical().show(ui, |ui| {
-            for (name, e) in app_data.environment.get_data().iter() {
+            for (name, e) in workspace_data.environment.get_data().iter() {
                 if name == ENVIRONMENT_GLOBALS {
                     continue;
                 }
@@ -43,13 +43,13 @@ impl EnvironmentWindows {
                         |ui| {
                             ui.horizontal(|ui| {
                                 if ui.button("📋").clicked() {
-                                    app_data
+                                    workspace_data
                                         .environment
                                         .insert(name.to_string() + " Copy", e.clone());
                                 };
                                 ui.button("⬇");
                                 if ui.button("🗑").clicked() {
-                                    app_data.environment.remove(name.to_string());
+                                    workspace_data.environment.remove(name.to_string());
                                 }
                             });
                         },
@@ -150,7 +150,7 @@ impl EnvironmentWindows {
         }
     }
 
-    fn env_bottom(&mut self, app_data: &mut AppData, ui: &mut Ui) {
+    fn env_bottom(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         egui::TopBottomPanel::bottom("environment_bottom_panel")
             .resizable(false)
             .min_height(0.0)
@@ -165,7 +165,9 @@ impl EnvironmentWindows {
                         }
                         ui.button("Import");
                         if ui.button("Globals").clicked() {
-                            let data = app_data.environment.get(ENVIRONMENT_GLOBALS.to_string());
+                            let data = workspace_data
+                                .environment
+                                .get(ENVIRONMENT_GLOBALS.to_string());
                             self.select_env = Some(ENVIRONMENT_GLOBALS.to_string());
                             self.select_env_config = data.unwrap_or(EnvironmentConfig::default());
                             self.select_env_name = ENVIRONMENT_GLOBALS.to_string();
@@ -173,10 +175,10 @@ impl EnvironmentWindows {
                     } else {
                         if ui.button("Update").clicked() {
                             if self.select_env_name != "" {
-                                app_data
+                                workspace_data
                                     .environment
                                     .remove(self.select_env.clone().unwrap());
-                                app_data.environment.insert(
+                                workspace_data.environment.insert(
                                     self.select_env_name.clone(),
                                     self.select_env_config.clone(),
                                 );
@@ -199,7 +201,7 @@ impl DataView for EnvironmentWindows {
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
         operation.lock_ui("env".to_string(), self.environment_windows_open);
@@ -213,11 +215,11 @@ impl DataView for EnvironmentWindows {
             .open(&mut environment_windows_open)
             .show(ui.ctx(), |ui| {
                 if self.select_env.is_none() {
-                    self.env_list(app_data, ui);
+                    self.env_list(workspace_data, ui);
                 } else {
                     self.select_modify(ui);
                 }
-                self.env_bottom(app_data, ui);
+                self.env_bottom(workspace_data, ui);
             });
         self.environment_windows_open = environment_windows_open;
     }

@@ -3,7 +3,7 @@ use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder, TableRow};
 use strum::IntoEnumIterator;
 
-use crate::data::{AppData, CentralRequestItem, MultipartData, MultipartDataType};
+use crate::data::{CentralRequestItem, MultipartData, MultipartDataType, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::utils;
@@ -19,10 +19,10 @@ impl DataView for RequestBodyFormDataPanel {
         &mut self,
         ui: &mut egui::Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        let data = app_data
+        let data = workspace_data
             .central_request_data_list
             .data_map
             .get_mut(cursor.as_str())

@@ -2,7 +2,7 @@ use egui::{RichText, Ui};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{AppData, CentralRequestItem, Response, ResponseStatus};
+use crate::data::{CentralRequestItem, Response, ResponseStatus, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
@@ -43,7 +43,7 @@ impl ResponsePanel {
     fn build_ready_panel(
         &mut self,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: String,
         ui: &mut Ui,
         data: &CentralRequestItem,
@@ -95,15 +95,15 @@ impl ResponsePanel {
         match self.open_panel_enum {
             ResponsePanelEnum::Body => {
                 self.response_body_panel
-                    .set_and_render(ui, operation, app_data, cursor);
+                    .set_and_render(ui, operation, workspace_data, cursor);
             }
             ResponsePanelEnum::Cookies => {
                 self.response_cookies_panel
-                    .set_and_render(ui, operation, app_data, cursor);
+                    .set_and_render(ui, operation, workspace_data, cursor);
             }
             ResponsePanelEnum::Headers => {
                 self.response_headers_panel
-                    .set_and_render(ui, operation, app_data, cursor);
+                    .set_and_render(ui, operation, workspace_data, cursor);
             }
         }
     }
@@ -116,10 +116,10 @@ impl DataView for ResponsePanel {
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        let data = app_data
+        let data = workspace_data
             .central_request_data_list
             .data_map
             .get(cursor.as_str())
@@ -140,7 +140,7 @@ impl DataView for ResponsePanel {
             }
 
             ResponseStatus::Ready => {
-                self.build_ready_panel(operation, app_data, cursor, ui, &data);
+                self.build_ready_panel(operation, workspace_data, cursor, ui, &data);
             }
             ResponseStatus::Error => {
                 ui.centered_and_justified(|ui| {

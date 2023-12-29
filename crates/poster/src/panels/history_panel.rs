@@ -1,6 +1,6 @@
 use egui::CollapsingHeader;
 
-use crate::data::{AppData, CentralRequestItem};
+use crate::data::{CentralRequestItem, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::utils;
@@ -14,10 +14,10 @@ impl DataView for HistoryPanel {
         &mut self,
         ui: &mut egui::Ui,
         operation: &mut Operation,
-        app_data: &mut AppData,
+        workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        for (date, date_history_data) in app_data.history_data_list.get_group().iter().rev() {
+        for (date, date_history_data) in workspace_data.history_data_list.get_group().iter().rev() {
             CollapsingHeader::new(date.to_string())
                 .default_open(false)
                 .show(ui, |ui| {
@@ -26,7 +26,7 @@ impl DataView for HistoryPanel {
                             utils::build_rest_ui_header(history_rest_item.rest.clone(), None, ui);
                         let button = ui.button(lb);
                         if button.clicked() {
-                            app_data
+                            workspace_data
                                 .central_request_data_list
                                 .add_crt(CentralRequestItem {
                                     id: history_rest_item.id.clone(),
