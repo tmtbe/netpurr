@@ -4,6 +4,7 @@ use crate::data::{ConfigData, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
+use crate::panels::workspace_windows::WorkspaceWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 
 #[derive(Default)]
@@ -16,6 +17,7 @@ pub struct App {
     show_confirmation_dialog: bool,
     allowed_to_close: bool,
     current_workspace: String,
+    workspace_windows: WorkspaceWindows,
 }
 
 impl App {
@@ -28,8 +30,7 @@ impl App {
         let mut app = App::default();
         app.config_data = ConfigData::load();
         app.workspace_data
-            .load_all(app.config_data.select_workspace().to_string())
-            .expect("app start error");
+            .load_all(app.config_data.select_workspace().to_string());
         app
     }
 
@@ -99,63 +100,81 @@ impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            ui.set_enabled(!self.operation.get_ui_lock());
-            // The top panel is often a good place for a menu bar:
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("New...").clicked() {}
-                    if ui.button("Import...").clicked() {}
-                    if ui.button("Exit").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                    }
+            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
+                // The top panel is often a good place for a menu bar:
+                egui::menu::bar(ui, |ui| {
+                    ui.menu_button("File", |ui| {
+                        if ui.button("New...").clicked() {}
+                        if ui.button("Import...").clicked() {}
+                        if ui.button("Exit").clicked() {
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
+                    });
+                    ui.menu_button("View", |ui| {
+                        if ui.button("Zoom In").clicked() {}
+                        if ui.button("Zoom Out").clicked() {}
+                    });
+                    egui::widgets::global_dark_light_mode_buttons(ui);
                 });
-                ui.menu_button("View", |ui| {
-                    if ui.button("Zoom In").clicked() {}
-                    if ui.button("Zoom Out").clicked() {}
+                ui.add_space(HORIZONTAL_GAP);
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        if ui.button("New").clicked() {}
+                        ui.add_space(HORIZONTAL_GAP);
+                        if ui.button("Import").clicked() {}
+                        ui.add_space(HORIZONTAL_GAP);
+                        self.current_workspace = self.config_data.select_workspace().to_string();
+                        egui::ComboBox::from_id_source("workspace")
+                            .selected_text(
+                                "Select workspace: ".to_string() + self.current_workspace.as_str(),
+                            )
+                            .show_ui(ui, |ui| {
+                                ui.style_mut().wrap = Some(false);
+                                ui.set_min_width(60.0);
+                                if ui.button("⚙ Manage Workspace").clicked() {
+                                    self.workspace_windows.open(&self.config_data);
+                                }
+                                for (name, _) in self.config_data.workspaces().iter() {
+                                    ui.selectable_value(
+                                        &mut self.current_workspace,
+                                        name.to_string(),
+                                        name.to_string(),
+                                    );
+                                }
+                            });
+                        if self.current_workspace != self.config_data.select_workspace() {
+                            self.config_data
+                                .set_select_workspace(self.current_workspace.clone());
+                            self.workspace_data = WorkspaceData::default();
+                            self.workspace_data.load_all(self.current_workspace.clone());
+                        }
+                    });
                 });
-                egui::widgets::global_dark_light_mode_buttons(ui);
+                ui.add_space(HORIZONTAL_GAP);
             });
-            ui.add_space(HORIZONTAL_GAP);
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    if ui.button("New").clicked() {}
-                    ui.add_space(HORIZONTAL_GAP);
-                    if ui.button("Import").clicked() {}
-                    ui.add_space(HORIZONTAL_GAP);
-                    self.current_workspace = self.config_data.select_workspace().to_string();
-                    egui::ComboBox::from_id_source("workspace")
-                        .selected_text("WorkSpace: ".to_string() + self.current_workspace.as_str())
-                        .show_ui(ui, |ui| {
-                            ui.style_mut().wrap = Some(false);
-                            ui.set_min_width(60.0);
-                            for workspace in self.config_data.workspaces().iter() {
-                                ui.selectable_value(
-                                    &mut self.current_workspace,
-                                    workspace.to_string(),
-                                    workspace,
-                                );
-                            }
-                        });
-                    if self.current_workspace != self.config_data.select_workspace() {
-                        self.config_data
-                            .set_select_workspace(self.current_workspace.clone());
-                        self.workspace_data = WorkspaceData::default();
-                        self.workspace_data.load_all(self.current_workspace.clone());
-                    }
-                });
-            });
-            ui.add_space(HORIZONTAL_GAP);
+            self.workspace_windows
+                .set_and_render(ui, &mut self.operation, &mut self.config_data)
         });
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
-            ui.set_enabled(!self.operation.get_ui_lock());
-            self.left_panel
-                .set_and_render(ui, &mut self.operation, &mut self.workspace_data, 0);
+            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
+                self.left_panel.set_and_render(
+                    ui,
+                    &mut self.operation,
+                    &mut self.workspace_data,
+                    0,
+                );
+            });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.set_enabled(!self.operation.get_ui_lock());
-            self.central_panel
-                .set_and_render(ui, &mut self.operation, &mut self.workspace_data, 0);
+            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
+                self.central_panel.set_and_render(
+                    ui,
+                    &mut self.operation,
+                    &mut self.workspace_data,
+                    0,
+                );
+            });
         });
 
         if ctx.input(|i| i.viewport().close_requested()) {

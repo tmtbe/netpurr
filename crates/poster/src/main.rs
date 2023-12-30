@@ -1,11 +1,18 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+use chrono::{Datelike, Local, Timelike};
+use log::LevelFilter;
+use log4rs::append::console::ConsoleAppender;
+use log4rs::append::file::FileAppender;
+use log4rs::config::{Appender, Root};
+use log4rs::encode::pattern::PatternEncoder;
+use log4rs::Config;
+
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {
-    env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
-
+    set_log_config();
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1000.0, 500.0])
@@ -20,6 +27,41 @@ fn main() -> eframe::Result<()> {
             Box::new(poster::App::new(cc))
         }),
     )
+}
+
+fn set_log_config() {
+    let local_time = Local::now();
+    // 生成文件名格式
+    let file_name = format!(
+        "{:04}{:02}{:02}_{:02}{:02}{:02}.log",
+        local_time.year(),
+        local_time.month(),
+        local_time.day(),
+        local_time.hour(),
+        local_time.minute(),
+        local_time.second()
+    );
+    let log_path = dirs::home_dir()
+        .unwrap()
+        .join("Poster")
+        .join("logs")
+        .join(file_name);
+    let stdout = ConsoleAppender::builder().build();
+    let file = FileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{d} - {m}{n}")))
+        .build(log_path)
+        .unwrap();
+    let config = Config::builder()
+        .appender(Appender::builder().build("stdout", Box::new(stdout)))
+        .appender(Appender::builder().build("file", Box::new(file)))
+        .build(
+            Root::builder()
+                .appender("stdout")
+                .appender("file")
+                .build(LevelFilter::Info),
+        )
+        .unwrap();
+    log4rs::init_config(config).expect("init log error");
 }
 
 // When compiling to web using trunk:

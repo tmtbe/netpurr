@@ -11,7 +11,6 @@ use base64::engine::general_purpose;
 use base64::Engine;
 use chrono::{DateTime, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
-use egui::ahash::HashSet;
 use egui::TextBuffer;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
@@ -26,14 +25,29 @@ use crate::utils;
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct ConfigData {
     select_workspace: String,
-    #[serde(skip)]
-    workspaces: HashSet<String>,
+    #[serde(skip, default)]
+    workspaces: BTreeMap<String, Workspace>,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Workspace {
+    pub name: String,
+    pub path: PathBuf,
+}
 impl Default for ConfigData {
     fn default() -> Self {
-        let mut workspaces = HashSet::default();
-        workspaces.insert("default".to_string());
+        let mut workspaces = BTreeMap::default();
+        workspaces.insert(
+            "default".to_string(),
+            Workspace {
+                name: "default".to_string(),
+                path: dirs::home_dir()
+                    .unwrap_or(Path::new("/home").to_path_buf())
+                    .join("Poster")
+                    .join("workspaces")
+                    .join("default"),
+            },
+        );
         ConfigData {
             select_workspace: "default".to_string(),
             workspaces: workspaces,
@@ -73,7 +87,13 @@ impl ConfigData {
                     if let Ok(entry) = entry {
                         if entry.path().is_dir() {
                             if let Some(file_name) = entry.file_name().to_str() {
-                                self.workspaces.insert(file_name.to_string());
+                                self.workspaces.insert(
+                                    file_name.to_string(),
+                                    Workspace {
+                                        name: file_name.to_string(),
+                                        path: entry.path(),
+                                    },
+                                );
                             }
                         }
                     }
@@ -98,7 +118,7 @@ impl ConfigData {
         }
         Ok(())
     }
-    pub fn workspaces(&self) -> &HashSet<String> {
+    pub fn workspaces(&self) -> &BTreeMap<String, Workspace> {
         &self.workspaces
     }
 }
@@ -120,16 +140,16 @@ pub struct CookiesManager {
 }
 
 impl CookiesManager {
-    pub fn load_all(&mut self, workspace: String) -> Result<(), Error> {
+    pub fn load_all(&mut self, workspace: String) {
         self.persistence.set_workspace(workspace);
         for cookie_dir in self
             .persistence
-            .load_list(Path::new("cookies").to_path_buf())?
+            .load_list(Path::new("cookies").to_path_buf())
             .iter()
         {
             if let Some(cookie_dir_str) = cookie_dir.file_name() {
                 if let Some(domain_name) = cookie_dir_str.to_str() {
-                    if let Ok(cookie_item) = self.persistence.load(cookie_dir.clone()) {
+                    if let Some(cookie_item) = self.persistence.load(cookie_dir.clone()) {
                         self.data_map.insert(
                             Persistence::decode_with_file_name(domain_name.to_string()),
                             cookie_item,
@@ -138,7 +158,6 @@ impl CookiesManager {
                 }
             }
         }
-        Ok(())
     }
     pub fn contain_domain(&self, domain: String) -> bool {
         self.data_map.contains_key(domain.as_str())
@@ -237,11 +256,11 @@ impl CookiesManager {
 }
 
 impl WorkspaceData {
-    pub fn load_all(&mut self, workspace: String) -> Result<(), Error> {
-        self.central_request_data_list.load_all(workspace.clone())?;
-        self.history_data_list.load_all(workspace.clone())?;
-        self.environment.load_all(workspace.clone())?;
-        self.collections.load_all(workspace.clone())?;
+    pub fn load_all(&mut self, workspace: String) {
+        self.central_request_data_list.load_all(workspace.clone());
+        self.history_data_list.load_all(workspace.clone());
+        self.environment.load_all(workspace.clone());
+        self.collections.load_all(workspace.clone());
         self.cookies_manager.load_all(workspace.clone())
     }
 
@@ -336,11 +355,11 @@ pub struct Collections {
 }
 
 impl Collections {
-    fn load_all(&mut self, workspace: String) -> Result<(), Error> {
+    fn load_all(&mut self, workspace: String) {
         self.persistence.set_workspace(workspace);
         for collection_file in self
             .persistence
-            .load_list(Path::new("collections").to_path_buf())?
+            .load_list(Path::new("collections").to_path_buf())
             .iter()
         {
             if collection_file.is_file() {
@@ -356,7 +375,6 @@ impl Collections {
                 }
             }
         }
-        Ok(())
     }
     pub fn insert_collection(&mut self, collection: Collection) {
         collection.folder.borrow_mut().fix_path(".".to_string());
@@ -498,7 +516,7 @@ impl Collections {
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Collection {
     pub envs: EnvironmentConfig,
-    #[serde(skip)]
+    #[serde(skip, default)]
     pub folder: Rc<RefCell<CollectionFolder>>,
 }
 
@@ -549,15 +567,17 @@ impl Collection {
     fn load(&mut self, persistence: Persistence, dir_path: PathBuf, file_path: PathBuf) {
         file_path.clone().file_name().map(|file_name_os| {
             file_name_os.to_str().map(|file_name| {
-                file_name.split("@info").next().map(|folder_name| {
-                    let collection: Result<Collection, _> = persistence.load(file_path);
-                    collection.map(|c| {
-                        self.envs = c.envs;
-                        let mut folder = CollectionFolder::default();
-                        folder.load(persistence, dir_path.join(folder_name));
-                        self.folder = Rc::new(RefCell::new(folder));
+                if file_name.ends_with("@info.json") {
+                    file_name.split("@info").next().map(|folder_name| {
+                        let collection: Option<Collection> = persistence.load(file_path);
+                        collection.map(|c| {
+                            self.envs = c.envs;
+                            let mut folder = CollectionFolder::default();
+                            folder.load(persistence, dir_path.join(folder_name));
+                            self.folder = Rc::new(RefCell::new(folder));
+                        });
                     });
-                });
+                }
             })
         });
     }
@@ -570,15 +590,15 @@ pub struct CollectionFolder {
     pub desc: String,
     pub auth: Auth,
     pub is_root: bool,
-    #[serde(skip)]
+    #[serde(skip, default)]
     pub requests: BTreeMap<String, HttpRecord>,
-    #[serde(skip)]
+    #[serde(skip, default)]
     pub folders: BTreeMap<String, Rc<RefCell<CollectionFolder>>>,
 }
 
 impl CollectionFolder {
-    pub fn load(&mut self, persistence: Persistence, path: PathBuf) -> Result<(), Error> {
-        let collection_folder: Result<CollectionFolder, _> =
+    pub fn load(&mut self, persistence: Persistence, path: PathBuf) {
+        let collection_folder: Option<CollectionFolder> =
             persistence.load(path.join("folder@info.json").to_path_buf());
         collection_folder.map(|cf| {
             self.name = cf.name;
@@ -587,9 +607,9 @@ impl CollectionFolder {
             self.auth = cf.auth;
             self.is_root = cf.is_root;
         });
-        for item in persistence.load_list(path.clone())?.iter() {
-            if item.is_file() {
-                let request: Result<HttpRecord, _> = persistence.load(item.clone());
+        for item in persistence.load_list(path.clone()).iter() {
+            if item.is_file() && item.ends_with(".json") && !item.ends_with("folder@info.json") {
+                let request: Option<HttpRecord> = persistence.load(item.clone());
                 request.map(|r| {
                     self.requests.insert(r.name.clone(), r);
                 });
@@ -602,7 +622,6 @@ impl CollectionFolder {
                 );
             }
         }
-        Ok(())
     }
     pub fn save(&self, persistence: Persistence, path: PathBuf) {
         let path = Path::new(&path).join(self.name.clone()).to_path_buf();
@@ -711,12 +730,12 @@ impl Environment {
         self.persistence.set_workspace(workspace);
         for key in self
             .persistence
-            .load_list(Path::new("environment/data").to_path_buf())?
+            .load_list(Path::new("environment/data").to_path_buf())
             .iter()
         {
             if let Some(key_os) = key.file_name() {
                 if let Some(key_name) = key_os.to_str() {
-                    if let Ok(environment_config) = self.persistence.load(key.clone()) {
+                    if let Some(environment_config) = self.persistence.load(key.clone()) {
                         self.data.insert(
                             Persistence::decode_with_file_name(key_name.to_string()),
                             environment_config,
@@ -782,13 +801,13 @@ struct CentralRequestDataListSaved {
 }
 
 impl CentralRequestDataList {
-    pub fn load_all(&mut self, workspace: String) -> Result<(), Error> {
+    pub fn load_all(&mut self, workspace: String) {
         self.persistence.set_workspace(workspace);
-        let result: Result<CentralRequestDataListSaved, _> = self
+        let result: Option<CentralRequestDataListSaved> = self
             .persistence
             .load(Path::new("requests/data.json").to_path_buf());
         match result {
-            Ok(mut c) => {
+            Some(mut c) => {
                 match &c.select_id {
                     None => {}
                     Some(id) => {
@@ -803,9 +822,8 @@ impl CentralRequestDataList {
                     self.data_list.push(crt.clone());
                 }
             }
-            Err(_) => {}
+            None => {}
         }
-        Ok(())
     }
     pub fn clear(&mut self) {
         self.data_map.clear();
@@ -889,15 +907,16 @@ impl HistoryDataList {
         self.persistence.set_workspace(workspace);
         for date_dir in self
             .persistence
-            .load_list(Path::new("history").to_path_buf())?
+            .load_list(Path::new("history").to_path_buf())
             .iter()
         {
             if let Some(date) = date_dir.file_name() {
                 if let Some(date_name) = date.to_str() {
                     if let Ok(naive_date) = NaiveDate::from_str(date_name) {
                         let mut date_group_history_list = DateGroupHistoryList::default();
-                        for item_path in self.persistence.load_list(date_dir.clone())?.iter() {
-                            if let Ok(history_rest_item) = self.persistence.load(item_path.clone())
+                        for item_path in self.persistence.load_list(date_dir.clone()).iter() {
+                            if let Some(history_rest_item) =
+                                self.persistence.load(item_path.clone())
                             {
                                 date_group_history_list.history_list.push(history_rest_item);
                             }
