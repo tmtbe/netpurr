@@ -1,5 +1,7 @@
 use std::io::Read;
 
+use poll_promise::Promise;
+
 use crate::data::{ConfigData, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::central_panel::MyCentralPanel;
@@ -18,6 +20,8 @@ pub struct App {
     allowed_to_close: bool,
     current_workspace: String,
     workspace_windows: WorkspaceWindows,
+    sync_promise: Option<Promise<rustygit::types::Result<()>>>,
+    sync_status: String,
 }
 
 impl App {
@@ -132,7 +136,7 @@ impl eframe::App for App {
                                 ui.style_mut().wrap = Some(false);
                                 ui.set_min_width(60.0);
                                 if ui.button("⚙ Manage Workspace").clicked() {
-                                    self.workspace_windows.open(&self.config_data);
+                                    self.workspace_windows.open(&mut self.config_data);
                                 }
                                 for (name, _) in self.config_data.workspaces().iter() {
                                     ui.selectable_value(
@@ -142,6 +146,41 @@ impl eframe::App for App {
                                     );
                                 }
                             });
+                        let select_workspace = self.config_data.select_workspace().to_string();
+                        if let Some(workspace) = self
+                            .config_data
+                            .mut_workspaces()
+                            .get_mut(select_workspace.as_str())
+                        {
+                            if workspace.is_enable_git() && workspace.is_enable_git() {
+                                if self.sync_promise.is_some() {
+                                    ui.add_enabled_ui(false, |ui| ui.button("🔄"));
+                                } else {
+                                    if ui.button("🔄").clicked() {
+                                        self.sync_promise = Some(
+                                            self.workspace_windows
+                                                .git_sync_promise(workspace.path.clone()),
+                                        );
+                                    }
+                                    ui.label(self.sync_status.clone());
+                                }
+                            }
+                        }
+                        match &self.sync_promise {
+                            None => {}
+                            Some(result) => match result.ready() {
+                                None => {}
+                                Some(result) => {
+                                    if result.is_ok() {
+                                        self.sync_status = "Success".to_string();
+                                    } else {
+                                        self.sync_status = "Failed".to_string();
+                                    }
+                                    self.sync_promise = None;
+                                    self.workspace_data.load_all(self.current_workspace.clone());
+                                }
+                            },
+                        }
                         if self.current_workspace != self.config_data.select_workspace() {
                             self.config_data
                                 .set_select_workspace(self.current_workspace.clone());
