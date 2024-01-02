@@ -15,20 +15,13 @@ jobs:
 
     strategy:
       matrix:
-        # You can add more, for any target you'd like!
         include:
-          #          - build: linux
-          #            os: ubuntu-latest
-          #            target: x86_64-unknown-linux-musl
-          #
           - build: macos
             os: macos-latest
             target: x86_64-apple-darwin
-
-    #          - build: macos
-    #            os: macos-latest
-    #            target: aarch64-apple-darwin
-
+          - build: windows-gnu
+            os: windows-latest
+            target: x86_64-pc-windows-gnu
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -38,26 +31,24 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - name: Install Rust
-        # Or @nightly if you want
         uses: dtolnay/rust-toolchain@stable
-        # Arguments to pass in
         with:
-          # Make Rust compile to our target (defined in the matrix)
           targets: ${{ matrix.target }}
 
-      - name: Add target
-        run: rustup target add aarch64-apple-darwin
+      - name: Add win target
+        if: "${{ matrix.os == 'windows-latest' }}"
+        run: rustup target add x86_64-pc-windows-gnu
 
-      #      - name: Build
-      #        uses: actions-rs/cargo@v1
-      #        with:
-      #          #          use-cross: true
-      #          command: build
-      #          args: --verbose --release --target ${{ matrix.target }}
+      - name: Build Win
+        if: "${{ matrix.os == 'windows-latest' }}"
+        run: cargo build --release --target ${{ matrix.target }}
+
       - name: Add Bundle
+        if: "${{ matrix.os == 'macos-latest' }}"
         run: cargo install cargo-bundle
 
-      - name: Build
+      - name: Build Mac
+        if: "${{ matrix.os == 'macos-latest' }}"
         working-directory: ./crates/poster
         run: cargo bundle --release --target ${{ matrix.target }}
 
@@ -72,10 +63,19 @@ jobs:
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             mv "target/${{ matrix.target }}/release/bundle/osx/$binary_name.app" "$dirname"
           fi
+          
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            mv "target/${{ matrix.target }}/release/$binary_name.exe" "$dirname"
+          fi
 
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             tar -czf "$dirname.tar.gz" "$dirname"
             echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
+          fi
+          
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            7z a "$dirname.zip" "$dirname"
+            echo "ASSET=$dirname.zip" >> $GITHUB_ENV
           fi
 
       - name: Release
