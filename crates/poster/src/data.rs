@@ -313,6 +313,12 @@ impl WorkspaceData {
         self.collections.load_all(workspace.clone());
         self.cookies_manager.load_all(workspace.clone())
     }
+    pub fn reload_data(&mut self, workspace: String) {
+        self.history_data_list.load_all(workspace.clone());
+        self.environment.load_all(workspace.clone());
+        self.collections.load_all(workspace.clone());
+        self.cookies_manager.load_all(workspace.clone())
+    }
 
     pub fn get_collection(&self, option_path: Option<String>) -> Option<Collection> {
         let path = option_path?;
@@ -658,10 +664,14 @@ impl CollectionFolder {
             self.is_root = cf.is_root;
         });
         for item in persistence.load_list(path.clone()).iter() {
-            if item.is_file() && item.ends_with(".json") && !item.ends_with("folder@info.json") {
-                let request: Option<HttpRecord> = persistence.load(item.clone());
-                request.map(|r| {
-                    self.requests.insert(r.name.clone(), r);
+            if item.is_file() {
+                item.to_str().map(|name| {
+                    if name.ends_with(".json") && !name.ends_with("folder@info.json") {
+                        let request: Option<HttpRecord> = persistence.load(item.clone());
+                        request.map(|r| {
+                            self.requests.insert(r.name.clone(), r);
+                        });
+                    }
                 });
             } else if item.is_dir() {
                 let mut child_folder = CollectionFolder::default();

@@ -177,7 +177,8 @@ impl eframe::App for App {
                                         self.sync_status = "Failed".to_string();
                                     }
                                     self.sync_promise = None;
-                                    self.workspace_data.load_all(self.current_workspace.clone());
+                                    self.workspace_data
+                                        .reload_data(self.current_workspace.clone());
                                 }
                             },
                         }
