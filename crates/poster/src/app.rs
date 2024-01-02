@@ -88,6 +88,7 @@ impl App {
         }
         #[cfg(windows)]
         {
+            use std::path::PathBuf;
             let font_file = {
                 // c:/Windows/Fonts/msyh.ttc
                 let mut font_path = PathBuf::from(std::env::var("SystemRoot").ok()?);

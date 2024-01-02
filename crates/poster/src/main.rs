@@ -1,7 +1,10 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+use std::sync::Arc;
+
 use chrono::{Datelike, Local, Timelike};
+use eframe::icon_data::from_png_bytes;
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::append::file::FileAppender;
@@ -15,6 +18,9 @@ fn main() -> eframe::Result<()> {
     set_log_config();
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
+            .with_icon(Arc::new(
+                from_png_bytes(&include_bytes!("../icon/icon128.png")[..]).unwrap(),
+            ))
             .with_inner_size([1000.0, 500.0])
             .with_min_inner_size([800.0, 400.0]),
         ..Default::default()

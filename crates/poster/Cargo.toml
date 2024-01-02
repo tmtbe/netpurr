@@ -10,6 +10,7 @@ default-run = "poster"
 [package.metadata.bundle]
 name = "Poster"
 identifier = "com.thoughtworks.poster"
+icon = ["icon/icon*.png"]
 
 
 [package.metadata.docs.rs]
