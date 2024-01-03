@@ -8,6 +8,7 @@ use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
 use crate::panels::workspace_windows::WorkspaceWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
+use crate::script::script::ScriptRuntime;
 
 #[derive(Default)]
 pub struct App {
@@ -22,6 +23,7 @@ pub struct App {
     workspace_windows: WorkspaceWindows,
     sync_promise: Option<Promise<rustygit::types::Result<()>>>,
     sync_status: String,
+    script_runtime: ScriptRuntime,
 }
 
 impl App {

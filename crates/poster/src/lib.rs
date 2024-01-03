@@ -8,5 +8,6 @@ mod env_func;
 mod operation;
 mod panels;
 mod save;
+mod script;
 mod utils;
 mod widgets;
