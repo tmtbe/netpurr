@@ -130,6 +130,13 @@ impl HighlightTemplate<'_> {
                                         });
                                         ui.add_space(VERTICAL_GAP);
                                         ui.horizontal(|ui| {
+                                            ui.strong("TYPE");
+                                            ui.label(
+                                                self.envs.get(&key).unwrap().value_type.to_string(),
+                                            )
+                                        });
+                                        ui.add_space(VERTICAL_GAP);
+                                        ui.horizontal(|ui| {
                                             ui.strong("SCOPE");
                                             ui.label(self.envs.get(&key).unwrap().scope.clone())
                                         });

@@ -1,5 +1,6 @@
 use std::cmp::min;
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
 use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
@@ -11,7 +12,8 @@ use egui::{
 };
 use regex::Regex;
 
-use crate::data::{EnvironmentItemValue, HttpRecord};
+use crate::data::{EnvironmentItemValue, EnvironmentValueType, HttpRecord};
+use crate::env_func::{get_env_result, EnvFunction};
 use crate::panels::HORIZONTAL_GAP;
 
 pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) -> LayoutJob {
@@ -152,20 +154,34 @@ pub fn replace_variable(content: String, envs: BTreeMap<String, EnvironmentItemV
     loop {
         let temp = result.clone();
         let find = re.find_iter(temp.as_str()).next();
-        if find.is_some() {
-            let key = find
-                .unwrap()
-                .as_str()
-                .trim_start_matches("{{")
-                .trim_end_matches("}}");
-            let v = envs.get(key);
-            if v.is_some() {
-                result.replace_range(find.unwrap().range(), v.unwrap().value.as_str())
-            } else {
-                result.replace_range(find.unwrap().range(), "{UNKNOWN}")
+        match find {
+            None => break,
+            Some(find_match) => {
+                let key = find
+                    .unwrap()
+                    .as_str()
+                    .trim_start_matches("{{")
+                    .trim_end_matches("}}");
+                let v = envs.get(key);
+                match v {
+                    None => result.replace_range(find_match.range(), "{UNKNOWN}"),
+                    Some(etv) => match etv.value_type {
+                        EnvironmentValueType::String => {
+                            result.replace_range(find_match.range(), etv.value.as_str())
+                        }
+                        EnvironmentValueType::Function => {
+                            let env_func = EnvFunction::from_str(etv.value.as_str());
+                            match env_func {
+                                Ok(f) => result
+                                    .replace_range(find_match.range(), get_env_result(f).as_str()),
+                                Err(_) => {
+                                    result.replace_range(find_match.range(), "{UNKNOWN}");
+                                }
+                            }
+                        }
+                    },
+                }
             }
-        } else {
-            break;
         }
     }
     result

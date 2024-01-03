@@ -14,12 +14,14 @@ use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
 use rustygit::Repository;
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use urlencoding::encode;
 use uuid::Uuid;
 
 use ehttp::multipart::MultipartBuilder;
 
+use crate::env_func::EnvFunction;
 use crate::save::{Persistence, PersistenceItem};
 use crate::utils;
 
@@ -607,6 +609,7 @@ impl Collection {
                 EnvironmentItemValue {
                     value: item.value.to_string(),
                     scope: self.folder.borrow().name.clone() + " Collection",
+                    value_type: item.value_type.clone(),
                 },
             );
         }
@@ -725,6 +728,7 @@ pub const ENVIRONMENT_GLOBALS: &str = "__Globals__";
 pub struct EnvironmentItemValue {
     pub value: String,
     pub scope: String,
+    pub value_type: EnvironmentValueType,
 }
 
 impl Environment {
@@ -743,29 +747,55 @@ impl Environment {
         &self,
         collection: Option<Collection>,
     ) -> BTreeMap<String, EnvironmentItemValue> {
-        self.status
-            .select
-            .clone()
-            .map_or_else(BTreeMap::default, |s| {
+        self.status.select.clone().map_or_else(
+            || {
                 let mut result = BTreeMap::default();
                 self.get(ENVIRONMENT_GLOBALS.to_string()).map(|e| {
-                    for x in e.items.iter().filter(|i| i.enable) {
+                    for et in e.items.iter().filter(|i| i.enable) {
                         result.insert(
-                            x.key.clone(),
+                            et.key.clone(),
                             EnvironmentItemValue {
-                                value: x.value.clone(),
+                                value: et.value.clone(),
                                 scope: ENVIRONMENT_GLOBALS.to_string(),
+                                value_type: et.value_type.clone(),
+                            },
+                        );
+                    }
+                });
+                for ef in EnvFunction::iter() {
+                    result.insert(
+                        "$".to_string() + ef.to_string().as_str(),
+                        EnvironmentItemValue {
+                            value: ef.to_string(),
+                            scope: "Global".to_string(),
+                            value_type: EnvironmentValueType::Function,
+                        },
+                    );
+                }
+                result
+            },
+            |s| {
+                let mut result = BTreeMap::default();
+                self.get(ENVIRONMENT_GLOBALS.to_string()).map(|e| {
+                    for et in e.items.iter().filter(|i| i.enable) {
+                        result.insert(
+                            et.key.clone(),
+                            EnvironmentItemValue {
+                                value: et.value.clone(),
+                                scope: ENVIRONMENT_GLOBALS.to_string(),
+                                value_type: et.value_type.clone(),
                             },
                         );
                     }
                 });
                 self.get(s.clone()).map(|e| {
-                    for x in e.items.iter().filter(|i| i.enable) {
+                    for et in e.items.iter().filter(|i| i.enable) {
                         result.insert(
-                            x.key.clone(),
+                            et.key.clone(),
                             EnvironmentItemValue {
-                                value: x.value.clone(),
+                                value: et.value.clone(),
                                 scope: s.clone(),
+                                value_type: et.value_type.clone(),
                             },
                         );
                     }
@@ -777,13 +807,24 @@ impl Environment {
                             EnvironmentItemValue {
                                 value: et.value.clone(),
                                 scope: c.folder.borrow().name.clone() + " Collection",
+                                value_type: et.value_type.clone(),
                             },
                         );
                     }
                 });
-
+                for ef in EnvFunction::iter() {
+                    result.insert(
+                        "$".to_string() + ef.to_string().as_str(),
+                        EnvironmentItemValue {
+                            value: ef.to_string(),
+                            scope: "Global".to_string(),
+                            value_type: EnvironmentValueType::Function,
+                        },
+                    );
+                }
                 result
-            })
+            },
+        )
     }
 
     pub fn load_all(&mut self, workspace: String) -> Result<(), Error> {
@@ -844,6 +885,19 @@ pub struct EnvironmentItem {
     pub enable: bool,
     pub key: String,
     pub value: String,
+    pub value_type: EnvironmentValueType,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Display)]
+pub enum EnvironmentValueType {
+    String,
+    Function,
+}
+
+impl Default for EnvironmentValueType {
+    fn default() -> Self {
+        EnvironmentValueType::String
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]

@@ -4,6 +4,7 @@ pub use app::App;
 
 mod app;
 mod data;
+mod env_func;
 mod operation;
 mod panels;
 mod save;
