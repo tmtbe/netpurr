@@ -34,7 +34,7 @@ egui = { version = "0.24.1",features = [
     "extra_debug_asserts",
     "log",
 ]}
-egui_extras = { version = "0.24.1",features = ["image"] }
+egui_extras = { version = "0.24.1", features = ["image", "syntect"] }
 egui_plot = {version = "0.24.1"}
 eframe = { version = "0.24.1", default-features = false, features = [
     "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
@@ -71,6 +71,7 @@ rfd = "0.12.1"
 regex = "1.10.2"
 base64 = "0.21.5"
 mime_guess = "2.0.4"
+enum-map = { version = "2", features = ["serde"] }
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rfd = { version = "0.12.1", optional = true }

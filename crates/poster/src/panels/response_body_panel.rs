@@ -13,16 +13,16 @@ impl ResponseBodyPanel {
         if content_type_header.is_some() {
             let content_type = content_type_header.unwrap().value.clone();
             if content_type.contains("json") {
-                return "toml".to_string();
+                return "json".to_string();
             } else if content_type.contains("html") {
-                return "toml".to_string();
+                return "html".to_string();
             } else if content_type.contains("js") {
-                return "toml".to_string();
+                return "js".to_string();
             } else if content_type.contains("xml") {
-                return "toml".to_string();
+                return "xml".to_string();
             }
         }
-        "toml".to_string()
+        "json".to_string()
     }
 }
 
