@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use std::time::Instant;
 
 use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
@@ -29,7 +28,6 @@ pub struct RestPanel {
     request_body_panel: RequestBodyPanel,
     response_panel: ResponsePanel,
     send_promise: Option<Promise<ehttp::Result<ehttp::Response>>>,
-    send_instant: Option<Instant>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -140,8 +138,7 @@ impl RestPanel {
                         if ui.button("Send").clicked() {
                             let send_response =
                                 operation.rest_sender().send(&mut data.rest, envs.clone());
-                            self.send_promise = Some(send_response.0);
-                            self.send_instant = Some(send_response.1);
+                            self.send_promise = Some(send_response);
                             send_rest = Some(data.rest.clone());
                         }
                     }
@@ -253,14 +250,14 @@ impl RestPanel {
         }
     }
 
-    fn send_promise(&mut self, workspace_data: &mut WorkspaceData, cursor: String) {
+    fn send_promise(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData, cursor: String) {
         let mut option_response_cookies = None;
         if let Some(promise) = &self.send_promise {
             let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
             if let Some(result) = promise.ready() {
-                data.rest.elapsed_time = Some(self.send_instant.unwrap().elapsed().as_millis());
                 match result {
                     Ok(r) => {
+                        data.rest.elapsed_time = Some(r.elapsed_time.as_millis());
                         data.rest.response = Response {
                             body: Rc::new(HttpBody::new(r.bytes.clone())),
                             headers: Header::new_from_tuple(r.headers.clone()),
@@ -276,6 +273,7 @@ impl RestPanel {
                 }
                 self.send_promise = None;
             } else {
+                ui.ctx().request_repaint();
                 data.rest.pending()
             }
         }
@@ -351,7 +349,7 @@ impl DataView for RestPanel {
             self.render_middle_select(operation, workspace_data, cursor.clone(), ui);
             ui.separator();
         });
-        self.send_promise(workspace_data, cursor.clone());
+        self.send_promise(ui, workspace_data, cursor.clone());
         self.render_request_open_panel(ui, operation, workspace_data, cursor.clone());
         ui.separator();
         self.response_panel

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 #[cfg(feature = "multipart")]
 use crate::multipart::MultipartBuilder;
 
@@ -108,6 +110,8 @@ pub struct Response {
 
     /// The raw bytes of the response body.
     pub bytes: Vec<u8>,
+
+    pub elapsed_time: Duration,
 }
 
 impl Response {
@@ -180,6 +184,7 @@ impl PartialResponse {
             status_text,
             headers,
             bytes,
+            elapsed_time: Default::default(),
         }
     }
 }

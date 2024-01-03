@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
-use std::time::Instant;
 
 use eframe::epaint::ahash::HashMap;
 use poll_promise::Promise;
@@ -46,7 +45,7 @@ impl RestSender {
         &self,
         rest: &mut HttpRecord,
         envs: BTreeMap<String, EnvironmentItemValue>,
-    ) -> (Promise<ehttp::Result<ehttp::Response>>, Instant) {
+    ) -> Promise<ehttp::Result<ehttp::Response>> {
         let (sender, promise) = Promise::new();
         if !rest.request.base_url.starts_with("http://")
             && !rest.request.base_url.starts_with("https://")
@@ -68,7 +67,7 @@ impl RestSender {
         ehttp::fetch(request, move |response| {
             sender.send(response);
         });
-        return (promise, Instant::now());
+        return promise;
     }
 
     fn build_header(

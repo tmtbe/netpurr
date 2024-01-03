@@ -117,6 +117,7 @@ async fn fetch_jsvalue(request: &Request) -> Result<Response, JsValue> {
         status_text: base.status_text,
         bytes,
         headers: base.headers,
+        elapsed_time: Default::default(),
     })
 }
 

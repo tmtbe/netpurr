@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::time::Instant;
 
 #[cfg(feature = "native-async")]
 use async_channel::{Receiver, Sender};
@@ -30,13 +31,13 @@ pub fn fetch_blocking(request: &Request) -> crate::Result<Response> {
     for header in &request.headers {
         req = req.set(header.0.as_str(), header.1.as_str());
     }
-
+    let start_time = Instant::now();
     let resp = if request.body.is_empty() {
         req.call()
     } else {
         req.send_bytes(&request.body)
     };
-
+    let elapsed_time = start_time.elapsed();
     let (ok, resp) = match resp {
         Ok(resp) => (true, resp),
         Err(ureq::Error::Status(_, resp)) => (false, resp), // Still read the body on e.g. 404
@@ -72,6 +73,7 @@ pub fn fetch_blocking(request: &Request) -> crate::Result<Response> {
         status_text,
         bytes,
         headers,
+        elapsed_time,
     };
     Ok(response)
 }
