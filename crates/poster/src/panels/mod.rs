@@ -14,6 +14,7 @@ mod request_body_panel;
 mod request_body_xxx_form_panel;
 mod request_headers_panel;
 pub mod request_params_panel;
+mod request_pre_script_panel;
 mod response_body_panel;
 mod response_cookies_panel;
 mod response_headers_panel;

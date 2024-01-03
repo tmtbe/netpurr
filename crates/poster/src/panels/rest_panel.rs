@@ -7,13 +7,14 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{
-    Auth, AuthType, BodyType, Header, HttpBody, Method, Request, Response, WorkspaceData,
+    Auth, AuthType, BodyType, Header, HttpBody, HttpRecord, Method, Response, WorkspaceData,
 };
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
+use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP};
 use crate::utils;
@@ -27,6 +28,7 @@ pub struct RestPanel {
     request_headers_panel: RequestHeadersPanel,
     request_body_panel: RequestBodyPanel,
     response_panel: ResponsePanel,
+    request_pre_script_panel: RequestPreScriptPanel,
     send_promise: Option<Promise<ehttp::Result<ehttp::Response>>>,
 }
 
@@ -36,6 +38,7 @@ enum RequestPanelEnum {
     Authorization,
     Headers,
     Body,
+    PreRequestScript,
 }
 
 impl Default for RequestPanelEnum {
@@ -45,35 +48,42 @@ impl Default for RequestPanelEnum {
 }
 
 impl RestPanel {
-    fn get_count(request: &Request, panel_enum: RequestPanelEnum, auth: &Auth) -> usize {
+    fn get_count(hr: &HttpRecord, panel_enum: RequestPanelEnum, auth: &Auth) -> usize {
         match panel_enum {
-            RequestPanelEnum::Params => request.params.iter().filter(|i| i.enable).count(),
+            RequestPanelEnum::Params => hr.request.params.iter().filter(|i| i.enable).count(),
             RequestPanelEnum::Authorization => match auth.get_final_type(auth.clone()) {
                 AuthType::InheritAuthFromParent => 0,
                 AuthType::NoAuth => 0,
                 AuthType::BearerToken => usize::MAX,
                 AuthType::BasicAuth => usize::MAX,
             },
-            RequestPanelEnum::Headers => request.headers.iter().filter(|i| i.enable).count(),
-            RequestPanelEnum::Body => match request.body.body_type {
+            RequestPanelEnum::Headers => hr.request.headers.iter().filter(|i| i.enable).count(),
+            RequestPanelEnum::Body => match hr.request.body.body_type {
                 BodyType::NONE => 0,
-                BodyType::FROM_DATA => request.body.body_form_data.len(),
-                BodyType::X_WWW_FROM_URLENCODED => request.body.body_xxx_form.len(),
+                BodyType::FROM_DATA => hr.request.body.body_form_data.len(),
+                BodyType::X_WWW_FROM_URLENCODED => hr.request.body.body_xxx_form.len(),
                 BodyType::RAW => {
-                    if request.body.body_str != "" {
+                    if hr.request.body.body_str != "" {
                         usize::MAX
                     } else {
                         0
                     }
                 }
                 BodyType::BINARY => {
-                    if request.body.body_file != "" {
+                    if hr.request.body.body_file != "" {
                         usize::MAX
                     } else {
                         0
                     }
                 }
             },
+            RequestPanelEnum::PreRequestScript => {
+                if hr.pre_request_script != "" {
+                    usize::MAX
+                } else {
+                    0
+                }
+            }
         }
     }
 
@@ -247,6 +257,12 @@ impl RestPanel {
                 workspace_data,
                 cursor.clone(),
             ),
+            RequestPanelEnum::PreRequestScript => self.request_pre_script_panel.set_and_render(
+                ui,
+                operation,
+                workspace_data,
+                cursor.clone(),
+            ),
         }
     }
 
@@ -307,7 +323,7 @@ impl RestPanel {
                             x.clone(),
                             utils::build_with_count_ui_header(
                                 x.to_string(),
-                                RestPanel::get_count(&data.rest.request, x, &auth),
+                                RestPanel::get_count(&data.rest, x, &auth),
                                 ui,
                             ),
                         );

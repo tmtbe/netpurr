@@ -72,7 +72,7 @@ regex = "1.10.2"
 base64 = "0.21.5"
 mime_guess = "2.0.4"
 rand = { version = "0.8" }
-deno_core = { version = "0" }
+deno_core = { version = "0.242.0" }
 tokio = { version = "1", features = ["full"] }
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

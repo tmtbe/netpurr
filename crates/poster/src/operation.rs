@@ -9,6 +9,7 @@ use urlencoding::encode;
 use crate::data::{
     Collection, CollectionFolder, EnvironmentItemValue, Header, HttpRecord, QueryParam,
 };
+use crate::script::script::ScriptRuntime;
 use crate::utils;
 
 #[derive(Default)]
@@ -16,6 +17,7 @@ pub struct Operation {
     rest_sender: RestSender,
     open_windows: OpenWindows,
     lock_ui: HashMap<String, bool>,
+    script_runtime: ScriptRuntime,
 }
 
 impl Operation {
@@ -34,6 +36,9 @@ impl Operation {
     }
     pub fn open_windows(&mut self) -> &mut OpenWindows {
         &mut self.open_windows
+    }
+    pub fn script_runtime(&self) -> &ScriptRuntime {
+        &self.script_runtime
     }
 }
 

@@ -26,6 +26,7 @@ use crate::save::{Persistence, PersistenceItem};
 use crate::utils;
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct ConfigData {
     select_workspace: String,
     #[serde(skip, default)]
@@ -41,7 +42,7 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn is_enable_git(&mut self) -> bool {
+    pub fn if_enable_git(&mut self) -> bool {
         if let Some(git) = self.enable_git {
             return git;
         }
@@ -572,6 +573,7 @@ impl Collections {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Collection {
     pub envs: EnvironmentConfig,
     #[serde(skip, default)]
@@ -643,6 +645,7 @@ impl Collection {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct CollectionFolder {
     pub name: String,
     pub parent_path: String,
@@ -718,6 +721,7 @@ pub struct Environment {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct EnvironmentStatus {
     select: Option<String>,
 }
@@ -876,11 +880,13 @@ impl Environment {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct EnvironmentConfig {
     pub items: Vec<EnvironmentItem>,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct EnvironmentItem {
     pub enable: bool,
     pub key: String,
@@ -909,6 +915,7 @@ pub struct CentralRequestDataList {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(default)]
 struct CentralRequestDataListSaved {
     pub select_id: Option<String>,
     pub data_map: HashMap<String, CentralRequestItem>,
@@ -1004,6 +1011,7 @@ impl CentralRequestDataList {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[serde(default)]
 pub struct CentralRequestItem {
     pub id: String,
     pub collection_path: Option<String>,
@@ -1079,6 +1087,7 @@ pub struct DateGroupHistoryList {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct HistoryRestItem {
     pub id: String,
     pub record_date: DateTime<Utc>,
@@ -1086,6 +1095,7 @@ pub struct HistoryRestItem {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct HttpRecord {
     pub name: String,
     pub desc: String,
@@ -1093,6 +1103,7 @@ pub struct HttpRecord {
     pub response: Response,
     pub status: ResponseStatus,
     pub elapsed_time: Option<u128>,
+    pub pre_request_script: String,
 }
 
 impl HttpRecord {
@@ -1125,6 +1136,7 @@ impl Default for ResponseStatus {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Request {
     pub method: Method,
     pub base_url: String,
@@ -1135,6 +1147,7 @@ pub struct Request {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct Auth {
     pub auth_type: AuthType,
     pub basic_username: String,
@@ -1349,6 +1362,7 @@ impl Default for BodyType {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct QueryParam {
     pub key: String,
     pub value: String,
@@ -1357,6 +1371,7 @@ pub struct QueryParam {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct MultipartData {
     pub data_type: MultipartDataType,
     pub key: String,
@@ -1378,6 +1393,7 @@ impl Default for MultipartDataType {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Header {
     pub key: String,
     pub value: String,
@@ -1403,6 +1419,7 @@ impl Header {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Response {
     pub body: Rc<HttpBody>,
     pub headers: Vec<Header>,
@@ -1413,6 +1430,7 @@ pub struct Response {
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct HttpBody {
     pub base64: String,
     pub size: usize,
@@ -1522,6 +1540,7 @@ impl HttpBody {
     }
 }
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Cookie {
     pub name: String,
     pub value: String,

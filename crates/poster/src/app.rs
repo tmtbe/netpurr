@@ -8,7 +8,6 @@ use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
 use crate::panels::workspace_windows::WorkspaceWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
-use crate::script::script::ScriptRuntime;
 
 #[derive(Default)]
 pub struct App {
@@ -23,7 +22,6 @@ pub struct App {
     workspace_windows: WorkspaceWindows,
     sync_promise: Option<Promise<rustygit::types::Result<()>>>,
     sync_status: String,
-    script_runtime: ScriptRuntime,
 }
 
 impl App {
@@ -155,7 +153,7 @@ impl eframe::App for App {
                             .mut_workspaces()
                             .get_mut(select_workspace.as_str())
                         {
-                            if workspace.is_enable_git() && workspace.is_enable_git() {
+                            if workspace.if_enable_git() && workspace.if_enable_git() {
                                 if self.sync_promise.is_some() {
                                     ui.add_enabled_ui(false, |ui| ui.button("🔄"));
                                 } else {

@@ -14,8 +14,17 @@
         },
     };
     globalThis.poster = {
-        set_env: (name, key, value) => {
-            core.ops.set_env(name, key, value)
+        set_env: (key, value) => {
+            core.ops.set_env(key, value)
+        },
+        get_env: (key) => {
+            core.ops.get_env(key)
+        },
+        add_header: (key, value) => {
+            core.ops.add_header(key, value)
+        },
+        add_params: (key, value) => {
+            core.ops.add_params(key, value)
         },
     }
 
