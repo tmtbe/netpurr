@@ -3,11 +3,14 @@ use log::error;
 
 use crate::data::WorkspaceData;
 use crate::operation::Operation;
+use crate::panels::test_script_windows::TestScriptWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
-use crate::script::script::Context;
+use crate::script::script::{Context, Logger};
 
 #[derive(Default)]
-pub struct RequestPreScriptPanel {}
+pub struct RequestPreScriptPanel {
+    test_script_windows: TestScriptWindows,
+}
 
 impl DataView for RequestPreScriptPanel {
     type CursorType = String;
@@ -32,22 +35,14 @@ impl DataView for RequestPreScriptPanel {
                 .resizable(true)
                 .show_separator_line(false)
                 .show_inside(ui, |ui| {
-                    if ui.hyperlink("Test").clicked() {
+                    if ui.link("Test").clicked() {
                         let js = data.rest.pre_request_script.clone();
-                        let static_js: &'static str = Box::leak(js.into_boxed_str());
-                        let result = operation.script_runtime().run(
-                            static_js,
-                            Context {
-                                request: data.rest.request.clone(),
-                                envs,
-                            },
-                        );
-                        match result {
-                            Ok(c) => {}
-                            Err(e) => {
-                                error!("{:?}", e);
-                            }
-                        }
+                        let context = Context {
+                            request: data.rest.request.clone(),
+                            envs,
+                            logger: Logger::default(),
+                        };
+                        self.test_script_windows.open(js, context);
                     }
                 });
             egui::SidePanel::left("pre_request_left")
@@ -71,5 +66,6 @@ impl DataView for RequestPreScriptPanel {
                     });
                 });
         });
+        self.test_script_windows.set_and_render(ui, operation);
     }
 }

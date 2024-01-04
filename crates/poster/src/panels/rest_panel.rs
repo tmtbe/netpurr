@@ -17,6 +17,7 @@ use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP};
+use crate::script::script::{Context, Logger};
 use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
@@ -146,8 +147,24 @@ impl RestPanel {
                         ui.add_enabled(false, Button::new("Send"));
                     } else {
                         if ui.button("Send").clicked() {
+                            data.rest.request.clear_lock_with_script();
+                            let mut send_envs = envs.clone();
+                            if data.rest.pre_request_script != "" {
+                                let js = data.rest.pre_request_script.clone();
+                                let context = Context {
+                                    request: data.rest.request.clone(),
+                                    envs,
+                                    logger: Logger::default(),
+                                };
+                                let result =
+                                    operation.script_runtime().run(js, context).block_and_take();
+                                if let Ok(new_context) = result {
+                                    send_envs = new_context.envs;
+                                    data.rest.request = new_context.request;
+                                }
+                            }
                             let send_response =
-                                operation.rest_sender().send(&mut data.rest, envs.clone());
+                                operation.rest_sender().send(&mut data.rest, send_envs);
                             self.send_promise = Some(send_response);
                             send_rest = Some(data.rest.clone());
                         }

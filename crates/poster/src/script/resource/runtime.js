@@ -7,10 +7,10 @@
 
     globalThis.console = {
         log: (...args) => {
-            core.print(`[out]: ${argsToMessage(...args)}\n`, false);
+            core.ops.log(argsToMessage(...args));
         },
         error: (...args) => {
-            core.print(`[err]: ${argsToMessage(...args)}\n`, true);
+            core.ops.error(argsToMessage(...args));
         },
     };
     globalThis.poster = {

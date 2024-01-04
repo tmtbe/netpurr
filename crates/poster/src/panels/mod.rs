@@ -21,6 +21,7 @@ mod response_headers_panel;
 mod response_panel;
 pub mod rest_panel;
 mod save_windows;
+mod test_script_windows;
 pub mod workspace_windows;
 
 pub const HORIZONTAL_GAP: f32 = 8.0;

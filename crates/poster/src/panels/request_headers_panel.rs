@@ -4,7 +4,7 @@ use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder};
 
-use crate::data::{CentralRequestItem, EnvironmentItemValue, Header, WorkspaceData};
+use crate::data::{CentralRequestItem, EnvironmentItemValue, Header, LockWith, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
@@ -84,17 +84,23 @@ impl RequestHeadersPanel {
         for (index, header) in data.rest.request.headers.iter_mut().enumerate() {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
-                    ui.add_enabled(!header.lock, Checkbox::new(&mut header.enable, ""));
+                    ui.add_enabled(
+                        header.lock_with == LockWith::NoLock,
+                        Checkbox::new(&mut header.enable, ""),
+                    );
                 });
                 row.col(|ui| {
-                    if ui.add_enabled(!header.lock, Button::new("x")).clicked() {
+                    if ui
+                        .add_enabled(header.lock_with == LockWith::NoLock, Button::new("x"))
+                        .clicked()
+                    {
                         delete_index = Some(index)
                     }
                 });
                 row.col(|ui| {
                     HighlightTemplateSinglelineBuilder::default()
                         .envs(envs.clone())
-                        .enable(!header.lock)
+                        .enable(header.lock_with == LockWith::NoLock)
                         .all_space(false)
                         .build(
                             "request_header_key_".to_string() + index.to_string().as_str(),
@@ -105,7 +111,7 @@ impl RequestHeadersPanel {
                 row.col(|ui| {
                     HighlightTemplateSinglelineBuilder::default()
                         .envs(envs.clone())
-                        .enable(!header.lock)
+                        .enable(header.lock_with == LockWith::NoLock)
                         .all_space(false)
                         .build(
                             "request_header_value_".to_string() + index.to_string().as_str(),
@@ -115,7 +121,7 @@ impl RequestHeadersPanel {
                 });
                 row.col(|ui| {
                     ui.add_enabled(
-                        !header.lock,
+                        header.lock_with == LockWith::NoLock,
                         TextEdit::singleline(&mut header.desc).desired_width(f32::INFINITY),
                     );
                 });
@@ -139,7 +145,7 @@ impl RequestHeadersPanel {
             row.col(|ui| {
                 HighlightTemplateSinglelineBuilder::default()
                     .envs(envs.clone())
-                    .enable(!self.new_header.lock)
+                    .enable(self.new_header.lock_with == LockWith::NoLock)
                     .all_space(false)
                     .build(
                         "request_header_key_new".to_string(),
@@ -150,7 +156,7 @@ impl RequestHeadersPanel {
             row.col(|ui| {
                 HighlightTemplateSinglelineBuilder::default()
                     .envs(envs.clone())
-                    .enable(!self.new_header.lock)
+                    .enable(self.new_header.lock_with == LockWith::NoLock)
                     .all_space(false)
                     .build(
                         "request_header_value_new".to_string(),
@@ -159,9 +165,11 @@ impl RequestHeadersPanel {
                     .ui(ui);
             });
             row.col(|ui| {
-                TextEdit::singleline(&mut self.new_header.desc)
-                    .desired_width(f32::INFINITY)
-                    .ui(ui);
+                ui.add_enabled_ui(self.new_header.lock_with == LockWith::NoLock, |ui| {
+                    TextEdit::singleline(&mut self.new_header.desc)
+                        .desired_width(f32::INFINITY)
+                        .ui(ui);
+                });
             });
         });
     }

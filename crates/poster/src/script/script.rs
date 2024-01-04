@@ -6,43 +6,64 @@ use deno_core::anyhow::Error;
 use deno_core::url::Url;
 use deno_core::{op2, ExtensionBuilder, Op, OpState};
 use deno_core::{ModuleCode, PollEventLoopOptions};
+use poll_promise::Promise;
 
-use crate::data::{EnvironmentItemValue, EnvironmentValueType, Header, QueryParam, Request};
+use crate::data::{
+    EnvironmentItemValue, EnvironmentValueType, Header, LockWith, QueryParam, Request,
+};
 
-pub struct ScriptRuntime {
-    runtime: tokio::runtime::Runtime,
-}
-
-impl Default for ScriptRuntime {
-    fn default() -> Self {
-        ScriptRuntime {
-            runtime: tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap(),
-        }
-    }
-}
+#[derive(Default)]
+pub struct ScriptRuntime {}
 
 #[derive(Clone)]
 pub struct Context {
     pub request: Request,
     pub envs: BTreeMap<String, EnvironmentItemValue>,
+    pub logger: Logger,
+}
+
+#[derive(Default, Clone)]
+pub struct Logger {
+    infos: Vec<String>,
+    errors: Vec<String>,
+}
+
+impl Logger {
+    pub fn add_log(&mut self, msg: String) {
+        self.infos.push(msg)
+    }
+    pub fn add_error(&mut self, msg: String) {
+        self.errors.push(msg)
+    }
+
+    pub fn infos(&self) -> Vec<String> {
+        self.infos.clone()
+    }
+    pub fn errors(&self) -> Vec<String> {
+        self.errors.clone()
+    }
 }
 
 impl ScriptRuntime {
-    pub fn run(&self, js: &'static str, context: Context) -> Result<Context, Error> {
-        let new_context = self.runtime.block_on(self.run_js(js, context))?;
-        Ok(new_context)
+    pub fn run(&self, js: String, context: Context) -> Promise<Result<Context, Error>> {
+        Promise::spawn_thread("script", || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            runtime.block_on(async { ScriptRuntime::run_js(js, context).await })
+        })
     }
 
-    async fn run_js(&self, js: &'static str, context: Context) -> Result<Context, Error> {
+    async fn run_js(js: String, context: Context) -> Result<Context, Error> {
         let runjs_extension = ExtensionBuilder::default()
             .ops(vec![
                 set_env::DECL,
                 get_env::DECL,
                 add_params::DECL,
                 add_header::DECL,
+                log::DECL,
+                error::DECL,
             ])
             .build();
         let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
@@ -57,7 +78,7 @@ impl ScriptRuntime {
             .unwrap();
         let temp = Url::from_file_path(Path::new("/temp/script.js")).unwrap();
         let mod_id = js_runtime
-            .load_main_module(&temp, Some(ModuleCode::from_static(js)))
+            .load_main_module(&temp, Some(ModuleCode::from(js)))
             .await?;
         let result = js_runtime.mod_evaluate(mod_id);
         js_runtime
@@ -81,13 +102,16 @@ fn set_env(state: &mut OpState, #[string] key: String, #[string] value: String) 
         None => {}
         Some(c) => {
             c.envs.insert(
-                key,
+                key.clone(),
                 EnvironmentItemValue {
-                    value,
+                    value: value.clone(),
                     scope: "Script".to_string(),
                     value_type: EnvironmentValueType::String,
                 },
             );
+            c.logger
+                .infos
+                .push(format!("set env: `{}` as `{}`", key, value));
         }
     }
 }
@@ -115,11 +139,16 @@ fn add_header(state: &mut OpState, #[string] key: String, #[string] value: Strin
         None => {}
         Some(c) => {
             c.request.headers.push(Header {
-                key,
-                value,
+                key: key.clone(),
+                value: value.clone(),
                 enable: true,
+                lock_with: LockWith::LockWithScript,
+                desc: "build with script".to_string(),
                 ..Default::default()
             });
+            c.logger
+                .infos
+                .push(format!("add header: `{}` as `{}`", key, value));
         }
     }
 }
@@ -131,11 +160,34 @@ fn add_params(state: &mut OpState, #[string] key: String, #[string] value: Strin
         None => {}
         Some(c) => {
             c.request.params.push(QueryParam {
-                key,
-                value,
+                key: key.clone(),
+                value: value.clone(),
                 enable: true,
+                lock_with: LockWith::LockWithScript,
+                desc: "build with script".to_string(),
                 ..Default::default()
             });
+            c.logger
+                .infos
+                .push(format!("add params: `{}` as `{}`", key, value));
         }
+    }
+}
+
+#[op2(fast)]
+fn log(state: &mut OpState, #[string] msg: String) {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => {}
+        Some(c) => c.logger.add_log(msg),
+    }
+}
+
+#[op2(fast)]
+fn error(state: &mut OpState, #[string] msg: String) {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => {}
+        Some(c) => c.logger.add_error(msg),
     }
 }

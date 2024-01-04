@@ -19,6 +19,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 use urlencoding::encode;
 use uuid::Uuid;
 
+use crate::data::LockWith::LockWithScript;
 use ehttp::multipart::MultipartBuilder;
 
 use crate::env_func::EnvFunction;
@@ -1146,6 +1147,12 @@ pub struct Request {
     pub auth: Auth,
 }
 
+impl Request {
+    pub fn clear_lock_with_script(&mut self) {
+        self.params.retain(|s| s.lock_with != LockWithScript);
+        self.headers.retain(|s| s.lock_with != LockWithScript);
+    }
+}
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct Auth {
@@ -1188,9 +1195,11 @@ impl Auth {
             value: "".to_string(),
             desc: "auto gen".to_string(),
             enable: true,
-            lock: true,
+            lock_with: LockWith::LockWithAuto,
         };
-        headers.retain(|h| !(h.key.to_lowercase() == "authorization" && h.lock));
+        headers.retain(|h| {
+            !(h.key.to_lowercase() == "authorization" && h.lock_with != LockWith::NoLock)
+        });
         match self.auth_type {
             AuthType::NoAuth => {}
             AuthType::BearerToken => {
@@ -1281,7 +1290,7 @@ impl HttpRecord {
                     .filter(|h| h.key.to_lowercase() == "cookie")
                     .for_each(|h| {
                         h.desc = "auto gen".to_string();
-                        h.lock = true;
+                        h.lock_with = LockWith::LockWithAuto;
                         h.enable = true;
                         h.value = cookie_str_list.join(";");
                         has = true;
@@ -1292,7 +1301,7 @@ impl HttpRecord {
                         value: cookie_str_list.join(";"),
                         desc: "auto gen".to_string(),
                         enable: true,
-                        lock: true,
+                        lock_with: LockWith::LockWithAuto,
                     })
                 }
             }
@@ -1325,7 +1334,7 @@ impl HttpRecord {
                 value,
                 desc: "".to_string(),
                 enable: true,
-                lock: false,
+                lock_with: LockWith::NoLock,
             });
         }
     }
@@ -1367,7 +1376,21 @@ pub struct QueryParam {
     pub key: String,
     pub value: String,
     pub desc: String,
+    pub lock_with: LockWith,
     pub enable: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub enum LockWith {
+    LockWithScript,
+    LockWithAuto,
+    NoLock,
+}
+
+impl Default for LockWith {
+    fn default() -> Self {
+        LockWith::NoLock
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -1399,7 +1422,7 @@ pub struct Header {
     pub value: String,
     pub desc: String,
     pub enable: bool,
-    pub lock: bool,
+    pub lock_with: LockWith,
 }
 
 impl Header {
@@ -1411,7 +1434,7 @@ impl Header {
                 value,
                 desc: "".to_string(),
                 enable: true,
-                lock: false,
+                lock_with: LockWith::NoLock,
             })
         }
         result

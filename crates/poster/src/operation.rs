@@ -1,3 +1,4 @@
+use deno_core::Op;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
@@ -89,7 +90,7 @@ impl RestSender {
                 value: utils::replace_variable(h.value.clone(), envs.clone()),
                 desc: h.desc.clone(),
                 enable: h.enable,
-                lock: h.lock,
+                lock_with: h.lock_with.clone(),
             })
             .map(|h| (h.key.clone(), h.value.clone()))
             .collect()
@@ -105,6 +106,7 @@ impl RestSender {
                 key: p.key.clone(),
                 value: utils::replace_variable(p.value.clone(), envs.clone()),
                 desc: p.desc.clone(),
+                lock_with: p.lock_with.clone(),
                 enable: p.enable,
             })
             .map(|p| format!("{}={}", encode(p.key.as_str()), encode(p.value.as_str())))

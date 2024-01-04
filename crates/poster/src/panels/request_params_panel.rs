@@ -4,7 +4,7 @@ use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder};
 
-use crate::data::{CentralRequestItem, EnvironmentItemValue, QueryParam, WorkspaceData};
+use crate::data::{CentralRequestItem, EnvironmentItemValue, LockWith, QueryParam, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
@@ -82,16 +82,23 @@ impl RequestParamsPanel {
         for (index, param) in data.rest.request.params.iter_mut().enumerate() {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
-                    ui.checkbox(&mut param.enable, "");
+                    ui.add_enabled(
+                        param.lock_with == LockWith::NoLock,
+                        Checkbox::new(&mut param.enable, ""),
+                    );
                 });
                 row.col(|ui| {
-                    if ui.button("x").clicked() {
+                    if ui
+                        .add_enabled(param.lock_with == LockWith::NoLock, Button::new("x"))
+                        .clicked()
+                    {
                         delete_index = Some(index)
                     }
                 });
                 row.col(|ui| {
                     HighlightTemplateSinglelineBuilder::default()
                         .envs(envs.clone())
+                        .enable(param.lock_with == LockWith::NoLock)
                         .all_space(false)
                         .build(
                             "request_parmas_key_".to_string() + index.to_string().as_str(),
@@ -102,6 +109,7 @@ impl RequestParamsPanel {
                 row.col(|ui| {
                     HighlightTemplateSinglelineBuilder::default()
                         .envs(envs.clone())
+                        .enable(param.lock_with == LockWith::NoLock)
                         .all_space(false)
                         .build(
                             "request_parmas_value_".to_string() + index.to_string().as_str(),
@@ -110,9 +118,10 @@ impl RequestParamsPanel {
                         .ui(ui);
                 });
                 row.col(|ui| {
-                    TextEdit::singleline(&mut param.desc)
-                        .desired_width(f32::INFINITY)
-                        .ui(ui);
+                    ui.add_enabled(
+                        param.lock_with == LockWith::NoLock,
+                        TextEdit::singleline(&mut param.desc).desired_width(f32::INFINITY),
+                    );
                 });
             });
         }
@@ -135,6 +144,7 @@ impl RequestParamsPanel {
                 HighlightTemplateSinglelineBuilder::default()
                     .envs(envs.clone())
                     .all_space(false)
+                    .enable(self.new_param.lock_with == LockWith::NoLock)
                     .build(
                         "request_parmas_key_new".to_string(),
                         &mut self.new_param.key,
@@ -145,6 +155,7 @@ impl RequestParamsPanel {
                 HighlightTemplateSinglelineBuilder::default()
                     .envs(envs.clone())
                     .all_space(false)
+                    .enable(self.new_param.lock_with == LockWith::NoLock)
                     .build(
                         "request_parmas_value_new".to_string(),
                         &mut self.new_param.value,
@@ -152,9 +163,11 @@ impl RequestParamsPanel {
                     .ui(ui);
             });
             row.col(|ui| {
-                TextEdit::singleline(&mut self.new_param.desc)
-                    .desired_width(f32::INFINITY)
-                    .ui(ui);
+                ui.add_enabled_ui(self.new_param.lock_with == LockWith::NoLock, |ui| {
+                    TextEdit::singleline(&mut self.new_param.desc)
+                        .desired_width(f32::INFINITY)
+                        .ui(ui);
+                });
             });
         });
     }
