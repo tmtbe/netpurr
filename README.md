@@ -32,3 +32,4 @@ Support switching between multiple workspaces, support git.
 
 Support JS script.
 ![script.png](pics%2Fscript.png)
+![check.png](pics%2Fcheck.png)
