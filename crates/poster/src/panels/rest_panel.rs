@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use deno_core::anyhow::Error;
 use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
 use egui_toast::{Toast, ToastKind, ToastOptions};
@@ -32,6 +33,7 @@ pub struct RestPanel {
     response_panel: ResponsePanel,
     request_pre_script_panel: RequestPreScriptPanel,
     send_promise: Option<Promise<ehttp::Result<ehttp::Response>>>,
+    script_promise: Option<Promise<Result<Context, Error>>>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -149,7 +151,6 @@ impl RestPanel {
                     } else {
                         if ui.button("Send").clicked() {
                             data.rest.request.clear_lock_with_script();
-                            let mut send_envs = envs.clone();
                             if data.rest.pre_request_script != "" {
                                 let js = data.rest.pre_request_script.clone();
                                 let context = Context {
@@ -157,31 +158,13 @@ impl RestPanel {
                                     envs,
                                     logger: Logger::default(),
                                 };
-                                let result =
-                                    operation.script_runtime().run(js, context).block_and_take();
-                                match result {
-                                    Ok(new_context) => {
-                                        send_envs = new_context.envs;
-                                        data.rest.request = new_context.request;
-                                    }
-                                    Err(err) => {
-                                        operation.toasts().add(Toast {
-                                            text: format!(
-                                                "Pre-Request-Script run error: {}",
-                                                err.to_string()
-                                            )
-                                            .into(),
-                                            kind: ToastKind::Error,
-                                            options: ToastOptions::default()
-                                                .duration_in_seconds(5.0)
-                                                .show_progress(true),
-                                        });
-                                    }
-                                }
+                                self.script_promise =
+                                    Some(operation.script_runtime().run(js, context));
+                            } else {
+                                let send_response =
+                                    operation.rest_sender().send(&mut data.rest, envs.clone());
+                                self.send_promise = Some(send_response);
                             }
-                            let send_response =
-                                operation.rest_sender().send(&mut data.rest, send_envs);
-                            self.send_promise = Some(send_response);
                             send_rest = Some(data.rest.clone());
                         }
                     }
@@ -298,8 +281,60 @@ impl RestPanel {
             ),
         }
     }
-
-    fn send_promise(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData, cursor: String) {
+    fn script_promise(
+        &mut self,
+        ui: &mut Ui,
+        workspace_data: &mut WorkspaceData,
+        operation: &mut Operation,
+        cursor: String,
+    ) {
+        match &self.script_promise {
+            None => {}
+            Some(promise) => match promise.ready() {
+                None => {
+                    ui.ctx().request_repaint();
+                }
+                Some(result) => {
+                    let (data, envs, auth) =
+                        workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+                    match result {
+                        Ok(new_context) => {
+                            data.rest.request = new_context.request.clone();
+                            let send_response = operation
+                                .rest_sender()
+                                .send(&mut data.rest, new_context.envs.clone());
+                            self.send_promise = Some(send_response);
+                            operation.toasts().add(Toast {
+                                text: format!("Pre-Request-Script run succrss").into(),
+                                kind: ToastKind::Info,
+                                options: ToastOptions::default()
+                                    .duration_in_seconds(2.0)
+                                    .show_progress(true),
+                            });
+                        }
+                        Err(err) => {
+                            operation.toasts().add(Toast {
+                                text: format!("Pre-Request-Script run error: {}", err.to_string())
+                                    .into(),
+                                kind: ToastKind::Error,
+                                options: ToastOptions::default()
+                                    .duration_in_seconds(5.0)
+                                    .show_progress(true),
+                            });
+                        }
+                    }
+                    self.script_promise = None;
+                }
+            },
+        }
+    }
+    fn send_promise(
+        &mut self,
+        ui: &mut Ui,
+        workspace_data: &mut WorkspaceData,
+        operation: &mut Operation,
+        cursor: String,
+    ) {
         let mut option_response_cookies = None;
         if let Some(promise) = &self.send_promise {
             let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
@@ -316,9 +351,25 @@ impl RestPanel {
                             status_text: r.status_text.clone(),
                         };
                         option_response_cookies = Some(data.rest.response.get_cookies());
-                        data.rest.ready()
+                        data.rest.ready();
+                        operation.toasts().add(Toast {
+                            text: format!("Send request succrss").into(),
+                            kind: ToastKind::Info,
+                            options: ToastOptions::default()
+                                .duration_in_seconds(2.0)
+                                .show_progress(true),
+                        });
                     }
-                    Err(_) => data.rest.error(),
+                    Err(e) => {
+                        data.rest.error();
+                        operation.toasts().add(Toast {
+                            text: format!("Send request failed: {}", e.to_string()).into(),
+                            kind: ToastKind::Error,
+                            options: ToastOptions::default()
+                                .duration_in_seconds(5.0)
+                                .show_progress(true),
+                        });
+                    }
                 }
                 self.send_promise = None;
             } else {
@@ -398,7 +449,8 @@ impl DataView for RestPanel {
             self.render_middle_select(operation, workspace_data, cursor.clone(), ui);
             ui.separator();
         });
-        self.send_promise(ui, workspace_data, cursor.clone());
+        self.script_promise(ui, workspace_data, operation, cursor.clone());
+        self.send_promise(ui, workspace_data, operation, cursor.clone());
         self.render_request_open_panel(ui, operation, workspace_data, cursor.clone());
         ui.separator();
         self.response_panel
