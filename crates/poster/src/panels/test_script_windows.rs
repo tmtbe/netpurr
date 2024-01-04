@@ -55,7 +55,9 @@ impl TestScriptWindows {
                             ui.separator();
                         });
                         match result.ready() {
-                            None => {}
+                            None => {
+                                ui.ctx().request_repaint();
+                            }
                             Some(js_run_result) => match js_run_result {
                                 Ok(new_context) => {
                                     Self::render_logs(ui, new_context);
@@ -76,25 +78,29 @@ impl TestScriptWindows {
     fn render_logs(ui: &mut Ui, new_context: &Context) {
         if new_context.logger.infos().len() > 0 {
             ui.strong("Output Log:");
-            egui::ScrollArea::vertical()
-                .min_scrolled_height(300.0)
-                .max_height(400.0)
-                .show(ui, |ui| {
-                    for info in new_context.logger.infos() {
-                        ui.label("> ".to_string() + info.as_str());
-                    }
-                });
+            ui.push_id("log_info", |ui| {
+                egui::ScrollArea::vertical()
+                    .min_scrolled_height(300.0)
+                    .max_height(400.0)
+                    .show(ui, |ui| {
+                        for info in new_context.logger.infos() {
+                            ui.label("> ".to_string() + info.as_str());
+                        }
+                    });
+            });
         }
         if new_context.logger.errors().len() > 0 {
             ui.strong("Output Error:");
-            egui::ScrollArea::vertical()
-                .min_scrolled_height(300.0)
-                .max_height(400.0)
-                .show(ui, |ui| {
-                    for error in new_context.logger.errors() {
-                        ui.label("> ".to_string() + error.as_str());
-                    }
-                });
+            ui.push_id("log_error", |ui| {
+                egui::ScrollArea::vertical()
+                    .min_scrolled_height(300.0)
+                    .max_height(400.0)
+                    .show(ui, |ui| {
+                        for error in new_context.logger.errors() {
+                            ui.label("> ".to_string() + error.as_str());
+                        }
+                    });
+            });
         }
     }
 }

@@ -1,5 +1,6 @@
+use std::ops::Add;
+
 use egui::Ui;
-use log::error;
 
 use crate::data::WorkspaceData;
 use crate::operation::Operation;
@@ -33,8 +34,10 @@ impl DataView for RequestPreScriptPanel {
         ui.horizontal(|ui| {
             egui::SidePanel::right("pre_request_right")
                 .resizable(true)
+                .min_width(300.0)
                 .show_separator_line(false)
                 .show_inside(ui, |ui| {
+                    ui.label("Pre-request scripts are written in JavaScript， and are run before the request is sent.");
                     if ui.link("Test").clicked() {
                         let js = data.rest.pre_request_script.clone();
                         let context = Context {
@@ -44,6 +47,43 @@ impl DataView for RequestPreScriptPanel {
                         };
                         self.test_script_windows.open(js, context);
                     }
+                    ui.separator();
+                    ui.strong("SNIPPETS");
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        if ui.link("Log info message").clicked() {
+                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nconsole.log(\"info1\",\"info2\");");
+                        }
+                        if ui.link("Log error message").clicked() {
+                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nconsole.error(\"error1\",\"error2\");");
+                        }
+                        if ui.link("Get a variable").clicked() {
+                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nposter.get_env(\"variable_key\");");
+                        }
+                        if ui.link("Set a variable").clicked() {
+                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nposter.set_env(\"variable_key\",\"variable_value\");");
+                        }
+                        if ui.link("Add a header").clicked() {
+                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nposter.add_header(\"header_key\",\"header_value\");");
+                        }
+                        if ui.link("Add a params").clicked() {
+                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nposter.add_params(\"params_key\",\"params_value\");");
+                        }
+
+                        if ui.link("Fetch a http request").clicked() {
+                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add(
+                                r#"let request = {
+    "method":"post",
+    "url":"http://www.httpbin.org/post",
+    "headers":[{
+        "name":"name",
+        "value":"value"
+    }],
+    "body":"body"
+}
+let response = await poster.fetch(request);
+console.log(response)"#)
+                        }
+                    });
                 });
             egui::SidePanel::left("pre_request_left")
                 .resizable(true)

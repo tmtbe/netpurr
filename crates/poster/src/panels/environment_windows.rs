@@ -32,7 +32,7 @@ impl EnvironmentWindows {
                     ui.add_space(HORIZONTAL_GAP * 3.0);
                     utils::left_right_panel(
                         ui,
-                        "env_".to_string() + name,
+                        "env_".to_string() + name.as_str(),
                         |ui| {
                             if ui.hyperlink(name).clicked() {
                                 self.select_env = Some(name.clone());

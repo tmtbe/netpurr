@@ -70,7 +70,7 @@ impl SaveWindows {
                     });
                 }
                 Some(name) => {
-                    if ui.link("◀ ".to_string() + name).clicked() {
+                    if ui.link("◀ ".to_string() + name.as_str()).clicked() {
                         self.add_folder = false;
                         self.add_collection = false;
                         let paths: Vec<&str> = name.split("/").collect();

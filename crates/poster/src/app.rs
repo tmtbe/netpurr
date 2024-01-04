@@ -247,6 +247,7 @@ impl eframe::App for App {
                         if ui.button("No").clicked() {
                             self.show_confirmation_dialog = false;
                             self.allowed_to_close = false;
+                            self.operation.lock_ui("Quit".to_string(), false);
                         }
 
                         if ui.button("Yes").clicked() {
