@@ -21,3 +21,14 @@ Support collection management.
 
 Support cookie management.
 ![cookie.png](pics%2Fcookie.png)
+
+## Workspace
+
+Support switching between multiple workspaces, support git.
+![workspace.png](pics%2Fworkspace.png)
+![git.png](pics%2Fgit.png)
+
+## Script
+
+Support JS script.
+![script.png](pics%2Fscript.png)
