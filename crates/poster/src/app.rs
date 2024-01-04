@@ -1,5 +1,6 @@
 use std::io::Read;
 
+use egui_toast::{Toast, ToastKind, ToastOptions};
 use poll_promise::Promise;
 
 use crate::data::{ConfigData, WorkspaceData};
@@ -21,7 +22,6 @@ pub struct App {
     current_workspace: String,
     workspace_windows: WorkspaceWindows,
     sync_promise: Option<Promise<rustygit::types::Result<()>>>,
-    sync_status: String,
 }
 
 impl App {
@@ -163,19 +163,32 @@ impl eframe::App for App {
                                                 .git_sync_promise(workspace.path.clone()),
                                         );
                                     }
-                                    ui.label(self.sync_status.clone());
                                 }
                             }
                         }
                         match &self.sync_promise {
                             None => {}
                             Some(result) => match result.ready() {
-                                None => {}
+                                None => {
+                                    ui.ctx().request_repaint();
+                                }
                                 Some(result) => {
                                     if result.is_ok() {
-                                        self.sync_status = "Success".to_string();
+                                        self.operation.toasts().add(Toast {
+                                            text: "Sync Success!".into(),
+                                            kind: ToastKind::Success,
+                                            options: ToastOptions::default()
+                                                .duration_in_seconds(5.0)
+                                                .show_progress(true),
+                                        });
                                     } else {
-                                        self.sync_status = "Failed".to_string();
+                                        self.operation.toasts().add(Toast {
+                                            text: "Sync Failed!".into(),
+                                            kind: ToastKind::Error,
+                                            options: ToastOptions::default()
+                                                .duration_in_seconds(5.0)
+                                                .show_progress(true),
+                                        });
                                     }
                                     self.sync_promise = None;
                                     self.workspace_data
@@ -194,7 +207,7 @@ impl eframe::App for App {
                 ui.add_space(HORIZONTAL_GAP);
             });
             self.workspace_windows
-                .set_and_render(ui, &mut self.operation, &mut self.config_data)
+                .set_and_render(ui, &mut self.operation, &mut self.config_data);
         });
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
             ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
@@ -245,5 +258,6 @@ impl eframe::App for App {
                     });
                 });
         }
+        self.operation.toasts().show(ctx);
     }
 }

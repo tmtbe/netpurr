@@ -2,6 +2,7 @@ use std::rc::Rc;
 
 use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
+use egui_toast::{Toast, ToastKind, ToastOptions};
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
@@ -158,9 +159,24 @@ impl RestPanel {
                                 };
                                 let result =
                                     operation.script_runtime().run(js, context).block_and_take();
-                                if let Ok(new_context) = result {
-                                    send_envs = new_context.envs;
-                                    data.rest.request = new_context.request;
+                                match result {
+                                    Ok(new_context) => {
+                                        send_envs = new_context.envs;
+                                        data.rest.request = new_context.request;
+                                    }
+                                    Err(err) => {
+                                        operation.toasts().add(Toast {
+                                            text: format!(
+                                                "Pre-Request-Script run error: {}",
+                                                err.to_string()
+                                            )
+                                            .into(),
+                                            kind: ToastKind::Error,
+                                            options: ToastOptions::default()
+                                                .duration_in_seconds(5.0)
+                                                .show_progress(true),
+                                        });
+                                    }
                                 }
                             }
                             let send_response =
