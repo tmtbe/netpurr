@@ -1,10 +1,15 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::fs::File;
+use std::io::Write;
 use std::rc::Rc;
 
 use egui::{CollapsingHeader, Response, RichText, Ui};
+use egui_toast::{Toast, ToastKind, ToastOptions};
 
-use crate::data::{CentralRequestItem, Collection, CollectionFolder, HttpRecord, WorkspaceData};
+use crate::data::{
+    CentralRequestItem, Collection, CollectionFolder, Export, ExportType, HttpRecord, WorkspaceData,
+};
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::utils;
@@ -183,6 +188,59 @@ impl CollectionsPanel {
                     .collections
                     .remove_collection(collection.folder.borrow().name.clone());
                 ui.close_menu();
+            }
+            ui.separator();
+            if utils::select_label(ui, "Export").clicked() {
+                ui.close_menu();
+                let export = Export {
+                    export_type: ExportType::Collection,
+                    collection: Some(collection.clone()),
+                };
+                if let Ok(json) = serde_json::to_string(&export) {
+                    let file_name = format!("collection-{}.json", collection.folder.borrow().name);
+                    if let Some(path) = rfd::FileDialog::new().set_file_name(file_name).save_file()
+                    {
+                        match File::create(path) {
+                            Ok(mut file) => match file.write_all(json.as_bytes()) {
+                                Ok(_) => {
+                                    operation.toasts().add(Toast {
+                                        text: format!("Export collection success.").into(),
+                                        kind: ToastKind::Info,
+                                        options: ToastOptions::default()
+                                            .duration_in_seconds(2.0)
+                                            .show_progress(true),
+                                    });
+                                }
+                                Err(e) => {
+                                    operation.toasts().add(Toast {
+                                        text: format!(
+                                            "Export collection file failed: {}",
+                                            e.to_string()
+                                        )
+                                        .into(),
+                                        kind: ToastKind::Error,
+                                        options: ToastOptions::default()
+                                            .duration_in_seconds(5.0)
+                                            .show_progress(true),
+                                    });
+                                }
+                            },
+                            Err(e) => {
+                                operation.toasts().add(Toast {
+                                    text: format!(
+                                        "Export collection file failed: {}",
+                                        e.to_string()
+                                    )
+                                    .into(),
+                                    kind: ToastKind::Error,
+                                    options: ToastOptions::default()
+                                        .duration_in_seconds(5.0)
+                                        .show_progress(true),
+                                });
+                            }
+                        }
+                    }
+                }
             }
         });
     }

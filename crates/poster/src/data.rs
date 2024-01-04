@@ -19,9 +19,9 @@ use strum_macros::{Display, EnumIter, EnumString};
 use urlencoding::encode;
 use uuid::Uuid;
 
-use crate::data::LockWith::LockWithScript;
 use ehttp::multipart::MultipartBuilder;
 
+use crate::data::LockWith::LockWithScript;
 use crate::env_func::EnvFunction;
 use crate::save::{Persistence, PersistenceItem};
 use crate::utils;
@@ -577,8 +577,13 @@ impl Collections {
 #[serde(default)]
 pub struct Collection {
     pub envs: EnvironmentConfig,
-    #[serde(skip, default)]
     pub folder: Rc<RefCell<CollectionFolder>>,
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SaveCollection {
+    pub envs: EnvironmentConfig,
 }
 
 impl Default for Collection {
@@ -604,6 +609,11 @@ impl Default for Collection {
 }
 
 impl Collection {
+    fn to_save_data(&self) -> SaveCollection {
+        SaveCollection {
+            envs: self.envs.clone(),
+        }
+    }
     pub fn build_envs(&self) -> BTreeMap<String, EnvironmentItemValue> {
         let mut result = BTreeMap::default();
         for item in self.envs.items.iter().filter(|i| i.enable) {
@@ -619,10 +629,11 @@ impl Collection {
         result
     }
     fn save(&self, persistence: Persistence, path: PathBuf) {
+        let save_data = self.to_save_data();
         persistence.save(
             path.clone(),
             self.folder.borrow().name.clone() + "@info",
-            self,
+            &save_data,
         );
         self.folder.borrow().save(persistence, path.clone());
     }
@@ -653,13 +664,30 @@ pub struct CollectionFolder {
     pub desc: String,
     pub auth: Auth,
     pub is_root: bool,
-    #[serde(skip, default)]
     pub requests: BTreeMap<String, HttpRecord>,
-    #[serde(skip, default)]
     pub folders: BTreeMap<String, Rc<RefCell<CollectionFolder>>>,
 }
 
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SaveCollectionFolder {
+    pub name: String,
+    pub parent_path: String,
+    pub desc: String,
+    pub auth: Auth,
+    pub is_root: bool,
+}
+
 impl CollectionFolder {
+    pub fn to_save_data(&self) -> SaveCollectionFolder {
+        SaveCollectionFolder {
+            name: self.name.clone(),
+            parent_path: self.parent_path.clone(),
+            desc: self.desc.clone(),
+            auth: self.auth.clone(),
+            is_root: self.is_root.clone(),
+        }
+    }
     pub fn load(&mut self, persistence: Persistence, path: PathBuf) {
         let collection_folder: Option<CollectionFolder> =
             persistence.load(path.join("folder@info.json").to_path_buf());
@@ -698,7 +726,8 @@ impl CollectionFolder {
         for (_, folder) in self.folders.iter() {
             folder.borrow().save(persistence.clone(), path.clone());
         }
-        persistence.save(path.clone(), "folder@info".to_string(), self);
+        let save_data = self.to_save_data();
+        persistence.save(path.clone(), "folder@info".to_string(), &save_data);
     }
 
     pub fn fix_path(&mut self, parent_path: String) {
@@ -1654,5 +1683,25 @@ pub enum Method {
 impl Default for Method {
     fn default() -> Self {
         Method::GET
+    }
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Export {
+    pub export_type: ExportType,
+    pub collection: Option<Collection>,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub enum ExportType {
+    Collection,
+    Request,
+    Environment,
+}
+
+impl Default for ExportType {
+    fn default() -> Self {
+        ExportType::Collection
     }
 }
