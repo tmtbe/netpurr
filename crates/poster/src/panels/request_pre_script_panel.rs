@@ -80,7 +80,7 @@ impl DataView for RequestPreScriptPanel {
     }],
     "body":"body"
 }
-let response = await poster.fetch(request);
+let response = await fetch(request);
 console.log(response)"#)
                         }
                     });

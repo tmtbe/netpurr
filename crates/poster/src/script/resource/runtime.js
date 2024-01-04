@@ -5,6 +5,14 @@
         return args.map((arg) => JSON.stringify(arg)).join(" ");
     }
 
+    globalThis.fetch = async function (request) {
+        let response = await core.ops.op_http_fetch(request);
+        try {
+            response.json = JSON.parse(response.text);
+        } catch (e) {
+        }
+        return response
+    }
     globalThis.console = {
         log: (...args) => {
             core.ops.op_log(argsToMessage(...args));
@@ -26,14 +34,6 @@
         add_params: (key, value) => {
             return core.ops.op_add_params(key, value)
         },
-        fetch: async (request) => {
-            let response = await core.ops.op_http_fetch(request);
-            try {
-                response.json = JSON.parse(response.text);
-            } catch (e) {
-            }
-            return response
-        }
     }
 
 })(globalThis);
