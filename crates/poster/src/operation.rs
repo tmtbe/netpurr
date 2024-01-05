@@ -1,18 +1,22 @@
 use std::cell::RefCell;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
+use std::fs::File;
+use std::io;
+use std::path::Path;
 use std::rc::Rc;
+use std::str::FromStr;
+use std::sync::Arc;
 
 use eframe::emath::Align2;
-use eframe::epaint::ahash::HashMap;
 use egui_toast::Toasts;
-use log::info;
 use poll_promise::Promise;
-use urlencoding::encode;
-
-use ehttp::Request;
+use reqwest::blocking::{multipart, Client};
+use reqwest::header::CONTENT_TYPE;
+use reqwest::Method;
 
 use crate::data::{
-    Collection, CollectionFolder, EnvironmentItemValue, Header, HttpRecord, Logger, QueryParam,
+    BodyRawType, BodyType, Collection, CollectionFolder, EnvironmentItemValue, Header, HttpBody,
+    HttpRecord, Logger, MultipartDataType,
 };
 use crate::script::script::{Context, ScriptRuntime, ScriptScope};
 use crate::{data, utils};
@@ -45,7 +49,7 @@ impl Operation {
         request: data::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
         scripts: Vec<ScriptScope>,
-    ) -> Promise<Result<(data::Request, ehttp::Response, Logger), String>> {
+    ) -> Promise<Result<(data::Request, data::Response), String>> {
         let mut logger = Logger::default();
         Promise::spawn_thread("send_with_script", move || {
             let mut context_result = Ok(Context {
@@ -72,18 +76,20 @@ impl Operation {
                     for log in context.logger.logs.iter() {
                         logger.logs.push(log.clone());
                     }
-                    let raw_request = RestSender::build_request(request.clone(), envs);
+                    let build_request = RestSender::build_request(request.clone(), envs);
                     logger.add_info(
                         "fetch".to_string(),
-                        format!("start fetch request: {:?}", raw_request),
+                        format!("start fetch request: {:?}", build_request),
                     );
-                    match RestSender::raw_block_send(raw_request) {
+                    match RestSender::reqwest_block_send(build_request) {
                         Ok(response) => {
+                            let mut data_response = response;
                             logger.add_info(
                                 "fetch".to_string(),
-                                format!("get response: {:?}", response),
+                                format!("get response: {:?}", data_response),
                             );
-                            Ok((context.request, response, logger))
+                            data_response.logger = logger;
+                            Ok((context.request, data_response))
                         }
                         Err(e) => Err(e.to_string()),
                     }
@@ -120,59 +126,120 @@ impl Operation {
 pub struct RestSender {}
 
 impl RestSender {
-    pub fn send(
-        &self,
-        request: data::Request,
-        envs: BTreeMap<String, EnvironmentItemValue>,
-    ) -> Promise<ehttp::Result<ehttp::Response>> {
-        let (sender, promise) = Promise::new();
-        let request = Self::build_request(request, envs);
-        ehttp::fetch(request, move |response| {
-            sender.send(response);
-        });
-        return promise;
+    pub fn reqwest_block_send(request: data::Request) -> reqwest::Result<data::Response> {
+        let client = Client::new();
+        let reqwest_request = Self::build_reqwest_request(request)?;
+        let reqwest_response = client.execute(reqwest_request)?;
+        Ok(data::Response {
+            headers: Header::new_from_map(reqwest_response.headers()),
+            status: reqwest_response.status().as_u16(),
+            status_text: reqwest_response.status().to_string(),
+            elapsed_time: 0,
+            logger: Logger::default(),
+            body: Arc::new(HttpBody::new(reqwest_response.bytes()?.to_vec())),
+        })
     }
 
-    pub fn block_send(
+    pub fn build_reqwest_request(
         request: data::Request,
-        envs: BTreeMap<String, EnvironmentItemValue>,
-    ) -> ehttp::Result<ehttp::Response> {
-        let request = Self::build_request(request.clone(), envs);
-        ehttp::fetch_blocking(&request)
-    }
-
-    pub fn raw_block_send(request: Request) -> ehttp::Result<ehttp::Response> {
-        ehttp::fetch_blocking(&request)
+    ) -> reqwest::Result<reqwest::blocking::Request> {
+        let client = Client::new();
+        let method = Method::from_str(request.method.to_string().to_uppercase().as_str()).unwrap();
+        let mut builder = client.request(method, request.base_url);
+        for header in request.headers.iter().filter(|h| h.enable) {
+            builder = builder.header(header.key.clone(), header.value.clone());
+        }
+        let query: Vec<(String, String)> = request
+            .params
+            .iter()
+            .filter(|q| q.enable)
+            .map(|p| (p.key.clone(), p.value.clone()))
+            .collect();
+        builder = builder.query(&query);
+        match request.body.body_type {
+            BodyType::NONE => {}
+            BodyType::FROM_DATA => {
+                let mut form = multipart::Form::new();
+                for md in request.body.body_form_data.iter().filter(|md| md.enable) {
+                    match md.data_type {
+                        MultipartDataType::File => {
+                            form = form
+                                .file(md.key.clone(), Path::new(md.value.as_str()).to_path_buf())
+                                .unwrap();
+                        }
+                        MultipartDataType::Text => {
+                            form = form.text(md.key.clone(), md.value.clone());
+                        }
+                    }
+                }
+                builder = builder.multipart(form);
+            }
+            BodyType::X_WWW_FROM_URLENCODED => {
+                let mut params = HashMap::new();
+                for md in request.body.body_xxx_form.iter().filter(|md| md.enable) {
+                    params.insert(md.key.clone(), md.value.clone());
+                }
+                builder = builder.form(&params);
+            }
+            BodyType::RAW => match request.body.body_raw_type {
+                BodyRawType::TEXT => {
+                    builder = builder.header(CONTENT_TYPE, "text/plain");
+                    builder = builder.body(request.body.body_str);
+                }
+                BodyRawType::JSON => {
+                    builder = builder.header(CONTENT_TYPE, "application/json");
+                    builder = builder.body(request.body.body_str);
+                }
+                BodyRawType::HTML => {
+                    builder = builder.header(CONTENT_TYPE, "text/html");
+                    builder = builder.body(request.body.body_str);
+                }
+                BodyRawType::XML => {
+                    builder = builder.header(CONTENT_TYPE, "application/xml");
+                    builder = builder.body(request.body.body_str);
+                }
+                BodyRawType::JavaScript => {
+                    builder = builder.header(CONTENT_TYPE, "application/javascript");
+                    builder = builder.body(request.body.body_str);
+                }
+            },
+            BodyType::BINARY => {
+                let path = Path::new(request.body.body_file.as_str());
+                let content_type = mime_guess::from_path(path);
+                builder = builder.header(
+                    CONTENT_TYPE,
+                    content_type.first_or_octet_stream().to_string(),
+                );
+                let file_name = path.file_name().and_then(|filename| filename.to_str());
+                let mut file =
+                    File::open(path).expect(format!("open {:?} error", file_name).as_str());
+                let mut inner: Vec<u8> = vec![];
+                io::copy(&mut file, &mut inner).expect("add_stream io copy error");
+                builder = builder.body(inner);
+            }
+        }
+        builder.build()
     }
 
     fn build_request(
-        mut request: data::Request,
+        request: data::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
-    ) -> Request {
-        if !request.base_url.starts_with("http://") && !request.base_url.starts_with("https://") {
-            request.base_url = "http://".to_string() + request.base_url.as_str();
+    ) -> data::Request {
+        let mut build_request = request.clone();
+        if !build_request.base_url.starts_with("http://")
+            && !build_request.base_url.starts_with("https://")
+        {
+            build_request.base_url = "http://".to_string() + build_request.base_url.as_str();
         }
-        let content_type = request.body.build_body(&envs);
-        content_type.map(|c| {
-            request.set_request_content_type(c);
-        });
-        let headers = Self::build_header(&request, &envs);
-        let request = Request {
-            method: request.method.to_string(),
-            url: Self::build_url(&request, &envs),
-            body: request.body.to_vec(),
-            headers,
-        };
-        info!("{:?}", request);
-        request
+        build_request.headers = Self::build_header(request.headers.clone(), &envs);
+        build_request
     }
 
     fn build_header(
-        request: &data::Request,
+        headers: Vec<Header>,
         envs: &BTreeMap<String, EnvironmentItemValue>,
-    ) -> Vec<(String, String)> {
-        request
-            .headers
+    ) -> Vec<Header> {
+        headers
             .iter()
             .filter(|h| h.enable)
             .map(|h| Header {
@@ -182,25 +249,7 @@ impl RestSender {
                 enable: h.enable,
                 lock_with: h.lock_with.clone(),
             })
-            .map(|h| (h.key.clone(), h.value.clone()))
             .collect()
-    }
-    fn build_url(request: &data::Request, envs: &BTreeMap<String, EnvironmentItemValue>) -> String {
-        let url = utils::replace_variable(request.base_url.clone(), envs.clone());
-        let params: Vec<String> = request
-            .params
-            .iter()
-            .filter(|p| p.enable)
-            .map(|p| QueryParam {
-                key: p.key.clone(),
-                value: utils::replace_variable(p.value.clone(), envs.clone()),
-                desc: p.desc.clone(),
-                lock_with: p.lock_with.clone(),
-                enable: p.enable,
-            })
-            .map(|p| format!("{}={}", encode(p.key.as_str()), encode(p.value.as_str())))
-            .collect();
-        url + "?" + params.join("&").as_str()
     }
 }
 

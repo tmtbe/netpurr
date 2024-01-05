@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
 use egui_toast::{Toast, ToastKind, ToastOptions};
@@ -7,9 +5,7 @@ use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{
-    Auth, AuthType, BodyType, Header, HttpBody, HttpRecord, Method, Response, WorkspaceData,
-};
+use crate::data::{Auth, AuthType, BodyType, HttpRecord, Method, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
@@ -31,7 +27,7 @@ pub struct RestPanel {
     request_body_panel: RequestBodyPanel,
     response_panel: ResponsePanel,
     request_pre_script_panel: RequestPreScriptPanel,
-    send_promise: Option<Promise<Result<(data::Request, ehttp::Response, data::Logger), String>>>,
+    send_promise: Option<Promise<Result<(data::Request, data::Response), String>>>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -307,18 +303,9 @@ impl RestPanel {
             let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
             if let Some(result) = promise.ready() {
                 match result {
-                    Ok((request, response, logger)) => {
+                    Ok((request, response)) => {
                         data.rest.request = request.clone();
-                        data.rest.response = Response {
-                            body: Rc::new(HttpBody::new(response.bytes.clone())),
-                            headers: Header::new_from_tuple(response.headers.clone()),
-                            url: response.url.clone(),
-                            ok: response.ok.clone(),
-                            status: response.status.clone(),
-                            status_text: response.status_text.clone(),
-                            elapsed_time: response.elapsed_time.as_millis(),
-                            logger: logger.clone(),
-                        };
+                        data.rest.response = response.clone();
                         option_response_cookies = Some(data.rest.response.get_cookies());
                         data.rest.ready();
                         operation.toasts().add(Toast {

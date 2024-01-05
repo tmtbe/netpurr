@@ -75,7 +75,7 @@ rand = { version = "0.8" }
 deno_core = { version = "0.242.0" }
 tokio = { version = "1", features = ["full"] }
 egui-toast = "0.10.1"
-reqwest = "0.11.23"
+reqwest = { version = "0.11.23", features = ["default-tls", "blocking", "cookies", "json", "multipart", "gzip", "brotli", "deflate"] }
 data-url = "0.3.1"
 url = "2.5.0"
 deno_ast = { version = "0.30", features = ["transpiling"] }

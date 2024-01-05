@@ -1,26 +1,25 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::fmt::Display;
+use std::fs;
 use std::fs::File;
 use std::io::{Error, Read, Write};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::FromStr;
-use std::{fs, io};
+use std::sync::Arc;
 
 use base64::engine::general_purpose;
 use base64::Engine;
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
+use reqwest::header::HeaderMap;
 use rustygit::Repository;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
-use urlencoding::encode;
 use uuid::Uuid;
-
-use ehttp::multipart::MultipartBuilder;
 
 use crate::data::LockWith::LockWithScript;
 use crate::env_func::EnvFunction;
@@ -1632,15 +1631,26 @@ impl Header {
         }
         result
     }
+    pub fn new_from_map(headers: &HeaderMap) -> Vec<Header> {
+        let mut result = vec![];
+        for (key, value) in headers.iter() {
+            result.push(Header {
+                key: key.to_string(),
+                value: value.to_str().unwrap().to_string(),
+                desc: "".to_string(),
+                enable: true,
+                lock_with: LockWith::NoLock,
+            })
+        }
+        result
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Response {
-    pub body: Rc<HttpBody>,
+    pub body: Arc<HttpBody>,
     pub headers: Vec<Header>,
-    pub url: String,
-    pub ok: bool,
     pub status: u16,
     pub status_text: String,
     pub elapsed_time: u128,
@@ -1685,76 +1695,6 @@ impl HttpBody {
             body_raw_type: Default::default(),
             body_form_data: vec![],
             body_xxx_form: vec![],
-        }
-    }
-
-    pub fn build_body(&mut self, envs: &BTreeMap<String, EnvironmentItemValue>) -> Option<String> {
-        match self.body_type {
-            BodyType::NONE => None,
-            BodyType::FROM_DATA => {
-                let mut multipart = MultipartBuilder::new();
-                for x in self.body_form_data.iter_mut() {
-                    if !x.enable {
-                        continue;
-                    }
-                    match x.data_type {
-                        MultipartDataType::File => {
-                            let file = PathBuf::from(x.value.as_str());
-                            if !file.is_file() {
-                                x.enable = false;
-                                continue;
-                            }
-                            multipart = multipart.add_file(x.key.as_str(), file);
-                        }
-                        MultipartDataType::Text => {
-                            multipart = multipart.add_text(
-                                x.key.as_str(),
-                                utils::replace_variable(x.value.clone(), envs.clone()).as_str(),
-                            );
-                        }
-                    }
-                }
-                let (content_type, data) = multipart.build();
-                self.base64 = general_purpose::STANDARD.encode(data);
-                Some(content_type)
-            }
-            BodyType::X_WWW_FROM_URLENCODED => {
-                let body_part: Vec<String> = self
-                    .body_xxx_form
-                    .iter()
-                    .filter(|x| x.enable)
-                    .map(|x| MultipartData {
-                        data_type: x.data_type.clone(),
-                        key: x.key.clone(),
-                        value: utils::replace_variable(x.value.clone(), envs.clone()),
-                        desc: x.desc.clone(),
-                        enable: x.enable,
-                    })
-                    .map(|x| format!("{}={}", encode(x.key.as_str()), encode(x.value.as_str())))
-                    .collect();
-                self.base64 =
-                    general_purpose::STANDARD.encode(body_part.join("&").as_bytes().to_vec());
-                None
-            }
-            BodyType::RAW => {
-                self.base64 = general_purpose::STANDARD.encode(
-                    utils::replace_variable(self.body_str.clone(), envs.clone())
-                        .as_bytes()
-                        .to_vec(),
-                );
-                None
-            }
-            BodyType::BINARY => {
-                let path = Path::new(&self.body_file);
-                let content_type = mime_guess::from_path(path);
-                let file_name = path.file_name().and_then(|filename| filename.to_str());
-                let mut file =
-                    File::open(path).expect(format!("open {:?} error", file_name).as_str());
-                let mut inner: Vec<u8> = vec![];
-                io::copy(&mut file, &mut inner).expect("add_stream io copy error");
-                self.base64 = general_purpose::STANDARD.encode(inner);
-                Some(content_type.first_or_octet_stream().to_string())
-            }
         }
     }
 }
