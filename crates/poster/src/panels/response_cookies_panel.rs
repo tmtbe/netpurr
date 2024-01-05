@@ -31,9 +31,9 @@ impl DataView for ResponseCookiesPanel {
                 .column(Column::initial(200.0).range(100.0..=300.0))
                 .column(Column::initial(200.0).range(100.0..=300.0))
                 .column(Column::initial(200.0).range(100.0..=300.0))
-                .column(Column::initial(200.0).range(100.0..=300.0))
-                .column(Column::initial(200.0).range(100.0..=300.0))
-                .column(Column::initial(200.0).range(100.0..=300.0))
+                .column(Column::initial(50.0).range(50.0..=100.0))
+                .column(Column::initial(100.0).range(50.0..=100.0))
+                .column(Column::initial(50.0).range(50.0..=100.0))
                 .column(Column::remainder())
                 .min_scrolled_height(200.0);
             table

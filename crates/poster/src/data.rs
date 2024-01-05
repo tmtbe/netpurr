@@ -1425,7 +1425,7 @@ impl Auth {
                     utils::replace_variable(self.basic_username.clone(), envs.clone()),
                     utils::replace_variable(self.basic_password.clone(), envs.clone())
                 ));
-                header.value = "Bearer ".to_string() + encoded_credentials.as_str();
+                header.value = "Basic ".to_string() + encoded_credentials.as_str();
                 headers.push(header)
             }
             AuthType::InheritAuthFromParent => auth.build_head(
