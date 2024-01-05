@@ -7,7 +7,7 @@ use crate::data::{EnvironmentItemValue, Request, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::test_script_windows::TestScriptWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
-use crate::script::script::{Context, Logger};
+use crate::script::script::{Context, Logger, ScriptScope};
 
 #[derive(Default)]
 pub struct RequestPreScriptPanel {
@@ -23,6 +23,7 @@ impl RequestPreScriptPanel {
         mut script: String,
         request: Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
+        id: String,
     ) -> String {
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
@@ -32,20 +33,25 @@ impl RequestPreScriptPanel {
             ui.fonts(|f| f.layout_job(layout_job))
         };
         ui.horizontal(|ui| {
-            egui::SidePanel::right("pre_request_right")
+            egui::SidePanel::right("pre_request_right_".to_string() + id.as_str())
                 .resizable(true)
                 .min_width(300.0)
                 .show_separator_line(false)
                 .show_inside(ui, |ui| {
                     ui.label("Pre-request scripts are written in JavaScript， and are run before the request is sent.");
                     if ui.link("Test").clicked() {
-                        let js = script.clone();
+                        let script_scope = ScriptScope {
+                            script: script.clone(),
+                            scope: "request".to_string(),
+                        };
                         let context = Context {
+                            scope_name: "request".to_string(),
                             request: request.clone(),
                             envs,
+                            shared_map: Default::default(),
                             logger: Logger::default(),
                         };
-                        self.test_script_windows.open(js, context);
+                        self.test_script_windows.open(vec!(script_scope), context);
                     }
                     ui.separator();
                     ui.strong("SNIPPETS");
@@ -85,7 +91,7 @@ console.log(response)"#)
                         }
                     });
                 });
-            egui::SidePanel::left("pre_request_left")
+            egui::SidePanel::left("pre_request_left_".to_string() + id.as_str())
                 .resizable(true)
                 .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
                 .show_inside(ui, |ui| {

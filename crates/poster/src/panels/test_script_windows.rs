@@ -3,21 +3,21 @@ use egui::Ui;
 use poll_promise::Promise;
 
 use crate::operation::Operation;
-use crate::script::script::Context;
+use crate::script::script::{Context, ScriptScope};
 use crate::utils;
 
 #[derive(Default)]
 pub struct TestScriptWindows {
     test_windows_open: bool,
-    script: String,
+    script_scopes: Vec<ScriptScope>,
     context: Option<Context>,
     run_result: Option<Promise<Result<Context, Error>>>,
 }
 
 impl TestScriptWindows {
-    pub(crate) fn open(&mut self, script: String, context: Context) {
+    pub(crate) fn open(&mut self, script_scopes: Vec<ScriptScope>, context: Context) {
         self.test_windows_open = true;
-        self.script = script;
+        self.script_scopes = script_scopes;
         self.context = Some(context);
         self.run_result = None;
     }
@@ -43,7 +43,7 @@ impl TestScriptWindows {
                                 self.run_result = Some(
                                     operation
                                         .script_runtime()
-                                        .run(self.script.clone(), context.clone()),
+                                        .run(self.script_scopes.clone(), context.clone()),
                                 );
                             }
                         }

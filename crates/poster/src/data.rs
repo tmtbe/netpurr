@@ -24,6 +24,7 @@ use ehttp::multipart::MultipartBuilder;
 use crate::data::LockWith::LockWithScript;
 use crate::env_func::EnvFunction;
 use crate::save::{Persistence, PersistenceItem};
+use crate::script::script::ScriptScope;
 use crate::utils;
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -376,6 +377,49 @@ impl WorkspaceData {
         )
     }
 
+    pub fn get_mut_crt_and_envs_auth_script(
+        &mut self,
+        id: String,
+    ) -> (
+        &mut CentralRequestItem,
+        BTreeMap<String, EnvironmentItemValue>,
+        Auth,
+        Option<ScriptScope>,
+    ) {
+        let data = self
+            .central_request_data_list
+            .data_map
+            .get(id.as_str())
+            .unwrap();
+        let envs = self.get_variable_hash_map(data.collection_path.clone());
+
+        let mut auth;
+        let mut script_scope = None;
+        match &data.collection_path {
+            None => {
+                auth = Auth {
+                    auth_type: AuthType::NoAuth,
+                    basic_username: "".to_string(),
+                    basic_password: "".to_string(),
+                    bearer_token: "".to_string(),
+                }
+            }
+            Some(collection_path) => {
+                auth = self.collections.get_auth(collection_path.clone());
+                script_scope = self.collections.get_script_scope(collection_path.clone());
+            }
+        }
+        (
+            self.central_request_data_list
+                .data_map
+                .get_mut(id.as_str())
+                .unwrap(),
+            envs,
+            auth,
+            script_scope,
+        )
+    }
+
     pub fn get_crt_and_envs_auth(
         &self,
         id: String,
@@ -525,7 +569,19 @@ impl Collections {
             }
         };
     }
-
+    pub fn get_script_scope(&self, path: String) -> Option<ScriptScope> {
+        let name = path.split("/").next()?;
+        let collection = self.data.get(name)?;
+        let scope = format!("collection:{}", collection.folder.borrow().name.clone());
+        if collection.script != "" {
+            Some(ScriptScope {
+                script: collection.script.clone(),
+                scope,
+            })
+        } else {
+            None
+        }
+    }
     pub fn get_auth(&self, path: String) -> Auth {
         let (_, of) = self.get_folder_with_path(path.clone());
         let binding = path.clone();

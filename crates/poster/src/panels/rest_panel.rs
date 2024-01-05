@@ -18,6 +18,7 @@ use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP};
+use crate::script::script::ScriptScope;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 use crate::{data, utils};
 
@@ -137,7 +138,8 @@ impl RestPanel {
         ui: &mut Ui,
     ) {
         let mut send_rest = None;
-        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+        let (data, envs, auth, script_scope) =
+            workspace_data.get_mut_crt_and_envs_auth_script(cursor.clone());
         egui::SidePanel::right("editor_right_panel")
             .resizable(false)
             .show_inside(ui, |ui| {
@@ -148,11 +150,20 @@ impl RestPanel {
                     } else {
                         if ui.button("Send").clicked() {
                             data.rest.request.clear_lock_with_script();
-
+                            let mut script_scopes = Vec::new();
+                            if let Some(collect_script_scope) = script_scope {
+                                script_scopes.push(collect_script_scope);
+                            }
+                            if data.rest.pre_request_script.clone() != "" {
+                                script_scopes.push(ScriptScope {
+                                    scope: "request".to_string(),
+                                    script: data.rest.pre_request_script.clone(),
+                                });
+                            }
                             let send_response = operation.send_with_script(
                                 data.rest.request.clone(),
                                 envs.clone(),
-                                data.rest.pre_request_script.clone(),
+                                script_scopes,
                             );
                             self.send_promise = Some(send_response);
                             send_rest = Some(data.rest.clone());
@@ -271,6 +282,7 @@ impl RestPanel {
                     data.rest.pre_request_script.clone(),
                     data.rest.request.clone(),
                     envs.clone(),
+                    "rest".to_string(),
                 );
                 {
                     let (data, envs, auth) =

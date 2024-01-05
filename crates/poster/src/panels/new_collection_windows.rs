@@ -388,6 +388,7 @@ impl DataView for NewCollectionWindows {
                             script,
                             Request::default(),
                             env,
+                            "collection".to_string(),
                         );
                     }
                 }

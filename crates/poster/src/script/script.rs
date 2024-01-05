@@ -8,7 +8,6 @@ use deno_core::error::AnyError;
 use deno_core::url::Url;
 use deno_core::{op2, ExtensionBuilder, Op, OpState};
 use deno_core::{ModuleCode, PollEventLoopOptions};
-use log::info;
 use poll_promise::Promise;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client, Method};
@@ -22,10 +21,12 @@ use crate::script::loader::SimpleModuleLoader;
 #[derive(Default)]
 pub struct ScriptRuntime {}
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Context {
+    pub scope_name: String,
     pub request: Request,
     pub envs: BTreeMap<String, EnvironmentItemValue>,
+    pub shared_map: BTreeMap<String, String>,
     pub logger: Logger,
 }
 
@@ -49,19 +50,48 @@ impl Logger {
     pub fn errors(&self) -> Vec<String> {
         self.errors.clone()
     }
+
+    pub fn append(&mut self, mut logger: Logger) {
+        self.infos.append(&mut logger.infos());
+        self.errors.append(&mut logger.errors);
+    }
 }
 
+#[derive(Default, Clone)]
+pub struct ScriptScope {
+    pub script: String,
+    pub scope: String,
+}
 impl ScriptRuntime {
-    pub fn run(&self, js: String, context: Context) -> Promise<Result<Context, Error>> {
-        Promise::spawn_thread("script", || ScriptRuntime::run_block(js, context))
+    pub fn run(
+        &self,
+        scripts: Vec<ScriptScope>,
+        context: Context,
+    ) -> Promise<Result<Context, Error>> {
+        Promise::spawn_thread("script", || ScriptRuntime::run_block_many(scripts, context))
     }
 
-    pub fn run_block(js: String, context: Context) -> Result<Context, Error> {
+    pub fn run_block_many(
+        scripts: Vec<ScriptScope>,
+        mut context: Context,
+    ) -> Result<Context, Error> {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .unwrap();
-        runtime.block_on(async { ScriptRuntime::run_js(js, context).await })
+        for script_scope in scripts.iter() {
+            context.scope_name = script_scope.scope.clone();
+            let step_context = runtime.block_on(async {
+                ScriptRuntime::run_js(script_scope.script.clone(), context.clone()).await
+            })?;
+            context.envs = step_context.envs.clone();
+            context.request = step_context.request.clone();
+            context.logger.append(step_context.logger.clone());
+            context
+                .shared_map
+                .append(&mut step_context.shared_map.clone());
+        }
+        Ok(context)
     }
 
     async fn run_js(js: String, context: Context) -> Result<Context, Error> {
@@ -186,11 +216,10 @@ fn op_add_params(state: &mut OpState, #[string] key: String, #[string] value: St
 
 #[op2(fast)]
 fn op_log(state: &mut OpState, #[string] msg: String) {
-    info!("{}", msg);
     let context = state.try_borrow_mut::<Context>();
     match context {
         None => {}
-        Some(c) => c.logger.add_log(msg),
+        Some(c) => c.logger.add_log(format!("[{}] {}", c.scope_name, msg)),
     }
 }
 
@@ -199,7 +228,7 @@ fn op_error(state: &mut OpState, #[string] msg: String) {
     let context = state.try_borrow_mut::<Context>();
     match context {
         None => {}
-        Some(c) => c.logger.add_error(msg),
+        Some(c) => c.logger.add_error(format!("[{}] {}", c.scope_name, msg)),
     }
 }
 

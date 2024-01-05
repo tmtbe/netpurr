@@ -14,7 +14,7 @@ use ehttp::Request;
 use crate::data::{
     Collection, CollectionFolder, EnvironmentItemValue, Header, HttpRecord, QueryParam,
 };
-use crate::script::script::{Context, ScriptRuntime};
+use crate::script::script::{Context, ScriptRuntime, ScriptScope};
 use crate::{data, utils};
 
 pub struct Operation {
@@ -38,22 +38,34 @@ impl Default for Operation {
         }
     }
 }
+
 impl Operation {
     pub fn send_with_script(
         &self,
         request: data::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
-        script: String,
+        scripts: Vec<ScriptScope>,
     ) -> Promise<Result<(data::Request, ehttp::Response), String>> {
         Promise::spawn_thread("send_with_script", move || {
-            let context_result = ScriptRuntime::run_block(
-                script,
-                Context {
-                    request: request.clone(),
-                    envs,
-                    logger: Default::default(),
-                },
-            );
+            let mut context_result = Ok(Context {
+                scope_name: "".to_string(),
+                request: request.clone(),
+                envs: envs.clone(),
+                shared_map: Default::default(),
+                logger: Default::default(),
+            });
+            if scripts.len() > 0 {
+                context_result = ScriptRuntime::run_block_many(
+                    scripts,
+                    Context {
+                        scope_name: "".to_string(),
+                        request: request.clone(),
+                        envs: envs.clone(),
+                        shared_map: Default::default(),
+                        logger: Default::default(),
+                    },
+                );
+            }
             match context_result {
                 Ok(context) => {
                     match RestSender::block_send(context.request.clone(), context.envs.clone()) {
