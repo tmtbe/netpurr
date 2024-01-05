@@ -237,7 +237,8 @@ impl RestPanel {
         workspace_data: &mut WorkspaceData,
         cursor: String,
     ) {
-        let (data, envs, auth) = workspace_data.get_crt_and_envs_auth(cursor.clone());
+        let (data, envs, auth, script_scope) =
+            workspace_data.get_crt_and_envs_auth_script(cursor.clone());
         match self.open_request_panel_enum {
             RequestPanelEnum::Params => self.request_params_panel.set_and_render(
                 ui,
@@ -280,6 +281,7 @@ impl RestPanel {
                     operation,
                     workspace_data,
                     data.rest.pre_request_script.clone(),
+                    script_scope,
                     data.rest.request.clone(),
                     envs.clone(),
                     "rest".to_string(),

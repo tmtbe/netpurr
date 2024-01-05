@@ -86,10 +86,8 @@ impl ScriptRuntime {
             })?;
             context.envs = step_context.envs.clone();
             context.request = step_context.request.clone();
-            context.logger.append(step_context.logger.clone());
-            context
-                .shared_map
-                .append(&mut step_context.shared_map.clone());
+            context.logger = step_context.logger.clone();
+            context.shared_map = step_context.shared_map.clone();
         }
         Ok(context)
     }

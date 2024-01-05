@@ -386,6 +386,7 @@ impl DataView for NewCollectionWindows {
                             operation,
                             workspace_data,
                             script,
+                            None,
                             Request::default(),
                             env,
                             "collection".to_string(),

@@ -450,6 +450,40 @@ impl WorkspaceData {
         }
         (data.clone(), envs, auth)
     }
+
+    pub fn get_crt_and_envs_auth_script(
+        &self,
+        id: String,
+    ) -> (
+        CentralRequestItem,
+        BTreeMap<String, EnvironmentItemValue>,
+        Auth,
+        Option<ScriptScope>,
+    ) {
+        let data = self
+            .central_request_data_list
+            .data_map
+            .get(id.as_str())
+            .unwrap();
+        let envs = self.get_variable_hash_map(data.collection_path.clone());
+        let mut auth;
+        let mut script_scope = None;
+        match &data.collection_path {
+            None => {
+                auth = Auth {
+                    auth_type: AuthType::NoAuth,
+                    basic_username: "".to_string(),
+                    basic_password: "".to_string(),
+                    bearer_token: "".to_string(),
+                }
+            }
+            Some(collection_path) => {
+                auth = self.collections.get_auth(collection_path.clone());
+                script_scope = self.collections.get_script_scope(collection_path.clone());
+            }
+        }
+        (data.clone(), envs, auth, script_scope)
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -706,6 +740,7 @@ impl Collection {
                             let mut folder = CollectionFolder::default();
                             folder.load(persistence, dir_path.join(folder_name));
                             self.folder = Rc::new(RefCell::new(folder));
+                            self.script = c.script
                         });
                     });
                 }
