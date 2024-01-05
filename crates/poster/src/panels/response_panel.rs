@@ -7,6 +7,7 @@ use crate::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
 use crate::panels::response_headers_panel::ResponseHeadersPanel;
+use crate::panels::response_log_panel::ResponseLogPanel;
 use crate::panels::DataView;
 use crate::utils;
 
@@ -16,6 +17,7 @@ pub struct ResponsePanel {
     response_body_panel: ResponseBodyPanel,
     response_headers_panel: ResponseHeadersPanel,
     response_cookies_panel: ResponseCookiesPanel,
+    response_log_panel: ResponseLogPanel,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -23,6 +25,7 @@ enum ResponsePanelEnum {
     Body,
     Cookies,
     Headers,
+    Logs,
 }
 
 impl Default for ResponsePanelEnum {
@@ -37,6 +40,7 @@ impl ResponsePanel {
             ResponsePanelEnum::Body => 0,
             ResponsePanelEnum::Cookies => response.get_cookies().len(),
             ResponsePanelEnum::Headers => response.headers.iter().count(),
+            ResponsePanelEnum::Logs => 0,
         }
     }
 
@@ -103,6 +107,10 @@ impl ResponsePanel {
             }
             ResponsePanelEnum::Headers => {
                 self.response_headers_panel
+                    .set_and_render(ui, operation, workspace_data, cursor);
+            }
+            ResponsePanelEnum::Logs => {
+                self.response_log_panel
                     .set_and_render(ui, operation, workspace_data, cursor);
             }
         }

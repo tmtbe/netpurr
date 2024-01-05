@@ -17,6 +17,9 @@
         log: (...args) => {
             core.ops.op_log(argsToMessage(...args));
         },
+        warn: (...args) => {
+            core.ops.op_warn(argsToMessage(...args));
+        },
         error: (...args) => {
             core.ops.op_error(argsToMessage(...args));
         },

@@ -18,6 +18,7 @@ mod request_pre_script_panel;
 mod response_body_panel;
 mod response_cookies_panel;
 mod response_headers_panel;
+mod response_log_panel;
 mod response_panel;
 pub mod rest_panel;
 mod save_windows;

@@ -3,11 +3,11 @@ use std::ops::Add;
 
 use egui::Ui;
 
-use crate::data::{EnvironmentItemValue, Request, WorkspaceData};
+use crate::data::{EnvironmentItemValue, Logger, Request, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::test_script_windows::TestScriptWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
-use crate::script::script::{Context, Logger, ScriptScope};
+use crate::script::script::{Context, ScriptScope};
 
 #[derive(Default)]
 pub struct RequestPreScriptPanel {
@@ -54,7 +54,7 @@ impl RequestPreScriptPanel {
                             scope_name: "request".to_string(),
                             request: request.clone(),
                             envs,
-                            shared_map: Default::default(),
+                            shared_map: BTreeMap::default(),
                             logger: Logger::default(),
                         };
                         self.test_script_windows.open(script_scopes, context);
@@ -64,6 +64,9 @@ impl RequestPreScriptPanel {
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         if ui.link("Log info message").clicked() {
                             script = script.clone().add("\nconsole.log(\"info1\",\"info2\");");
+                        }
+                        if ui.link("Log warn message").clicked() {
+                            script = script.clone().add("\nconsole.warn(\"info1\",\"info2\");");
                         }
                         if ui.link("Log error message").clicked() {
                             script = script.clone().add("\nconsole.error(\"error1\",\"error2\");");

@@ -14,7 +14,7 @@ use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
 
 use crate::data::{
-    EnvironmentItemValue, EnvironmentValueType, Header, LockWith, QueryParam, Request,
+    EnvironmentItemValue, EnvironmentValueType, Header, LockWith, Logger, QueryParam, Request,
 };
 use crate::script::loader::SimpleModuleLoader;
 
@@ -28,33 +28,6 @@ pub struct Context {
     pub envs: BTreeMap<String, EnvironmentItemValue>,
     pub shared_map: BTreeMap<String, String>,
     pub logger: Logger,
-}
-
-#[derive(Default, Clone)]
-pub struct Logger {
-    infos: Vec<String>,
-    errors: Vec<String>,
-}
-
-impl Logger {
-    pub fn add_log(&mut self, msg: String) {
-        self.infos.push(msg)
-    }
-    pub fn add_error(&mut self, msg: String) {
-        self.errors.push(msg)
-    }
-
-    pub fn infos(&self) -> Vec<String> {
-        self.infos.clone()
-    }
-    pub fn errors(&self) -> Vec<String> {
-        self.errors.clone()
-    }
-
-    pub fn append(&mut self, mut logger: Logger) {
-        self.infos.append(&mut logger.infos());
-        self.errors.append(&mut logger.errors);
-    }
 }
 
 #[derive(Default, Clone)]
@@ -101,6 +74,7 @@ impl ScriptRuntime {
                 op_add_header::DECL,
                 op_log::DECL,
                 op_error::DECL,
+                op_warn::DECL,
                 op_http_fetch::DECL,
             ])
             .build();
@@ -147,9 +121,10 @@ fn op_set_env(state: &mut OpState, #[string] key: String, #[string] value: Strin
                     value_type: EnvironmentValueType::String,
                 },
             );
-            c.logger
-                .infos
-                .push(format!("set env: `{}` as `{}`", key, value));
+            c.logger.add_info(
+                c.scope_name.clone(),
+                format!("set env: `{}` as `{}`", key, value),
+            );
         }
     }
 }
@@ -162,7 +137,8 @@ fn op_get_env(state: &mut OpState, #[string] key: String) -> String {
         None => "".to_string(),
         Some(c) => match c.envs.get(key.as_str()).cloned() {
             None => {
-                c.logger.add_error(format!("get env `{}` failed", key));
+                c.logger
+                    .add_error(c.scope_name.clone(), format!("get env `{}` failed", key));
                 "".to_string()
             }
             Some(v) => v.value.clone(),
@@ -184,9 +160,10 @@ fn op_add_header(state: &mut OpState, #[string] key: String, #[string] value: St
                 desc: "build with script".to_string(),
                 ..Default::default()
             });
-            c.logger
-                .infos
-                .push(format!("add header: `{}` as `{}`", key, value));
+            c.logger.add_info(
+                c.scope_name.clone(),
+                format!("add header: `{}` as `{}`", key, value),
+            );
         }
     }
 }
@@ -205,9 +182,10 @@ fn op_add_params(state: &mut OpState, #[string] key: String, #[string] value: St
                 desc: "build with script".to_string(),
                 ..Default::default()
             });
-            c.logger
-                .infos
-                .push(format!("add params: `{}` as `{}`", key, value));
+            c.logger.add_info(
+                c.scope_name.clone(),
+                format!("add params: `{}` as `{}`", key, value),
+            );
         }
     }
 }
@@ -217,7 +195,7 @@ fn op_log(state: &mut OpState, #[string] msg: String) {
     let context = state.try_borrow_mut::<Context>();
     match context {
         None => {}
-        Some(c) => c.logger.add_log(format!("[{}] {}", c.scope_name, msg)),
+        Some(c) => c.logger.add_info(c.scope_name.clone(), msg),
     }
 }
 
@@ -226,7 +204,16 @@ fn op_error(state: &mut OpState, #[string] msg: String) {
     let context = state.try_borrow_mut::<Context>();
     match context {
         None => {}
-        Some(c) => c.logger.add_error(format!("[{}] {}", c.scope_name, msg)),
+        Some(c) => c.logger.add_error(c.scope_name.clone(), msg),
+    }
+}
+
+#[op2(fast)]
+fn op_warn(state: &mut OpState, #[string] msg: String) {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => {}
+        Some(c) => c.logger.add_warn(c.scope_name.clone(), msg),
     }
 }
 
