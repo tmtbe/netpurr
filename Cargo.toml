@@ -2,7 +2,6 @@
 resolver = "2"
 members = [
     "crates/poster",
-    "crates/ehttp"
 ]
 
 [workspace.package]

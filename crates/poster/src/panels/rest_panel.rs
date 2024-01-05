@@ -5,7 +5,7 @@ use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{Auth, AuthType, BodyType, HttpRecord, Method, WorkspaceData};
+use crate::data::{Auth, AuthType, BodyType, HttpRecord, LockWith, Method, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
@@ -145,7 +145,7 @@ impl RestPanel {
                         ui.add_enabled(false, Button::new("Send"));
                     } else {
                         if ui.button("Send").clicked() {
-                            data.rest.request.clear_lock_with_script();
+                            data.rest.request.clear_lock_with();
                             let mut script_scopes = Vec::new();
                             if let Some(collect_script_scope) = script_scope {
                                 script_scopes.push(collect_script_scope);
@@ -304,7 +304,13 @@ impl RestPanel {
             if let Some(result) = promise.ready() {
                 match result {
                     Ok((request, response)) => {
-                        data.rest.request = request.clone();
+                        request
+                            .headers
+                            .iter()
+                            .filter(|h| h.lock_with != LockWith::NoLock)
+                            .for_each(|h| {
+                                data.rest.request.headers.push(h.clone());
+                            });
                         data.rest.response = response.clone();
                         option_response_cookies = Some(data.rest.response.get_cookies());
                         data.rest.ready();

@@ -20,7 +20,7 @@ all-features = true
 default = ["glow", "persistence", "http", "image_viewer"]
 # image_viewer adds about 0.9 MB of WASM
 web_app = ["http", "persistence"]
-http = ["ehttp", "image", "poll-promise", "egui_extras/image"]
+http = ["image", "poll-promise", "egui_extras/image"]
 image_viewer = ["image", "egui_extras/all_loaders", "rfd"]
 persistence = ["eframe/persistence", "egui/persistence", "serde"]
 puffin = ["eframe/puffin", "dep:puffin", "dep:puffin_http"]
@@ -48,9 +48,6 @@ log = { version = "0.4", features = ["std"] }
 bytemuck = { version = "1.7.1", optional = true }
 puffin = { version = "0.18", optional = true }
 puffin_http = { version = "0.15", optional = true }
-
-# feature "http":
-ehttp = { version = "0.3.0", path = "../ehttp", optional = true, features = ["multipart"] }
 image = { version = "0.24.7", optional = true, default-features = false, features = [
     "jpeg",
     "png",

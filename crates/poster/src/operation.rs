@@ -16,7 +16,7 @@ use reqwest::Method;
 
 use crate::data::{
     BodyRawType, BodyType, Collection, CollectionFolder, EnvironmentItemValue, Header, HttpBody,
-    HttpRecord, Logger, MultipartDataType,
+    HttpRecord, LockWith, Logger, MultipartDataType,
 };
 use crate::script::script::{Context, ScriptRuntime, ScriptScope};
 use crate::{data, utils};
@@ -76,20 +76,21 @@ impl Operation {
                     for log in context.logger.logs.iter() {
                         logger.logs.push(log.clone());
                     }
-                    let build_request = RestSender::build_request(request.clone(), envs);
+                    let build_request =
+                        RestSender::build_request(context.request.clone(), context.envs.clone());
                     logger.add_info(
                         "fetch".to_string(),
                         format!("start fetch request: {:?}", build_request),
                     );
                     match RestSender::reqwest_block_send(build_request) {
-                        Ok(response) => {
-                            let mut data_response = response;
+                        Ok((after_request, response)) => {
+                            let mut after_response = response;
                             logger.add_info(
                                 "fetch".to_string(),
-                                format!("get response: {:?}", data_response),
+                                format!("get response: {:?}", after_response),
                             );
-                            data_response.logger = logger;
-                            Ok((context.request, data_response))
+                            after_response.logger = logger;
+                            Ok((after_request, after_response))
                         }
                         Err(e) => Err(e.to_string()),
                     }
@@ -126,18 +127,43 @@ impl Operation {
 pub struct RestSender {}
 
 impl RestSender {
-    pub fn reqwest_block_send(request: data::Request) -> reqwest::Result<data::Response> {
+    pub fn reqwest_block_send(
+        request: data::Request,
+    ) -> reqwest::Result<(data::Request, data::Response)> {
         let client = Client::new();
-        let reqwest_request = Self::build_reqwest_request(request)?;
+        let reqwest_request = Self::build_reqwest_request(request.clone())?;
+        let mut new_request = request.clone();
+        for (hn, hv) in reqwest_request.headers().iter() {
+            if new_request
+                .headers
+                .iter()
+                .find(|h| {
+                    h.key.to_lowercase() == hn.to_string().to_lowercase()
+                        && h.value == hv.to_str().unwrap()
+                })
+                .is_none()
+            {
+                new_request.headers.push(Header {
+                    key: hn.to_string(),
+                    value: hv.to_str().unwrap().to_string(),
+                    desc: "auto gen".to_string(),
+                    enable: true,
+                    lock_with: LockWith::LockWithAuto,
+                })
+            }
+        }
         let reqwest_response = client.execute(reqwest_request)?;
-        Ok(data::Response {
-            headers: Header::new_from_map(reqwest_response.headers()),
-            status: reqwest_response.status().as_u16(),
-            status_text: reqwest_response.status().to_string(),
-            elapsed_time: 0,
-            logger: Logger::default(),
-            body: Arc::new(HttpBody::new(reqwest_response.bytes()?.to_vec())),
-        })
+        Ok((
+            new_request,
+            data::Response {
+                headers: Header::new_from_map(reqwest_response.headers()),
+                status: reqwest_response.status().as_u16(),
+                status_text: reqwest_response.status().to_string(),
+                elapsed_time: 0,
+                logger: Logger::default(),
+                body: Arc::new(HttpBody::new(reqwest_response.bytes()?.to_vec())),
+            },
+        ))
     }
 
     pub fn build_reqwest_request(
@@ -232,6 +258,16 @@ impl RestSender {
             build_request.base_url = "http://".to_string() + build_request.base_url.as_str();
         }
         build_request.headers = Self::build_header(request.headers.clone(), &envs);
+        build_request.body.body_str =
+            utils::replace_variable(build_request.body.body_str, envs.clone());
+        for md in build_request.body.body_xxx_form.iter_mut() {
+            md.key = utils::replace_variable(md.key.clone(), envs.clone());
+            md.value = utils::replace_variable(md.value.clone(), envs.clone());
+        }
+        for md in build_request.body.body_form_data.iter_mut() {
+            md.key = utils::replace_variable(md.key.clone(), envs.clone());
+            md.value = utils::replace_variable(md.value.clone(), envs.clone());
+        }
         build_request
     }
 

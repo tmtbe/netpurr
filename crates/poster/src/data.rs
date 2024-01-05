@@ -21,7 +21,6 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use uuid::Uuid;
 
-use crate::data::LockWith::LockWithScript;
 use crate::env_func::EnvFunction;
 use crate::save::{Persistence, PersistenceItem};
 use crate::script::script::ScriptScope;
@@ -1336,24 +1335,31 @@ pub struct Request {
 }
 
 impl Request {
-    pub fn clear_lock_with_script(&mut self) {
-        self.params.retain(|s| s.lock_with != LockWithScript);
-        self.headers.retain(|s| s.lock_with != LockWithScript);
+    pub fn clear_lock_with(&mut self) {
+        self.params.retain(|s| s.lock_with == LockWith::NoLock);
+        self.headers.retain(|s| s.lock_with == LockWith::NoLock);
+        self.body
+            .body_form_data
+            .retain(|s| s.lock_with == LockWith::NoLock);
+        self.body
+            .body_xxx_form
+            .retain(|s| s.lock_with == LockWith::NoLock);
     }
-
+    pub fn remove_request_content_type(&mut self) {
+        self.headers
+            .retain(|h| h.key.to_lowercase() != "content-type" || h.lock_with != LockWith::NoLock);
+    }
     pub fn set_request_content_type(&mut self, value: String) {
-        let mut need_add = false;
         let mut find = false;
-        for (index, header) in self.headers.clone().iter().enumerate() {
-            if header.key == "content-type" {
+        for header in self.headers.iter_mut() {
+            if header.key.to_lowercase() == "content-type" {
                 find = true;
                 if !header.value.contains(value.as_str()) {
-                    need_add = true;
-                    self.headers.remove(index);
+                    header.value = value.clone();
                 }
             }
         }
-        if !find || need_add {
+        if !find {
             self.headers.push(Header {
                 key: "content-type".to_string(),
                 value,
@@ -1459,7 +1465,9 @@ impl HttpRecord {
             .build_head(&mut self.request.headers, envs.clone(), auth);
         match self.request.body.body_type {
             BodyType::NONE => {}
-            BodyType::FROM_DATA => {}
+            BodyType::FROM_DATA => {
+                self.set_request_content_type("multipart/form-data".to_string());
+            }
             BodyType::X_WWW_FROM_URLENCODED => {
                 self.set_request_content_type("application/x-www-form-urlencoded".to_string());
             }
@@ -1530,6 +1538,9 @@ impl HttpRecord {
     pub fn set_request_content_type(&mut self, value: String) {
         self.request.set_request_content_type(value);
     }
+    pub fn remove_request_content_type(&mut self) {
+        self.request.remove_request_content_type();
+    }
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -1592,6 +1603,7 @@ pub struct MultipartData {
     pub key: String,
     pub value: String,
     pub desc: String,
+    pub lock_with: LockWith,
     pub enable: bool,
 }
 
