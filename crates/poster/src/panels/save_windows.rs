@@ -213,6 +213,7 @@ impl SaveWindows {
                             requests: Default::default(),
                             folders: BTreeMap::default(),
                         })),
+                        script: "".to_string(),
                     });
                     self.add_name = "".to_string();
                     self.add_collection = false;

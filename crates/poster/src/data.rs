@@ -578,6 +578,7 @@ impl Collections {
 pub struct Collection {
     pub envs: EnvironmentConfig,
     pub folder: Rc<RefCell<CollectionFolder>>,
+    pub script: String,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -604,6 +605,7 @@ impl Default for Collection {
                 requests: Default::default(),
                 folders: Default::default(),
             })),
+            script: "".to_string(),
         }
     }
 }

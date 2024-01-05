@@ -273,12 +273,21 @@ impl RestPanel {
                 workspace_data,
                 cursor.clone(),
             ),
-            RequestPanelEnum::PreRequestScript => self.request_pre_script_panel.set_and_render(
-                ui,
-                operation,
-                workspace_data,
-                cursor.clone(),
-            ),
+            RequestPanelEnum::PreRequestScript => {
+                let script = self.request_pre_script_panel.set_and_render(
+                    ui,
+                    operation,
+                    workspace_data,
+                    data.rest.pre_request_script.clone(),
+                    data.rest.request.clone(),
+                    envs.clone(),
+                );
+                {
+                    let (data, envs, auth) =
+                        workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+                    data.rest.pre_request_script = script;
+                }
+            }
         }
     }
     fn script_promise(

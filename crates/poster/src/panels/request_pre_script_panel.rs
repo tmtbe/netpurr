@@ -1,8 +1,9 @@
+use std::collections::BTreeMap;
 use std::ops::Add;
 
 use egui::Ui;
 
-use crate::data::WorkspaceData;
+use crate::data::{EnvironmentItemValue, Request, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::test_script_windows::TestScriptWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
@@ -13,17 +14,16 @@ pub struct RequestPreScriptPanel {
     test_script_windows: TestScriptWindows,
 }
 
-impl DataView for RequestPreScriptPanel {
-    type CursorType = String;
-
-    fn set_and_render(
+impl RequestPreScriptPanel {
+    pub(crate) fn set_and_render(
         &mut self,
         ui: &mut Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
-    ) {
-        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+        mut script: String,
+        request: Request,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+    ) -> String {
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
             let mut layout_job =
@@ -39,9 +39,9 @@ impl DataView for RequestPreScriptPanel {
                 .show_inside(ui, |ui| {
                     ui.label("Pre-request scripts are written in JavaScript， and are run before the request is sent.");
                     if ui.link("Test").clicked() {
-                        let js = data.rest.pre_request_script.clone();
+                        let js = script.clone();
                         let context = Context {
-                            request: data.rest.request.clone(),
+                            request: request.clone(),
                             envs,
                             logger: Logger::default(),
                         };
@@ -51,26 +51,26 @@ impl DataView for RequestPreScriptPanel {
                     ui.strong("SNIPPETS");
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         if ui.link("Log info message").clicked() {
-                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nconsole.log(\"info1\",\"info2\");");
+                            script = script.clone().add("\nconsole.log(\"info1\",\"info2\");");
                         }
                         if ui.link("Log error message").clicked() {
-                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nconsole.error(\"error1\",\"error2\");");
+                            script = script.clone().add("\nconsole.error(\"error1\",\"error2\");");
                         }
                         if ui.link("Get a variable").clicked() {
-                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nposter.get_env(\"variable_key\");");
+                            script = script.clone().add("\nposter.get_env(\"variable_key\");");
                         }
                         if ui.link("Set a variable").clicked() {
-                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nposter.set_env(\"variable_key\",\"variable_value\");");
+                            script = script.clone().add("\nposter.set_env(\"variable_key\",\"variable_value\");");
                         }
                         if ui.link("Add a header").clicked() {
-                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nposter.add_header(\"header_key\",\"header_value\");");
+                            script = script.clone().add("\nposter.add_header(\"header_key\",\"header_value\");");
                         }
                         if ui.link("Add a params").clicked() {
-                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add("\nposter.add_params(\"params_key\",\"params_value\");");
+                            script = script.clone().add("\nposter.add_params(\"params_key\",\"params_value\");");
                         }
 
                         if ui.link("Fetch a http request").clicked() {
-                            data.rest.pre_request_script = data.rest.pre_request_script.clone().add(
+                            script = script.clone().add(
                                 r#"let request = {
     "method":"post",
     "url":"http://www.httpbin.org/post",
@@ -94,7 +94,7 @@ console.log(response)"#)
                             .min_scrolled_height(300.0)
                             .show(ui, |ui| {
                                 ui.add(
-                                    egui::TextEdit::multiline(&mut data.rest.pre_request_script)
+                                    egui::TextEdit::multiline(&mut script)
                                         .font(egui::TextStyle::Monospace) // for cursor height
                                         .code_editor()
                                         .desired_rows(10)
@@ -107,5 +107,6 @@ console.log(response)"#)
                 });
         });
         self.test_script_windows.set_and_render(ui, operation);
+        script
     }
 }

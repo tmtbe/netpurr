@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::default::Default;
 use std::rc::Rc;
 
@@ -7,9 +8,13 @@ use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{Collection, CollectionFolder, EnvironmentItem, WorkspaceData};
+use crate::data::{
+    Collection, CollectionFolder, EnvironmentItem, EnvironmentItemValue, EnvironmentValueType,
+    Request, WorkspaceData,
+};
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
+use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::{AlongDataView, DataView, VERTICAL_GAP};
 use crate::utils;
 
@@ -25,6 +30,7 @@ pub struct NewCollectionWindows {
     parent_folder: Option<Rc<RefCell<CollectionFolder>>>,
     new_collection_content_type: NewCollectionContentType,
     auth_panel: AuthPanel,
+    request_pre_script_panel: RequestPreScriptPanel,
 }
 
 #[derive(Clone, EnumString, EnumIter, PartialEq, Display)]
@@ -32,6 +38,7 @@ enum NewCollectionContentType {
     Description,
     Authorization,
     Variables,
+    PreRequestScript,
 }
 
 impl Default for NewCollectionContentType {
@@ -328,8 +335,8 @@ impl DataView for NewCollectionWindows {
         let mut new_collection_windows_open = self.new_collection_windows_open;
         egui::Window::new(self.title_name.clone())
             .default_open(true)
-            .max_width(500.0)
-            .max_width(500.0)
+            .max_width(800.0)
+            .min_width(500.0)
             .max_height(600.0)
             .collapsible(false)
             .resizable(true)
@@ -360,6 +367,28 @@ impl DataView for NewCollectionWindows {
                     }
                     NewCollectionContentType::Variables => {
                         self.build_variables(ui);
+                    }
+                    NewCollectionContentType::PreRequestScript => {
+                        let script = self.new_collection.script.clone();
+                        let mut env = BTreeMap::default();
+                        for et in self.new_collection.envs.items.iter() {
+                            env.insert(
+                                et.key.clone(),
+                                EnvironmentItemValue {
+                                    value: et.value.clone(),
+                                    scope: self.new_collection.folder.borrow().name.clone(),
+                                    value_type: EnvironmentValueType::String,
+                                },
+                            );
+                        }
+                        self.new_collection.script = self.request_pre_script_panel.set_and_render(
+                            ui,
+                            operation,
+                            workspace_data,
+                            script,
+                            Request::default(),
+                            env,
+                        );
                     }
                 }
                 self.bottom_panel(workspace_data, ui);
