@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 use std::fs;
 use std::fs::File;
@@ -14,12 +14,16 @@ use base64::Engine;
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
+use log::info;
 use reqwest::header::HeaderMap;
 use rustygit::Repository;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 use uuid::Uuid;
+
+use cookie_store::{CookieDomain, RawCookie};
+use reqwest_cookie_store::CookieStoreMutex;
 
 use crate::env_func::EnvFunction;
 use crate::save::{Persistence, PersistenceItem};
@@ -177,7 +181,7 @@ impl ConfigData {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct WorkspaceData {
     pub workspace_name: String,
     pub cookies_manager: CookiesManager,
@@ -187,125 +191,161 @@ pub struct WorkspaceData {
     pub collections: Collections,
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct CookiesManager {
     persistence: Persistence,
-    data_map: BTreeMap<String, BTreeMap<String, Cookie>>,
+    pub cookie_store: Arc<CookieStoreMutex>,
 }
 
 impl CookiesManager {
     pub fn load_all(&mut self, workspace: String) {
         self.persistence.set_workspace(workspace);
-        for cookie_dir in self
-            .persistence
-            .load_list(Path::new("cookies").to_path_buf())
-            .iter()
-        {
-            if let Some(cookie_dir_str) = cookie_dir.file_name() {
-                if let Some(domain_name) = cookie_dir_str.to_str() {
-                    if let Some(cookie_item) = self.persistence.load(cookie_dir.clone()) {
-                        self.data_map.insert(
-                            Persistence::decode_with_file_name(domain_name.to_string()),
-                            cookie_item,
-                        );
-                    }
-                }
+        let cookie_store = {
+            if let Ok(file) = File::open(self.persistence.get_workspace_dir().join("cookies.json"))
+                .map(std::io::BufReader::new)
+            {
+                // use re-exported version of `CookieStore` for crate compatibility
+                reqwest_cookie_store::CookieStore::load_json(file).unwrap()
+            } else {
+                reqwest_cookie_store::CookieStore::default()
             }
-        }
-    }
-    pub fn contain_domain(&self, domain: String) -> bool {
-        self.data_map.contains_key(domain.as_str())
-    }
-    pub fn contain_domain_key(&self, domain: String, key: String) -> bool {
-        match self.data_map.get(domain.as_str()) {
-            None => false,
-            Some(d) => d.contains_key(key.as_str()),
-        }
-    }
-    pub fn set_domain_cookies(&mut self, mut domain: String, cookies: BTreeMap<String, Cookie>) {
-        domain = domain.trim_start_matches(".").to_string();
-        self.data_map.insert(domain.clone(), cookies.clone());
-        self.persistence
-            .save(Path::new("cookies").to_path_buf(), domain.clone(), &cookies);
-    }
-    pub fn get_domain_cookies(&self, domain: String) -> Option<BTreeMap<String, Cookie>> {
-        self.data_map.get(domain.trim_start_matches(".")).cloned()
-    }
-    pub fn get_domain_key(&self, domain: String, key: String) -> Option<Cookie> {
-        self.data_map
-            .get(domain.as_str())?
-            .get(key.as_str())
-            .cloned()
-    }
-    pub fn add_domain_cookies(&mut self, mut domain: String, key: String, value: Cookie) {
-        domain = domain.trim_start_matches(".").to_string();
-        if !self.data_map.contains_key(domain.as_str()) {
-            self.data_map.insert(domain.clone(), BTreeMap::default());
-        }
-        self.data_map.get_mut(domain.as_str()).map(|d| {
-            d.insert(key, value);
-            self.persistence
-                .save(Path::new("cookies").to_path_buf(), domain.clone(), d);
-        });
-    }
-    pub fn remove_domain_cookies(&mut self, mut domain: String, key: String) {
-        domain = domain.trim_start_matches(".").to_string();
-        self.data_map.get_mut(domain.as_str()).map(|d| {
-            d.remove(key.as_str());
-            self.persistence
-                .save(Path::new("cookies").to_path_buf(), domain.clone(), d);
-        });
-    }
-    pub fn remove_domain(&mut self, mut domain: String) {
-        domain = domain.trim_start_matches(".").to_string();
-        self.data_map.remove(domain.as_str());
-        self.persistence
-            .remove(Path::new("cookies").to_path_buf(), domain.clone());
-    }
-    pub fn remove_domain_key(&mut self, mut domain: String, key: String) {
-        domain = domain.trim_start_matches(".").to_string();
-        self.data_map.get_mut(domain.as_str()).map(|d| {
-            d.remove(key.as_str());
-            self.persistence
-                .save(Path::new("cookies").to_path_buf(), domain.clone(), d);
-        });
-    }
-    pub fn get_cookies_names(&self) -> Vec<String> {
-        let mut keys = vec![];
-        self.data_map.keys().for_each(|name| {
-            keys.push(name.clone());
-        });
-        keys
-    }
-    pub fn get_match_cookie(&self, request_domain: String, request_path: String) -> Vec<Cookie> {
-        let mut cookies = vec![];
-        for (_, map) in self.data_map.iter().filter(|(key, _)| {
-            let mut domain = key.to_string();
-            if !domain.starts_with(".") {
-                domain = ".".to_string() + domain.as_str();
-            }
-            request_domain.ends_with(domain.as_str())
-        }) {
-            for (_, c) in map.iter().filter(|(_, c)| {
-                let mut path = c.path.clone();
-                if !path.ends_with("/") {
-                    path = path + "/";
-                }
-                request_path.starts_with(path.as_str())
-            }) {
-                cookies.push(c.clone())
-            }
-        }
-        cookies
+        };
+        let cookie_store = CookieStoreMutex::new(cookie_store);
+        self.cookie_store = Arc::new(cookie_store);
     }
 
-    pub fn update_domain_key(&mut self, domain: String, key: String, cookie: Cookie) {
-        let domain_map = self.data_map.get_mut(domain.as_str());
-        domain_map.map(|m| {
-            m.insert(key.clone(), cookie);
-            self.persistence
-                .save(Path::new("cookies").to_path_buf(), domain.clone(), m);
-        });
+    pub fn save(&self) {
+        let mut store = self.cookie_store.lock().unwrap();
+        for c in store.iter_any() {
+            info!("{:?}", c);
+        }
+        let mut writer = File::create(self.persistence.get_workspace_dir().join("cookies.json"))
+            .map(std::io::BufWriter::new)
+            .unwrap();
+        store
+            .save_incl_expired_and_nonpersistent_json(&mut writer)
+            .unwrap();
+    }
+    pub fn contain_domain(&self, domain: String) -> bool {
+        self.cookie_store
+            .lock()
+            .unwrap()
+            .iter_any()
+            .find(|c| {
+                c.domain == CookieDomain::HostOnly(domain.clone())
+                    || c.domain == CookieDomain::Suffix(domain.clone())
+            })
+            .is_some()
+    }
+    pub fn contain_domain_key(&self, domain: String, key: String) -> bool {
+        self.cookie_store
+            .lock()
+            .unwrap()
+            .iter_any()
+            .find(|c| c.domain() == Some(domain.as_str()) && c.name() == key.as_str())
+            .is_some()
+    }
+    pub fn get_domain_cookies(&self, domain: String) -> Option<BTreeMap<String, Cookie>> {
+        let mut result = BTreeMap::new();
+        self.cookie_store
+            .lock()
+            .unwrap()
+            .iter_any()
+            .filter(|c| {
+                c.domain == CookieDomain::HostOnly(domain.clone())
+                    || c.domain == CookieDomain::Suffix(domain.clone())
+            })
+            .map(|c| Cookie {
+                name: c.name().to_string(),
+                value: c.value().to_string(),
+                domain: domain.clone(),
+                path: c.path().unwrap_or("").to_string(),
+                expires: c
+                    .expires_datetime()
+                    .map(|e| e.to_string())
+                    .unwrap_or("".to_string()),
+                max_age: c.max_age().map(|d| d.to_string()).unwrap_or("".to_string()),
+                raw: c.to_string(),
+                http_only: c.http_only().unwrap_or(false),
+                secure: c.secure().unwrap_or(false),
+            })
+            .for_each(|c| {
+                result.insert(c.name.clone(), c);
+            });
+        Some(result)
+    }
+    pub fn add_domain_cookies(&self, cookie: Cookie) -> Result<(), String> {
+        let result = match &RawCookie::parse(cookie.raw.as_str()) {
+            Ok(c) => match self.cookie_store.lock().unwrap().insert_raw_no_url_check(c) {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e.to_string()),
+            },
+            Err(e) => Err(e.to_string()),
+        };
+        if result.is_ok() {
+            self.save();
+        }
+        result
+    }
+    pub fn update_domain_cookies(
+        &self,
+        cookie: Cookie,
+        domain: String,
+        name: String,
+    ) -> Result<(), String> {
+        let result = match &RawCookie::parse(cookie.raw.as_str()) {
+            Ok(c) => {
+                if c.name() != name || (c.domain().is_some() && c.domain() != Some(domain.as_str()))
+                {
+                    return Err("Domain or Name is changed.".to_string());
+                }
+                match self.cookie_store.lock().unwrap().insert_raw_no_url_check(c) {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(e.to_string()),
+                }
+            }
+            Err(e) => Err(e.to_string()),
+        };
+        if result.is_ok() {
+            self.save();
+        }
+        result
+    }
+
+    pub fn remove_domain(&mut self, mut domain: String) {
+        self.cookie_store
+            .lock()
+            .unwrap()
+            .remove_domain(domain.as_str());
+        self.save()
+    }
+    pub fn remove_domain_path_name(&mut self, mut domain: String, path: String, name: String) {
+        self.cookie_store
+            .lock()
+            .unwrap()
+            .remove(domain.as_str(), path.as_str(), name.as_str());
+        self.save()
+    }
+    pub fn get_cookie_domains(&self) -> Vec<String> {
+        let mut hash_set: BTreeSet<String> = BTreeSet::new();
+        let mut store = self.cookie_store.lock().unwrap();
+        for cookie in store.iter_any() {
+            match &cookie.domain {
+                CookieDomain::HostOnly(domain) => {
+                    hash_set.insert(domain.clone());
+                }
+                CookieDomain::Suffix(domain) => {
+                    hash_set.insert(domain.clone());
+                }
+                CookieDomain::NotPresent => {}
+                CookieDomain::Empty => {}
+            }
+        }
+        let mut keys = vec![];
+        for domain_name in hash_set {
+            keys.push(domain_name)
+        }
+        keys
     }
 }
 
@@ -1484,45 +1524,6 @@ impl HttpRecord {
                 let path = Path::new(&self.request.body.body_file);
                 let content_type = mime_guess::from_path(path);
                 self.set_request_content_type(content_type.first_or_octet_stream().to_string());
-            }
-        }
-        let base_url = utils::replace_variable(self.request.base_url.clone(), envs.clone());
-        let base_url_splits: Vec<&str> = base_url.splitn(2, "//").collect();
-        if base_url_splits.len() >= 2 {
-            let request_domain_and_path: Vec<&str> = base_url_splits[1].splitn(2, "/").collect();
-            let request_domain = request_domain_and_path[0];
-            let mut request_path = "/";
-            if request_domain_and_path.len() == 2 {
-                request_path = request_domain_and_path[1];
-            }
-            let cookies = cookies_manager
-                .get_match_cookie(request_domain.to_string(), request_path.to_string());
-            let mut cookie_str_list = vec![];
-            for cookie in cookies {
-                cookie_str_list.push(format!("{}={}", cookie.name, cookie.value))
-            }
-            if cookie_str_list.len() > 0 {
-                let mut has = false;
-                self.request
-                    .headers
-                    .iter_mut()
-                    .filter(|h| h.key.to_lowercase() == "cookie")
-                    .for_each(|h| {
-                        h.desc = "auto gen".to_string();
-                        h.lock_with = LockWith::LockWithAuto;
-                        h.enable = true;
-                        h.value = cookie_str_list.join(";");
-                        has = true;
-                    });
-                if !has {
-                    self.request.headers.push(Header {
-                        key: "Cookie".to_string(),
-                        value: cookie_str_list.join(";"),
-                        desc: "auto gen".to_string(),
-                        enable: true,
-                        lock_with: LockWith::LockWithAuto,
-                    })
-                }
             }
         }
     }

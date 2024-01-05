@@ -6,6 +6,7 @@ use std::path::Path;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::time::Instant;
 
 use eframe::emath::Align2;
 use egui_toast::Toasts;
@@ -13,6 +14,8 @@ use poll_promise::Promise;
 use reqwest::blocking::{multipart, Client};
 use reqwest::header::CONTENT_TYPE;
 use reqwest::Method;
+
+use reqwest_cookie_store::CookieStoreMutex;
 
 use crate::data::{
     BodyRawType, BodyType, Collection, CollectionFolder, EnvironmentItemValue, Header, HttpBody,
@@ -49,6 +52,7 @@ impl Operation {
         request: data::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
         scripts: Vec<ScriptScope>,
+        cookie_store: Arc<CookieStoreMutex>,
     ) -> Promise<Result<(data::Request, data::Response), String>> {
         let mut logger = Logger::default();
         Promise::spawn_thread("send_with_script", move || {
@@ -82,7 +86,7 @@ impl Operation {
                         "fetch".to_string(),
                         format!("start fetch request: {:?}", build_request),
                     );
-                    match RestSender::reqwest_block_send(build_request) {
+                    match RestSender::reqwest_block_send(build_request, cookie_store) {
                         Ok((after_request, response)) => {
                             let mut after_response = response;
                             logger.add_info(
@@ -129,8 +133,12 @@ pub struct RestSender {}
 impl RestSender {
     pub fn reqwest_block_send(
         request: data::Request,
+        cookie_store: Arc<CookieStoreMutex>,
     ) -> reqwest::Result<(data::Request, data::Response)> {
-        let client = Client::new();
+        let client = Client::builder()
+            .cookie_provider(cookie_store)
+            .build()
+            .unwrap();
         let reqwest_request = Self::build_reqwest_request(request.clone())?;
         let mut new_request = request.clone();
         for (hn, hv) in reqwest_request.headers().iter() {
@@ -152,14 +160,16 @@ impl RestSender {
                 })
             }
         }
+        let start_time = Instant::now();
         let reqwest_response = client.execute(reqwest_request)?;
+        let total_time = start_time.elapsed();
         Ok((
             new_request,
             data::Response {
                 headers: Header::new_from_map(reqwest_response.headers()),
                 status: reqwest_response.status().as_u16(),
                 status_text: reqwest_response.status().to_string(),
-                elapsed_time: 0,
+                elapsed_time: total_time.as_millis(),
                 logger: Logger::default(),
                 body: Arc::new(HttpBody::new(reqwest_response.bytes()?.to_vec())),
             },

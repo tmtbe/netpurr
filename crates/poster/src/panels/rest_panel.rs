@@ -134,6 +134,7 @@ impl RestPanel {
         ui: &mut Ui,
     ) {
         let mut send_rest = None;
+        let cookie_store = workspace_data.cookies_manager.cookie_store.clone();
         let (data, envs, auth, script_scope) =
             workspace_data.get_mut_crt_and_envs_auth_script(cursor.clone());
         egui::SidePanel::right("editor_right_panel")
@@ -160,6 +161,7 @@ impl RestPanel {
                                 data.rest.request.clone(),
                                 envs.clone(),
                                 script_scopes,
+                                cookie_store,
                             );
                             self.send_promise = Some(send_response);
                             send_rest = Some(data.rest.clone());
@@ -298,10 +300,11 @@ impl RestPanel {
         operation: &mut Operation,
         cursor: String,
     ) {
-        let mut option_response_cookies = None;
         if let Some(promise) = &self.send_promise {
+            let cookies_manager = workspace_data.cookies_manager.clone();
             let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
             if let Some(result) = promise.ready() {
+                cookies_manager.save();
                 match result {
                     Ok((request, response)) => {
                         request
@@ -312,7 +315,6 @@ impl RestPanel {
                                 data.rest.request.headers.push(h.clone());
                             });
                         data.rest.response = response.clone();
-                        option_response_cookies = Some(data.rest.response.get_cookies());
                         data.rest.ready();
                         operation.toasts().add(Toast {
                             text: format!("Send request succrss").into(),
@@ -339,15 +341,6 @@ impl RestPanel {
                 data.rest.pending()
             }
         }
-        option_response_cookies.map(|cookies| {
-            for (_, c) in cookies.iter() {
-                workspace_data.cookies_manager.add_domain_cookies(
-                    c.domain.clone(),
-                    c.name.clone(),
-                    c.clone(),
-                );
-            }
-        });
     }
 
     fn render_middle_select(

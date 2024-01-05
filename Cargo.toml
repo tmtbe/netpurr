@@ -2,6 +2,8 @@
 resolver = "2"
 members = [
     "crates/poster",
+    "crates/cookie_store",
+    "crates/reqwest_cookie_store"
 ]
 
 [workspace.package]
