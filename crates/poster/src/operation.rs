@@ -46,6 +46,7 @@ impl Operation {
         envs: BTreeMap<String, EnvironmentItemValue>,
         scripts: Vec<ScriptScope>,
     ) -> Promise<Result<(data::Request, ehttp::Response, Logger), String>> {
+        let mut logger = Logger::default();
         Promise::spawn_thread("send_with_script", move || {
             let mut context_result = Ok(Context {
                 scope_name: "".to_string(),
@@ -66,12 +67,24 @@ impl Operation {
                     },
                 );
             }
-            let mut logger = data::Logger::default();
             match context_result {
                 Ok(context) => {
-                    logger = context.logger;
-                    match RestSender::block_send(context.request.clone(), context.envs.clone()) {
-                        Ok(response) => Ok((context.request, response, logger)),
+                    for log in context.logger.logs.iter() {
+                        logger.logs.push(log.clone());
+                    }
+                    let raw_request = RestSender::build_request(request.clone(), envs);
+                    logger.add_info(
+                        "fetch".to_string(),
+                        format!("start fetch request: {:?}", raw_request),
+                    );
+                    match RestSender::raw_block_send(raw_request) {
+                        Ok(response) => {
+                            logger.add_info(
+                                "fetch".to_string(),
+                                format!("get response: {:?}", response),
+                            );
+                            Ok((context.request, response, logger))
+                        }
                         Err(e) => Err(e.to_string()),
                     }
                 }
@@ -125,6 +138,10 @@ impl RestSender {
         envs: BTreeMap<String, EnvironmentItemValue>,
     ) -> ehttp::Result<ehttp::Response> {
         let request = Self::build_request(request.clone(), envs);
+        ehttp::fetch_blocking(&request)
+    }
+
+    pub fn raw_block_send(request: Request) -> ehttp::Result<ehttp::Response> {
         ehttp::fetch_blocking(&request)
     }
 
