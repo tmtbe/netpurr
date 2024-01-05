@@ -74,14 +74,14 @@ impl ResponsePanel {
                             .color(ui.visuals().warn_fg_color)
                             .strong(),
                     );
-                    if data.rest.elapsed_time.is_some() {
-                        ui.label("Time:");
-                        ui.label(
-                            RichText::new(data.rest.elapsed_time.unwrap().to_string() + "ms")
-                                .color(ui.visuals().warn_fg_color)
-                                .strong(),
-                        );
-                    }
+
+                    ui.label("Time:");
+                    ui.label(
+                        RichText::new(data.rest.response.elapsed_time.to_string() + "ms")
+                            .color(ui.visuals().warn_fg_color)
+                            .strong(),
+                    );
+
                     ui.label("Size:");
                     ui.label(
                         RichText::new(data.rest.response.body.get_byte_size())

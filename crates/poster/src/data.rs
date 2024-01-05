@@ -1134,7 +1134,6 @@ pub struct HttpRecord {
     pub request: Request,
     pub response: Response,
     pub status: ResponseStatus,
-    pub elapsed_time: Option<u128>,
     pub pre_request_script: String,
 }
 
@@ -1182,6 +1181,29 @@ impl Request {
     pub fn clear_lock_with_script(&mut self) {
         self.params.retain(|s| s.lock_with != LockWithScript);
         self.headers.retain(|s| s.lock_with != LockWithScript);
+    }
+
+    pub fn set_request_content_type(&mut self, value: String) {
+        let mut need_add = false;
+        let mut find = false;
+        for (index, header) in self.headers.clone().iter().enumerate() {
+            if header.key == "content-type" {
+                find = true;
+                if !header.value.contains(value.as_str()) {
+                    need_add = true;
+                    self.headers.remove(index);
+                }
+            }
+        }
+        if !find || need_add {
+            self.headers.push(Header {
+                key: "content-type".to_string(),
+                value,
+                desc: "".to_string(),
+                enable: true,
+                lock_with: LockWith::NoLock,
+            });
+        }
     }
 }
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Default)]
@@ -1348,26 +1370,7 @@ impl HttpRecord {
     }
 
     pub fn set_request_content_type(&mut self, value: String) {
-        let mut need_add = false;
-        let mut find = false;
-        for (index, header) in self.request.headers.clone().iter().enumerate() {
-            if header.key == "content-type" {
-                find = true;
-                if !header.value.contains(value.as_str()) {
-                    need_add = true;
-                    self.request.headers.remove(index);
-                }
-            }
-        }
-        if !find || need_add {
-            self.request.headers.push(Header {
-                key: "content-type".to_string(),
-                value,
-                desc: "".to_string(),
-                enable: true,
-                lock_with: LockWith::NoLock,
-            });
-        }
+        self.request.set_request_content_type(value);
     }
 }
 
@@ -1481,6 +1484,7 @@ pub struct Response {
     pub ok: bool,
     pub status: u16,
     pub status_text: String,
+    pub elapsed_time: u128,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]

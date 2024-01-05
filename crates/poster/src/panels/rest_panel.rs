@@ -1,6 +1,5 @@
 use std::rc::Rc;
 
-use deno_core::anyhow::Error;
 use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
 use egui_toast::{Toast, ToastKind, ToastOptions};
@@ -19,9 +18,8 @@ use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP};
-use crate::script::script::{Context, Logger};
-use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
+use crate::{data, utils};
 
 #[derive(Default)]
 pub struct RestPanel {
@@ -32,8 +30,7 @@ pub struct RestPanel {
     request_body_panel: RequestBodyPanel,
     response_panel: ResponsePanel,
     request_pre_script_panel: RequestPreScriptPanel,
-    send_promise: Option<Promise<ehttp::Result<ehttp::Response>>>,
-    script_promise: Option<Promise<Result<Context, Error>>>,
+    send_promise: Option<Promise<Result<(data::Request, ehttp::Response), String>>>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -151,20 +148,13 @@ impl RestPanel {
                     } else {
                         if ui.button("Send").clicked() {
                             data.rest.request.clear_lock_with_script();
-                            if data.rest.pre_request_script != "" {
-                                let js = data.rest.pre_request_script.clone();
-                                let context = Context {
-                                    request: data.rest.request.clone(),
-                                    envs,
-                                    logger: Logger::default(),
-                                };
-                                self.script_promise =
-                                    Some(operation.script_runtime().run(js, context));
-                            } else {
-                                let send_response =
-                                    operation.rest_sender().send(&mut data.rest, envs.clone());
-                                self.send_promise = Some(send_response);
-                            }
+
+                            let send_response = operation.send_with_script(
+                                data.rest.request.clone(),
+                                envs.clone(),
+                                data.rest.pre_request_script.clone(),
+                            );
+                            self.send_promise = Some(send_response);
                             send_rest = Some(data.rest.clone());
                         }
                     }
@@ -290,53 +280,7 @@ impl RestPanel {
             }
         }
     }
-    fn script_promise(
-        &mut self,
-        ui: &mut Ui,
-        workspace_data: &mut WorkspaceData,
-        operation: &mut Operation,
-        cursor: String,
-    ) {
-        match &self.script_promise {
-            None => {}
-            Some(promise) => match promise.ready() {
-                None => {
-                    ui.ctx().request_repaint();
-                }
-                Some(result) => {
-                    let (data, envs, auth) =
-                        workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
-                    match result {
-                        Ok(new_context) => {
-                            data.rest.request = new_context.request.clone();
-                            let send_response = operation
-                                .rest_sender()
-                                .send(&mut data.rest, new_context.envs.clone());
-                            self.send_promise = Some(send_response);
-                            operation.toasts().add(Toast {
-                                text: format!("Pre-Request-Script run succrss").into(),
-                                kind: ToastKind::Info,
-                                options: ToastOptions::default()
-                                    .duration_in_seconds(2.0)
-                                    .show_progress(true),
-                            });
-                        }
-                        Err(err) => {
-                            operation.toasts().add(Toast {
-                                text: format!("Pre-Request-Script run error: {}", err.to_string())
-                                    .into(),
-                                kind: ToastKind::Error,
-                                options: ToastOptions::default()
-                                    .duration_in_seconds(5.0)
-                                    .show_progress(true),
-                            });
-                        }
-                    }
-                    self.script_promise = None;
-                }
-            },
-        }
-    }
+
     fn send_promise(
         &mut self,
         ui: &mut Ui,
@@ -349,15 +293,16 @@ impl RestPanel {
             let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
             if let Some(result) = promise.ready() {
                 match result {
-                    Ok(r) => {
-                        data.rest.elapsed_time = Some(r.elapsed_time.as_millis());
+                    Ok((request, response)) => {
+                        data.rest.request = request.clone();
                         data.rest.response = Response {
-                            body: Rc::new(HttpBody::new(r.bytes.clone())),
-                            headers: Header::new_from_tuple(r.headers.clone()),
-                            url: r.url.clone(),
-                            ok: r.ok.clone(),
-                            status: r.status.clone(),
-                            status_text: r.status_text.clone(),
+                            body: Rc::new(HttpBody::new(response.bytes.clone())),
+                            headers: Header::new_from_tuple(response.headers.clone()),
+                            url: response.url.clone(),
+                            ok: response.ok.clone(),
+                            status: response.status.clone(),
+                            status_text: response.status_text.clone(),
+                            elapsed_time: response.elapsed_time.as_millis(),
                         };
                         option_response_cookies = Some(data.rest.response.get_cookies());
                         data.rest.ready();
@@ -458,7 +403,6 @@ impl DataView for RestPanel {
             self.render_middle_select(operation, workspace_data, cursor.clone(), ui);
             ui.separator();
         });
-        self.script_promise(ui, workspace_data, operation, cursor.clone());
         self.send_promise(ui, workspace_data, operation, cursor.clone());
         self.render_request_open_panel(ui, operation, workspace_data, cursor.clone());
         ui.separator();

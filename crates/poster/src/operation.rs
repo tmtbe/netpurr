@@ -5,14 +5,17 @@ use std::rc::Rc;
 use eframe::emath::Align2;
 use eframe::epaint::ahash::HashMap;
 use egui_toast::Toasts;
+use log::info;
 use poll_promise::Promise;
 use urlencoding::encode;
+
+use ehttp::Request;
 
 use crate::data::{
     Collection, CollectionFolder, EnvironmentItemValue, Header, HttpRecord, QueryParam,
 };
-use crate::script::script::ScriptRuntime;
-use crate::utils;
+use crate::script::script::{Context, ScriptRuntime};
+use crate::{data, utils};
 
 pub struct Operation {
     rest_sender: RestSender,
@@ -36,6 +39,32 @@ impl Default for Operation {
     }
 }
 impl Operation {
+    pub fn send_with_script(
+        &self,
+        request: data::Request,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        script: String,
+    ) -> Promise<Result<(data::Request, ehttp::Response), String>> {
+        Promise::spawn_thread("send_with_script", move || {
+            let context_result = ScriptRuntime::run_block(
+                script,
+                Context {
+                    request: request.clone(),
+                    envs,
+                    logger: Default::default(),
+                },
+            );
+            match context_result {
+                Ok(context) => {
+                    match RestSender::block_send(context.request.clone(), context.envs.clone()) {
+                        Ok(response) => Ok((context.request, response)),
+                        Err(e) => Err(e.to_string()),
+                    }
+                }
+                Err(e) => Err(e.to_string()),
+            }
+        })
+    }
     pub fn lock_ui(&mut self, key: String, bool: bool) {
         self.lock_ui.insert(key, bool);
     }
@@ -66,39 +95,52 @@ pub struct RestSender {}
 impl RestSender {
     pub fn send(
         &self,
-        rest: &mut HttpRecord,
+        request: data::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
     ) -> Promise<ehttp::Result<ehttp::Response>> {
         let (sender, promise) = Promise::new();
-        if !rest.request.base_url.starts_with("http://")
-            && !rest.request.base_url.starts_with("https://")
-        {
-            rest.request.base_url = "http://".to_string() + rest.request.base_url.as_str();
-        }
-        let content_type = rest.request.body.build_body(&envs);
-        content_type.map(|c| {
-            rest.set_request_content_type(c);
-        });
-        let headers = self.build_header(rest, &envs);
-        let request = ehttp::Request {
-            method: rest.request.method.to_string(),
-            url: self.build_url(&rest, envs.clone()),
-            body: rest.request.body.to_vec(),
-            headers,
-        };
-        println!("{:?}", request);
+        let request = Self::build_request(request, envs);
         ehttp::fetch(request, move |response| {
             sender.send(response);
         });
         return promise;
     }
 
+    pub fn block_send(
+        request: data::Request,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+    ) -> ehttp::Result<ehttp::Response> {
+        let request = Self::build_request(request.clone(), envs);
+        ehttp::fetch_blocking(&request)
+    }
+
+    fn build_request(
+        mut request: data::Request,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+    ) -> Request {
+        if !request.base_url.starts_with("http://") && !request.base_url.starts_with("https://") {
+            request.base_url = "http://".to_string() + request.base_url.as_str();
+        }
+        let content_type = request.body.build_body(&envs);
+        content_type.map(|c| {
+            request.set_request_content_type(c);
+        });
+        let headers = Self::build_header(&request, &envs);
+        let request = Request {
+            method: request.method.to_string(),
+            url: Self::build_url(&request, &envs),
+            body: request.body.to_vec(),
+            headers,
+        };
+        info!("{:?}", request);
+        request
+    }
+
     fn build_header(
-        &self,
-        rest: &mut HttpRecord,
+        request: &data::Request,
         envs: &BTreeMap<String, EnvironmentItemValue>,
     ) -> Vec<(String, String)> {
-        rest.request
+        request
             .headers
             .iter()
             .filter(|h| h.enable)
@@ -112,10 +154,9 @@ impl RestSender {
             .map(|h| (h.key.clone(), h.value.clone()))
             .collect()
     }
-    fn build_url(&self, rest: &HttpRecord, envs: BTreeMap<String, EnvironmentItemValue>) -> String {
-        let url = utils::replace_variable(rest.request.base_url.clone(), envs.clone());
-        let params: Vec<String> = rest
-            .request
+    fn build_url(request: &data::Request, envs: &BTreeMap<String, EnvironmentItemValue>) -> String {
+        let url = utils::replace_variable(request.base_url.clone(), envs.clone());
+        let params: Vec<String> = request
             .params
             .iter()
             .filter(|p| p.enable)

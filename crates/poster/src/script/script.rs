@@ -53,13 +53,15 @@ impl Logger {
 
 impl ScriptRuntime {
     pub fn run(&self, js: String, context: Context) -> Promise<Result<Context, Error>> {
-        Promise::spawn_thread("script", || {
-            let runtime = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .unwrap();
-            runtime.block_on(async { ScriptRuntime::run_js(js, context).await })
-        })
+        Promise::spawn_thread("script", || ScriptRuntime::run_block(js, context))
+    }
+
+    pub fn run_block(js: String, context: Context) -> Result<Context, Error> {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        runtime.block_on(async { ScriptRuntime::run_js(js, context).await })
     }
 
     async fn run_js(js: String, context: Context) -> Result<Context, Error> {
