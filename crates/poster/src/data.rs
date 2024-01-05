@@ -1229,8 +1229,6 @@ pub struct HttpRecord {
     pub response: Response,
     pub status: ResponseStatus,
     pub pre_request_script: String,
-    #[serde(skip)]
-    pub logger: Logger,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -1646,6 +1644,8 @@ pub struct Response {
     pub status: u16,
     pub status_text: String,
     pub elapsed_time: u128,
+    #[serde(skip)]
+    pub logger: Logger,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]

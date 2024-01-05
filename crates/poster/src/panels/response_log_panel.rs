@@ -31,7 +31,7 @@ impl DataView for ResponseLogPanel {
         };
         ui.push_id("log_info", |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for log in data.rest.logger.logs.iter() {
+                for log in data.rest.response.logger.logs.iter() {
                     let mut content = format!("> {}", log.show());
                     egui::TextEdit::multiline(&mut content)
                         .font(egui::TextStyle::Monospace)

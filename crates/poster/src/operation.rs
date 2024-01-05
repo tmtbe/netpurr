@@ -12,7 +12,7 @@ use urlencoding::encode;
 use ehttp::Request;
 
 use crate::data::{
-    Collection, CollectionFolder, EnvironmentItemValue, Header, HttpRecord, QueryParam,
+    Collection, CollectionFolder, EnvironmentItemValue, Header, HttpRecord, Logger, QueryParam,
 };
 use crate::script::script::{Context, ScriptRuntime, ScriptScope};
 use crate::{data, utils};
@@ -45,7 +45,7 @@ impl Operation {
         request: data::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
         scripts: Vec<ScriptScope>,
-    ) -> Promise<Result<(data::Request, ehttp::Response), String>> {
+    ) -> Promise<Result<(data::Request, ehttp::Response, Logger), String>> {
         Promise::spawn_thread("send_with_script", move || {
             let mut context_result = Ok(Context {
                 scope_name: "".to_string(),
@@ -66,10 +66,12 @@ impl Operation {
                     },
                 );
             }
+            let mut logger = data::Logger::default();
             match context_result {
                 Ok(context) => {
+                    logger = context.logger;
                     match RestSender::block_send(context.request.clone(), context.envs.clone()) {
-                        Ok(response) => Ok((context.request, response)),
+                        Ok(response) => Ok((context.request, response, logger)),
                         Err(e) => Err(e.to_string()),
                     }
                 }

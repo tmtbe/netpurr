@@ -31,7 +31,7 @@ pub struct RestPanel {
     request_body_panel: RequestBodyPanel,
     response_panel: ResponsePanel,
     request_pre_script_panel: RequestPreScriptPanel,
-    send_promise: Option<Promise<Result<(data::Request, ehttp::Response), String>>>,
+    send_promise: Option<Promise<Result<(data::Request, ehttp::Response, data::Logger), String>>>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -307,7 +307,7 @@ impl RestPanel {
             let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
             if let Some(result) = promise.ready() {
                 match result {
-                    Ok((request, response)) => {
+                    Ok((request, response, logger)) => {
                         data.rest.request = request.clone();
                         data.rest.response = Response {
                             body: Rc::new(HttpBody::new(response.bytes.clone())),
@@ -317,6 +317,7 @@ impl RestPanel {
                             status: response.status.clone(),
                             status_text: response.status_text.clone(),
                             elapsed_time: response.elapsed_time.as_millis(),
+                            logger: logger.clone(),
                         };
                         option_response_cookies = Some(data.rest.response.get_cookies());
                         data.rest.ready();

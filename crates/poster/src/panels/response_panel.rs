@@ -40,7 +40,7 @@ impl ResponsePanel {
             ResponsePanelEnum::Body => 0,
             ResponsePanelEnum::Cookies => response.get_cookies().len(),
             ResponsePanelEnum::Headers => response.headers.iter().count(),
-            ResponsePanelEnum::Logs => 0,
+            ResponsePanelEnum::Logs => response.logger.logs.len(),
         }
     }
 
