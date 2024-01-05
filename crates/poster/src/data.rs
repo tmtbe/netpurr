@@ -675,6 +675,7 @@ pub struct Collection {
 #[serde(default)]
 pub struct SaveCollection {
     pub envs: EnvironmentConfig,
+    pub script: String,
 }
 
 impl Default for Collection {
@@ -704,6 +705,7 @@ impl Collection {
     fn to_save_data(&self) -> SaveCollection {
         SaveCollection {
             envs: self.envs.clone(),
+            script: self.script.clone(),
         }
     }
     pub fn build_envs(&self) -> BTreeMap<String, EnvironmentItemValue> {
