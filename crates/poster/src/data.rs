@@ -1295,6 +1295,9 @@ impl HistoryDataList {
                                 date_group_history_list.history_list.push(history_rest_item);
                             }
                         }
+                        date_group_history_list
+                            .history_list
+                            .sort_by(|a, b| b.record_date.cmp(&a.record_date));
                         self.date_group.insert(naive_date, date_group_history_list);
                     }
                 }
