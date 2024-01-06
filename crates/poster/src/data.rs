@@ -1230,7 +1230,7 @@ impl CentralRequestDataList {
         let crt = CentralRequestItem {
             id: Uuid::new_v4().to_string(),
             collection_path: None,
-            rest: Default::default(),
+            ..Default::default()
         };
         self.add_crt(crt.clone());
         self.select(crt.id.clone())
@@ -1267,6 +1267,7 @@ pub struct CentralRequestItem {
     pub id: String,
     pub collection_path: Option<String>,
     pub rest: HttpRecord,
+    pub test_result: TestResult,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -1892,7 +1893,7 @@ impl Default for ExportType {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct TestResult {
     pub status: TestStatus,
     open_test: Option<String>,
@@ -1900,14 +1901,14 @@ pub struct TestResult {
     pub test_info_list: Vec<TestInfo>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct TestInfo {
-    name: String,
-    results: Vec<TestAssertResult>,
-    status: TestStatus,
+    pub name: String,
+    pub results: Vec<TestAssertResult>,
+    pub status: TestStatus,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct TestAssertResult {
     assert_result: bool,
     msg: String,
@@ -1945,7 +1946,7 @@ impl TestResult {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum TestStatus {
     None,
     Success,

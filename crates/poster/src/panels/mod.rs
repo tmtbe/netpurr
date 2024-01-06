@@ -22,6 +22,7 @@ mod response_log_panel;
 mod response_panel;
 pub mod rest_panel;
 mod save_windows;
+mod test_result_panel;
 mod test_script_panel;
 mod test_script_windows;
 pub mod workspace_windows;

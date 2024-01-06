@@ -73,19 +73,22 @@ pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) ->
 
 pub fn build_with_count_ui_header(name: String, count: usize, ui: &Ui) -> LayoutJob {
     let mut lb = LayoutJob::default();
+    let mut color = ui.visuals().warn_fg_color;
     let style = Style::default();
     RichText::new(name + " ")
         .color(ui.visuals().text_color())
         .strong()
         .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
     if count == usize::MAX {
-        RichText::new("●")
-            .color(ui.visuals().warn_fg_color)
-            .strong()
-            .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+        RichText::new("●").color(color.clone()).strong().append_to(
+            &mut lb,
+            &style,
+            FontSelection::Default,
+            Align::Center,
+        );
     } else if count > 0 {
         RichText::new("(".to_string() + count.to_string().as_str() + ")")
-            .color(ui.visuals().warn_fg_color)
+            .color(color.clone())
             .strong()
             .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
     }

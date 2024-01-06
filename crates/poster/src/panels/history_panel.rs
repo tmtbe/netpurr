@@ -32,6 +32,7 @@ impl DataView for HistoryPanel {
                                     id: history_rest_item.id.clone(),
                                     collection_path: None,
                                     rest: history_rest_item.rest.clone(),
+                                    ..Default::default()
                                 })
                         }
                     }

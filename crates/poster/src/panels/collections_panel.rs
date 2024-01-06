@@ -328,6 +328,7 @@ impl CollectionsPanel {
                         id,
                         collection_path: Some(path.clone()),
                         rest: request.clone(),
+                        ..Default::default()
                     });
                 ui.close_menu();
             }
@@ -396,6 +397,7 @@ impl CollectionsPanel {
                         id: path.clone() + "/" + hr.name.as_str(),
                         collection_path: Some(path.clone()),
                         rest: hr.clone(),
+                        ..Default::default()
                     })
             }
             self.popup_request_item(

@@ -18,7 +18,7 @@
         if (expect === actual) {
             core.ops.op_append_assert(true, "");
         } else {
-            core.ops.op_append_assert(false, "failed");
+            core.ops.op_append_assert(false, `Expect is ${expect} but actual is ${actual}`);
         }
     }
 

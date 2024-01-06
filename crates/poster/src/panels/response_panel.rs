@@ -4,12 +4,15 @@ use egui::{RichText, Ui};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{CentralRequestItem, Cookie, Response, ResponseStatus, WorkspaceData};
+use crate::data::{
+    CentralRequestItem, Cookie, Response, ResponseStatus, TestResult, TestStatus, WorkspaceData,
+};
 use crate::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
 use crate::panels::response_headers_panel::ResponseHeadersPanel;
 use crate::panels::response_log_panel::ResponseLogPanel;
+use crate::panels::test_result_panel::TestResultPanel;
 use crate::panels::DataView;
 use crate::utils;
 
@@ -20,6 +23,7 @@ pub struct ResponsePanel {
     response_headers_panel: ResponseHeadersPanel,
     response_cookies_panel: ResponseCookiesPanel,
     response_log_panel: ResponseLogPanel,
+    test_result_panel: TestResultPanel,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -28,6 +32,7 @@ enum ResponsePanelEnum {
     Cookies,
     Headers,
     Logs,
+    TestResult,
 }
 
 impl Default for ResponsePanelEnum {
@@ -40,6 +45,7 @@ impl ResponsePanel {
     fn get_count(
         response: &Response,
         cookies: &BTreeMap<String, Cookie>,
+        test_result: &TestResult,
         panel_enum: ResponsePanelEnum,
     ) -> usize {
         match panel_enum {
@@ -47,6 +53,11 @@ impl ResponsePanel {
             ResponsePanelEnum::Cookies => cookies.len(),
             ResponsePanelEnum::Headers => response.headers.iter().count(),
             ResponsePanelEnum::Logs => response.logger.logs.len(),
+            ResponsePanelEnum::TestResult => match test_result.status {
+                TestStatus::None => 0,
+                TestStatus::Success => usize::MAX,
+                TestStatus::Failed => usize::MAX,
+            },
         }
     }
 
@@ -64,13 +75,18 @@ impl ResponsePanel {
             "response".to_string(),
             |ui| {
                 ui.horizontal(|ui| {
-                    for x in ResponsePanelEnum::iter() {
+                    for response_panel_enum in ResponsePanelEnum::iter() {
                         ui.selectable_value(
                             &mut self.open_panel_enum,
-                            x.clone(),
+                            response_panel_enum.clone(),
                             utils::build_with_count_ui_header(
-                                x.to_string(),
-                                ResponsePanel::get_count(&data.rest.response, &cookies, x),
+                                response_panel_enum.to_string(),
+                                ResponsePanel::get_count(
+                                    &data.rest.response,
+                                    &cookies,
+                                    &data.test_result,
+                                    response_panel_enum,
+                                ),
                                 ui,
                             ),
                         );
@@ -117,6 +133,10 @@ impl ResponsePanel {
             }
             ResponsePanelEnum::Logs => {
                 self.response_log_panel
+                    .set_and_render(ui, operation, workspace_data, cursor);
+            }
+            ResponsePanelEnum::TestResult => {
+                self.test_result_panel
                     .set_and_render(ui, operation, workspace_data, cursor);
             }
         }

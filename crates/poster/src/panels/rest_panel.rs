@@ -359,6 +359,7 @@ impl RestPanel {
                                 .duration_in_seconds(2.0)
                                 .show_progress(true),
                         });
+                        data.test_result = test_result.clone();
                         match test_result.status {
                             TestStatus::None => {}
                             TestStatus::Success => {
