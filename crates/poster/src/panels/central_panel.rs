@@ -1,4 +1,5 @@
-use egui::{Response, Ui, WidgetText};
+use eframe::emath::Align;
+use egui::{FontSelection, Response, RichText, Style, Ui, WidgetText};
 use uuid::Uuid;
 
 use crate::data::{CentralRequestItem, WorkspaceData, ENVIRONMENT_GLOBALS};
@@ -157,53 +158,75 @@ impl MyCentralPanel {
             .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
             .show_inside(ui, |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    for request_data in workspace_data
-                        .central_request_data_list
-                        .data_list
-                        .clone()
-                        .iter()
-                    {
-                        let lb =
-                            utils::build_rest_ui_header(request_data.rest.clone(), Some(15), ui);
-                        let response = ui.selectable_value(
-                            &mut workspace_data.central_request_data_list.select_id,
-                            Some(request_data.id.clone()),
-                            lb,
-                        );
-                        response.context_menu(|ui| {
-                            if ui.button("Duplicate Tab").clicked() {
-                                let mut duplicate = request_data.clone();
-                                duplicate.id = Uuid::new_v4().to_string();
-                                workspace_data.central_request_data_list.add_crt(duplicate);
-                                ui.close_menu();
+                    let data_list = workspace_data.central_request_data_list.data_list.clone();
+                    for request_id in data_list.iter() {
+                        let request_data_option = workspace_data
+                            .central_request_data_list
+                            .data_map
+                            .get(request_id)
+                            .cloned();
+                        match request_data_option {
+                            None => {
+                                continue;
                             }
-                            ui.separator();
-                            if ui.button("Close").clicked() {
-                                self.close_tab(workspace_data, request_data);
-                                ui.close_menu();
+                            Some(request_data) => {
+                                let mut lb = utils::build_rest_ui_header(
+                                    request_data.rest.clone(),
+                                    Some(15),
+                                    ui,
+                                );
+                                if request_data.is_modify() {
+                                    let style = Style::default();
+                                    RichText::new(" ●")
+                                        .color(ui.visuals().warn_fg_color)
+                                        .append_to(
+                                            &mut lb,
+                                            &style,
+                                            FontSelection::Default,
+                                            Align::Center,
+                                        );
+                                }
+                                let response = ui.selectable_value(
+                                    &mut workspace_data.central_request_data_list.select_id,
+                                    Some(request_data.id.clone()),
+                                    lb,
+                                );
+                                response.context_menu(|ui| {
+                                    if ui.button("Duplicate Tab").clicked() {
+                                        let mut duplicate = request_data.clone();
+                                        duplicate.id = Uuid::new_v4().to_string();
+                                        workspace_data.central_request_data_list.add_crt(duplicate);
+                                        ui.close_menu();
+                                    }
+                                    ui.separator();
+                                    if ui.button("Close").clicked() {
+                                        self.close_tab(workspace_data, &request_data);
+                                        ui.close_menu();
+                                    }
+                                    if ui.button("Force Close").clicked() {
+                                        self.close_tab(workspace_data, &request_data);
+                                        ui.close_menu();
+                                    }
+                                    if ui.button("Close Other Tabs").clicked() {
+                                        workspace_data.central_request_data_list.clear();
+                                        workspace_data
+                                            .central_request_data_list
+                                            .add_crt(request_data.clone());
+                                        ui.close_menu();
+                                    }
+                                    if ui.button("Close All Tabs").clicked() {
+                                        workspace_data.central_request_data_list.clear();
+                                        workspace_data.central_request_data_list.select_id = None;
+                                        ui.close_menu();
+                                    }
+                                    if ui.button("Force Close All Tabs").clicked() {
+                                        workspace_data.central_request_data_list.clear();
+                                        workspace_data.central_request_data_list.select_id = None;
+                                        ui.close_menu();
+                                    }
+                                });
                             }
-                            if ui.button("Force Close").clicked() {
-                                self.close_tab(workspace_data, request_data);
-                                ui.close_menu();
-                            }
-                            if ui.button("Close Other Tabs").clicked() {
-                                workspace_data.central_request_data_list.clear();
-                                workspace_data
-                                    .central_request_data_list
-                                    .add_crt(request_data.clone());
-                                ui.close_menu();
-                            }
-                            if ui.button("Close All Tabs").clicked() {
-                                workspace_data.central_request_data_list.clear();
-                                workspace_data.central_request_data_list.select_id = None;
-                                ui.close_menu();
-                            }
-                            if ui.button("Force Close All Tabs").clicked() {
-                                workspace_data.central_request_data_list.clear();
-                                workspace_data.central_request_data_list.select_id = None;
-                                ui.close_menu();
-                            }
-                        });
+                        }
                     }
                     if ui.button("+").clicked() {
                         workspace_data.central_request_data_list.add_new()

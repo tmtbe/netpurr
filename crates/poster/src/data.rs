@@ -1160,7 +1160,7 @@ impl Default for EnvironmentValueType {
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct CentralRequestDataList {
     pub select_id: Option<String>,
-    pub data_list: Vec<CentralRequestItem>,
+    pub data_list: Vec<String>,
     pub data_map: HashMap<String, CentralRequestItem>,
     persistence: Persistence,
 }
@@ -1191,7 +1191,7 @@ impl CentralRequestDataList {
                 self.data_map = c.data_map;
                 self.select_id = c.select_id;
                 for (_, crt) in self.data_map.iter() {
-                    self.data_list.push(crt.clone());
+                    self.data_list.push(crt.id.clone());
                 }
             }
             None => {}
@@ -1215,7 +1215,7 @@ impl CentralRequestDataList {
             .clone()
             .iter()
             .enumerate()
-            .find(|(_, c)| c.id == id)
+            .find(|(_, list_id)| list_id.as_str() == id)
             .map(|(index, _)| self.data_list.remove(index));
         self.persistence.save(
             Path::new("requests").to_path_buf(),
@@ -1227,21 +1227,23 @@ impl CentralRequestDataList {
         );
     }
     pub fn add_new(&mut self) {
+        let id = Uuid::new_v4().to_string();
         let crt = CentralRequestItem {
-            id: Uuid::new_v4().to_string(),
+            id: id.clone(),
             collection_path: None,
             ..Default::default()
         };
-        self.add_crt(crt.clone());
-        self.select(crt.id.clone())
+        self.add_crt(crt);
+        self.select(id)
     }
     pub fn select(&mut self, id: String) {
         self.select_id = Some(id)
     }
-    pub fn add_crt(&mut self, crt: CentralRequestItem) {
+    pub fn add_crt(&mut self, mut crt: CentralRequestItem) {
+        crt.set_baseline();
         if !self.data_map.contains_key(crt.id.as_str()) {
             self.data_map.insert(crt.id.clone(), crt.clone());
-            self.data_list.push(crt.clone())
+            self.data_list.push(crt.id.clone())
         }
         self.select(crt.id.clone());
         self.save();
@@ -1268,6 +1270,27 @@ pub struct CentralRequestItem {
     pub collection_path: Option<String>,
     pub rest: HttpRecord,
     pub test_result: TestResult,
+    pub modify_baseline: String,
+}
+
+impl CentralRequestItem {
+    pub fn set_baseline(&mut self) {
+        self.modify_baseline = self.compute_signature();
+    }
+
+    fn compute_signature(&self) -> String {
+        format!(
+            "{}/{}/{}",
+            serde_json::to_string(&self.rest.request).unwrap(),
+            self.rest.test_script.clone(),
+            self.rest.pre_request_script.clone()
+        )
+    }
+
+    pub fn is_modify(&self) -> bool {
+        let now_sign = self.compute_signature();
+        now_sign != self.modify_baseline
+    }
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
