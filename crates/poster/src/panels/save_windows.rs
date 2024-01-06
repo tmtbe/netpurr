@@ -239,7 +239,7 @@ impl SaveWindows {
                             let mut ui_enable = true;
                             let button_name =
                                 "Save to ".to_string() + path.split("/").last().unwrap();
-                            let (collection_name, option) = workspace_data
+                            let (_, option) = workspace_data
                                 .collections
                                 .get_mut_folder_with_path(path.clone());
                             match &option {

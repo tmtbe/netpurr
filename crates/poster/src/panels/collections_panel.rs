@@ -205,8 +205,9 @@ impl CollectionsPanel {
                                 Ok(_) => {
                                     operation.toasts().add(Toast {
                                         text: format!("Export collection success.").into(),
-                                        kind: ToastKind::Info,
+                                        kind: ToastKind::Success,
                                         options: ToastOptions::default()
+                                            .show_icon(true)
                                             .duration_in_seconds(2.0)
                                             .show_progress(true),
                                     });
@@ -220,6 +221,7 @@ impl CollectionsPanel {
                                         .into(),
                                         kind: ToastKind::Error,
                                         options: ToastOptions::default()
+                                            .show_icon(true)
                                             .duration_in_seconds(5.0)
                                             .show_progress(true),
                                     });
@@ -234,6 +236,7 @@ impl CollectionsPanel {
                                     .into(),
                                     kind: ToastKind::Error,
                                     options: ToastOptions::default()
+                                        .show_icon(true)
                                         .duration_in_seconds(5.0)
                                         .show_progress(true),
                                 });

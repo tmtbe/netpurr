@@ -2,11 +2,14 @@ use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
 use egui_toast::{Toast, ToastKind, ToastOptions};
 use poll_promise::Promise;
+use std::cell::RefCell;
+use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{
-    Auth, AuthType, BodyType, HttpRecord, LockWith, Method, TestStatus, WorkspaceData,
+    Auth, AuthType, BodyType, CollectionFolder, HttpRecord, LockWith, Method, TestStatus,
+    WorkspaceData,
 };
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
@@ -147,6 +150,7 @@ impl RestPanel {
     ) {
         let mut send_rest = None;
         let client = workspace_data.build_client();
+        let mut just_need_replace_save = None;
         let (data, envs, auth, pre_request_script_scope, test_script_scope) =
             workspace_data.get_mut_crt_and_envs_auth_script(cursor.clone());
         egui::SidePanel::right("editor_right_panel")
@@ -197,9 +201,11 @@ impl RestPanel {
                                 operation.open_windows().open_save(data.rest.clone(), None);
                             }
                             Some(collection_path) => {
-                                operation
-                                    .open_windows()
-                                    .open_edit(data.rest.clone(), collection_path.clone());
+                                // operation
+                                //     .open_windows()
+                                //     .open_edit(data.rest.clone(), collection_path.clone());
+                                just_need_replace_save =
+                                    Some((collection_path.clone(), data.rest.clone()));
                             }
                         }
                     }
@@ -208,8 +214,28 @@ impl RestPanel {
         send_rest.map(|r| {
             workspace_data.history_data_list.record(r);
         });
+        just_need_replace_save.map(|(collection_path, http_record)| {
+            let (_, option) = workspace_data
+                .collections
+                .get_mut_folder_with_path(collection_path.clone());
+            match option {
+                None => {}
+                Some(cf) => {
+                    workspace_data
+                        .collections
+                        .insert_http_record(cf.clone(), http_record);
+                    operation.toasts().add(Toast {
+                        kind: ToastKind::Success,
+                        text: "Save success.".into(),
+                        options: ToastOptions::default()
+                            .duration_in_seconds(2.0)
+                            .show_icon(true)
+                            .show_progress(true),
+                    });
+                }
+            }
+        });
     }
-
     fn render_editor_left_panel(
         &self,
         workspace_data: &mut WorkspaceData,
@@ -354,9 +380,10 @@ impl RestPanel {
                         data.rest.ready();
                         operation.toasts().add(Toast {
                             text: format!("Send request success").into(),
-                            kind: ToastKind::Info,
+                            kind: ToastKind::Success,
                             options: ToastOptions::default()
                                 .duration_in_seconds(2.0)
+                                .show_icon(true)
                                 .show_progress(true),
                         });
                         data.test_result = test_result.clone();
@@ -365,9 +392,10 @@ impl RestPanel {
                             TestStatus::PASS => {
                                 operation.toasts().add(Toast {
                                     text: format!("Test success.").into(),
-                                    kind: ToastKind::Info,
+                                    kind: ToastKind::Success,
                                     options: ToastOptions::default()
                                         .duration_in_seconds(2.0)
+                                        .show_icon(true)
                                         .show_progress(true),
                                 });
                             }
@@ -377,6 +405,7 @@ impl RestPanel {
                                     kind: ToastKind::Error,
                                     options: ToastOptions::default()
                                         .duration_in_seconds(2.0)
+                                        .show_icon(true)
                                         .show_progress(true),
                                 });
                             }
@@ -389,6 +418,7 @@ impl RestPanel {
                             kind: ToastKind::Error,
                             options: ToastOptions::default()
                                 .duration_in_seconds(5.0)
+                                .show_icon(true)
                                 .show_progress(true),
                         });
                     }

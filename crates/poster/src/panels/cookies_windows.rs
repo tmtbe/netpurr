@@ -193,7 +193,7 @@ impl CookiesWindows {
                                     ) {
                                         Ok(_) => {
                                             operation.toasts().add(Toast {
-                                                kind: ToastKind::Info,
+                                                kind: ToastKind::Success,
                                                 text: "Update cookie success.".into(),
                                                 options: Default::default(),
                                             });

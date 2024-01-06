@@ -1332,7 +1332,7 @@ impl HistoryDataList {
         &self.date_group
     }
     pub fn record(&mut self, rest: HttpRecord) {
-        let today = chrono::Local::now().naive_local().date();
+        let today = Local::now().naive_local().date();
         if !self.date_group.contains_key(&today) {
             self.date_group.insert(
                 today,
@@ -1343,7 +1343,7 @@ impl HistoryDataList {
         }
         let hrt = HistoryRestItem {
             id: Uuid::new_v4().to_string(),
-            record_date: chrono::Local::now().with_timezone(&Utc),
+            record_date: Local::now().with_timezone(&Utc),
             rest,
         };
         self.date_group
