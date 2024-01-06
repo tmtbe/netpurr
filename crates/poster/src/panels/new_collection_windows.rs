@@ -15,6 +15,7 @@ use crate::data::{
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
+use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::{AlongDataView, DataView, VERTICAL_GAP};
 use crate::utils;
 
@@ -31,6 +32,7 @@ pub struct NewCollectionWindows {
     new_collection_content_type: NewCollectionContentType,
     auth_panel: AuthPanel,
     request_pre_script_panel: RequestPreScriptPanel,
+    test_script_panel: TestScriptPanel,
 }
 
 #[derive(Clone, EnumString, EnumIter, PartialEq, Display)]
@@ -39,6 +41,7 @@ enum NewCollectionContentType {
     Authorization,
     Variables,
     PreRequestScript,
+    Tests,
 }
 
 impl Default for NewCollectionContentType {
@@ -369,7 +372,7 @@ impl DataView for NewCollectionWindows {
                         self.build_variables(ui);
                     }
                     NewCollectionContentType::PreRequestScript => {
-                        let script = self.new_collection.script.clone();
+                        let script = self.new_collection.pre_request_script.clone();
                         let mut env = BTreeMap::default();
                         for et in self.new_collection.envs.items.iter() {
                             env.insert(
@@ -381,16 +384,25 @@ impl DataView for NewCollectionWindows {
                                 },
                             );
                         }
-                        self.new_collection.script = self.request_pre_script_panel.set_and_render(
+                        self.new_collection.pre_request_script =
+                            self.request_pre_script_panel.set_and_render(
+                                ui,
+                                operation,
+                                workspace_data,
+                                script,
+                                None,
+                                Request::default(),
+                                env,
+                                "collection".to_string(),
+                            );
+                    }
+                    NewCollectionContentType::Tests => {
+                        let script = self.new_collection.test_script.clone();
+                        self.new_collection.test_script = self.test_script_panel.set_and_render(
                             ui,
-                            operation,
-                            workspace_data,
                             script,
-                            None,
-                            Request::default(),
-                            env,
                             "collection".to_string(),
-                        );
+                        )
                     }
                 }
                 self.bottom_panel(workspace_data, ui);

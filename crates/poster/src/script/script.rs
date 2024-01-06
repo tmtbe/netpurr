@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::data::{
     EnvironmentItemValue, EnvironmentValueType, Header, LockWith, Logger, QueryParam, Request,
+    TestResult,
 };
 use crate::script::loader::SimpleModuleLoader;
 
@@ -28,6 +29,7 @@ pub struct Context {
     pub envs: BTreeMap<String, EnvironmentItemValue>,
     pub shared_map: BTreeMap<String, String>,
     pub logger: Logger,
+    pub test_result: TestResult,
 }
 
 #[derive(Default, Clone)]
@@ -79,6 +81,8 @@ impl ScriptRuntime {
                 op_error::DECL,
                 op_warn::DECL,
                 op_http_fetch::DECL,
+                op_get_shared::DECL,
+                op_set_shared::DECL,
             ])
             .build();
         let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
@@ -107,6 +111,38 @@ impl ScriptRuntime {
             .ok_or(Error::msg("get context error"))?
             .clone();
         Ok(new_context)
+    }
+}
+
+#[op2(fast)]
+fn op_set_shared(state: &mut OpState, #[string] key: String, #[string] value: String) {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => {}
+        Some(c) => {
+            c.shared_map.insert(key.clone(), value.clone());
+            c.logger.add_info(
+                c.scope_name.clone(),
+                format!("set shared: `{}` as `{}`", key, value),
+            );
+        }
+    }
+}
+
+#[op2]
+#[string]
+fn op_get_shared(state: &mut OpState, #[string] key: String) -> String {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => "".to_string(),
+        Some(c) => match c.shared_map.get(key.as_str()).cloned() {
+            None => {
+                c.logger
+                    .add_error(c.scope_name.clone(), format!("get shared `{}` failed", key));
+                "\"\"".to_string()
+            }
+            Some(v) => v.clone(),
+        },
     }
 }
 

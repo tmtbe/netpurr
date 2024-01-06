@@ -13,6 +13,7 @@ use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::response_panel::ResponsePanel;
+use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP};
 use crate::script::script::ScriptScope;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
@@ -27,7 +28,9 @@ pub struct RestPanel {
     request_body_panel: RequestBodyPanel,
     response_panel: ResponsePanel,
     request_pre_script_panel: RequestPreScriptPanel,
-    send_promise: Option<Promise<Result<(data::Request, data::Response), String>>>,
+    test_script_panel: TestScriptPanel,
+    send_promise:
+        Option<Promise<Result<(data::Request, data::Response, data::TestResult), String>>>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -37,6 +40,7 @@ enum RequestPanelEnum {
     Headers,
     Body,
     PreRequestScript,
+    Tests,
 }
 
 impl Default for RequestPanelEnum {
@@ -77,6 +81,13 @@ impl RestPanel {
             },
             RequestPanelEnum::PreRequestScript => {
                 if hr.pre_request_script != "" {
+                    usize::MAX
+                } else {
+                    0
+                }
+            }
+            RequestPanelEnum::Tests => {
+                if hr.test_script != "" {
                     usize::MAX
                 } else {
                     0
@@ -134,7 +145,7 @@ impl RestPanel {
     ) {
         let mut send_rest = None;
         let client = workspace_data.build_client();
-        let (data, envs, auth, script_scope) =
+        let (data, envs, auth, pre_request_script_scope, test_script_scope) =
             workspace_data.get_mut_crt_and_envs_auth_script(cursor.clone());
         egui::SidePanel::right("editor_right_panel")
             .resizable(false)
@@ -147,20 +158,31 @@ impl RestPanel {
                         if ui.button("Send").clicked() {
                             data.rest.request.clear_lock_with();
                             data.rest.sync(envs.clone(), auth.clone());
-                            let mut script_scopes = Vec::new();
-                            if let Some(collect_script_scope) = script_scope {
-                                script_scopes.push(collect_script_scope);
+                            let mut pre_request_script_scopes = Vec::new();
+                            if let Some(collect_script_scope) = pre_request_script_scope {
+                                pre_request_script_scopes.push(collect_script_scope);
                             }
                             if data.rest.pre_request_script.clone() != "" {
-                                script_scopes.push(ScriptScope {
+                                pre_request_script_scopes.push(ScriptScope {
                                     scope: "request".to_string(),
                                     script: data.rest.pre_request_script.clone(),
+                                });
+                            }
+                            let mut test_script_scopes = Vec::new();
+                            if let Some(collect_script_scope) = test_script_scope {
+                                test_script_scopes.push(collect_script_scope);
+                            }
+                            if data.rest.test_script.clone() != "" {
+                                test_script_scopes.push(ScriptScope {
+                                    scope: "request".to_string(),
+                                    script: data.rest.test_script.clone(),
                                 });
                             }
                             let send_response = operation.send_with_script(
                                 data.rest.request.clone(),
                                 envs.clone(),
-                                script_scopes,
+                                pre_request_script_scopes,
+                                test_script_scopes,
                                 client,
                             );
                             self.send_promise = Some(send_response);
@@ -290,6 +312,18 @@ impl RestPanel {
                     data.rest.pre_request_script = script;
                 }
             }
+            RequestPanelEnum::Tests => {
+                let script = self.test_script_panel.set_and_render(
+                    ui,
+                    data.rest.test_script.clone(),
+                    "rest".to_string(),
+                );
+                {
+                    let (data, envs, auth) =
+                        workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+                    data.rest.test_script = script;
+                }
+            }
         }
     }
 
@@ -306,7 +340,7 @@ impl RestPanel {
             if let Some(result) = promise.ready() {
                 cookies_manager.save();
                 match result {
-                    Ok((request, response)) => {
+                    Ok((request, response, test_result)) => {
                         request
                             .headers
                             .iter()

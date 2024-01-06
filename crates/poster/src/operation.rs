@@ -49,37 +49,38 @@ impl Operation {
         &self,
         request: data::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
-        scripts: Vec<ScriptScope>,
+        pre_request_scripts: Vec<ScriptScope>,
+        test_scripts: Vec<ScriptScope>,
         client: Client,
-    ) -> Promise<Result<(data::Request, data::Response), String>> {
+    ) -> Promise<Result<(data::Request, data::Response, data::TestResult), String>> {
         let mut logger = Logger::default();
         Promise::spawn_thread("send_with_script", move || {
-            let mut context_result = Ok(Context {
+            let mut pre_request_context_result = Ok(Context {
                 scope_name: "".to_string(),
                 request: request.clone(),
                 envs: envs.clone(),
-                shared_map: Default::default(),
-                logger: Default::default(),
+                ..Default::default()
             });
-            if scripts.len() > 0 {
-                context_result = ScriptRuntime::run_block_many(
-                    scripts,
+            if pre_request_scripts.len() > 0 {
+                pre_request_context_result = ScriptRuntime::run_block_many(
+                    pre_request_scripts,
                     Context {
                         scope_name: "".to_string(),
                         request: request.clone(),
                         envs: envs.clone(),
-                        shared_map: Default::default(),
-                        logger: Default::default(),
+                        ..Default::default()
                     },
                 );
             }
-            match context_result {
-                Ok(context) => {
-                    for log in context.logger.logs.iter() {
+            match pre_request_context_result {
+                Ok(pre_request_context) => {
+                    for log in pre_request_context.logger.logs.iter() {
                         logger.logs.push(log.clone());
                     }
-                    let build_request =
-                        RestSender::build_request(context.request.clone(), context.envs.clone());
+                    let build_request = RestSender::build_request(
+                        pre_request_context.request.clone(),
+                        pre_request_context.envs.clone(),
+                    );
                     logger.add_info(
                         "fetch".to_string(),
                         format!("start fetch request: {:?}", build_request),
@@ -92,7 +93,25 @@ impl Operation {
                                 format!("get response: {:?}", after_response),
                             );
                             after_response.logger = logger;
-                            Ok((after_request, after_response))
+                            let mut test_result: data::TestResult = Default::default();
+                            if test_scripts.len() > 0 {
+                                pre_request_context_result = ScriptRuntime::run_block_many(
+                                    test_scripts,
+                                    pre_request_context.clone(),
+                                );
+                                match pre_request_context_result {
+                                    Ok(test_context) => {
+                                        for log in test_context.logger.logs.iter() {
+                                            after_response.logger.logs.push(log.clone());
+                                        }
+                                        test_result = test_context.test_result.clone();
+                                    }
+                                    Err(e) => {
+                                        return Err(e.to_string());
+                                    }
+                                }
+                            }
+                            Ok((after_request, after_response, test_result))
                         }
                         Err(e) => Err(e.to_string()),
                     }

@@ -3,7 +3,7 @@ use std::ops::Add;
 
 use egui::Ui;
 
-use crate::data::{EnvironmentItemValue, Logger, Request, WorkspaceData};
+use crate::data::{EnvironmentItemValue, Request, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::test_script_windows::TestScriptWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
@@ -54,8 +54,7 @@ impl RequestPreScriptPanel {
                             scope_name: "request".to_string(),
                             request: request.clone(),
                             envs,
-                            shared_map: BTreeMap::default(),
-                            logger: Logger::default(),
+                            ..Default::default()
                         };
                         self.test_script_windows.open(script_scopes, context);
                     }
@@ -83,7 +82,12 @@ impl RequestPreScriptPanel {
                         if ui.link("Add a params").clicked() {
                             script = script.clone().add("\nposter.add_params(\"params_key\",\"params_value\");");
                         }
-
+                        if ui.link("Get a shared").clicked() {
+                            script = script.clone().add("\nposter.get_shared(\"shared_key\");");
+                        }
+                        if ui.link("Set a shared").clicked() {
+                            script = script.clone().add("\nposter.set_shared(\"shared_key\",\"shared_value\");");
+                        }
                         if ui.link("Fetch a http request").clicked() {
                             script = script.clone().add(
                                 r#"let request = {

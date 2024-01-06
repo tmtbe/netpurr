@@ -37,6 +37,14 @@
         add_params: (key, value) => {
             return core.ops.op_add_params(key, value)
         },
+        set_shared: (key, value) => {
+            let json_value = JSON.stringify(value)
+            return core.ops.op_set_shared(key, json_value)
+        },
+        get_shared: (key) => {
+            let json_value = core.ops.op_get_shared(key)
+            return JSON.parse(json_value)
+        },
     }
 
 })(globalThis);

@@ -483,6 +483,7 @@ impl WorkspaceData {
         BTreeMap<String, EnvironmentItemValue>,
         Auth,
         Option<ScriptScope>,
+        Option<ScriptScope>,
     ) {
         let data = self
             .central_request_data_list
@@ -492,7 +493,8 @@ impl WorkspaceData {
         let envs = self.get_variable_hash_map(data.collection_path.clone());
 
         let mut auth;
-        let mut script_scope = None;
+        let mut pre_request_script_scope = None;
+        let mut test_script_scope = None;
         match &data.collection_path {
             None => {
                 auth = Auth {
@@ -504,7 +506,12 @@ impl WorkspaceData {
             }
             Some(collection_path) => {
                 auth = self.collections.get_auth(collection_path.clone());
-                script_scope = self.collections.get_script_scope(collection_path.clone());
+                pre_request_script_scope = self
+                    .collections
+                    .get_pre_request_script_scope(collection_path.clone());
+                test_script_scope = self
+                    .collections
+                    .get_test_script_scope(collection_path.clone());
             }
         }
         (
@@ -514,7 +521,8 @@ impl WorkspaceData {
                 .unwrap(),
             envs,
             auth,
-            script_scope,
+            pre_request_script_scope,
+            test_script_scope,
         )
     }
 
@@ -577,7 +585,9 @@ impl WorkspaceData {
             }
             Some(collection_path) => {
                 auth = self.collections.get_auth(collection_path.clone());
-                script_scope = self.collections.get_script_scope(collection_path.clone());
+                script_scope = self
+                    .collections
+                    .get_pre_request_script_scope(collection_path.clone());
             }
         }
         (data.clone(), envs, auth, script_scope)
@@ -701,13 +711,26 @@ impl Collections {
             }
         };
     }
-    pub fn get_script_scope(&self, path: String) -> Option<ScriptScope> {
+    pub fn get_pre_request_script_scope(&self, path: String) -> Option<ScriptScope> {
         let name = path.split("/").next()?;
         let collection = self.data.get(name)?;
         let scope = format!("collection:{}", collection.folder.borrow().name.clone());
-        if collection.script != "" {
+        if collection.pre_request_script != "" {
             Some(ScriptScope {
-                script: collection.script.clone(),
+                script: collection.pre_request_script.clone(),
+                scope,
+            })
+        } else {
+            None
+        }
+    }
+    pub fn get_test_script_scope(&self, path: String) -> Option<ScriptScope> {
+        let name = path.split("/").next()?;
+        let collection = self.data.get(name)?;
+        let scope = format!("collection:{}", collection.folder.borrow().name.clone());
+        if collection.test_script != "" {
+            Some(ScriptScope {
+                script: collection.test_script.clone(),
                 scope,
             })
         } else {
@@ -766,14 +789,16 @@ impl Collections {
 pub struct Collection {
     pub envs: EnvironmentConfig,
     pub folder: Rc<RefCell<CollectionFolder>>,
-    pub script: String,
+    pub pre_request_script: String,
+    pub test_script: String,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SaveCollection {
     pub envs: EnvironmentConfig,
-    pub script: String,
+    pub pre_request_script: String,
+    pub test_script: String,
 }
 
 impl Default for Collection {
@@ -794,7 +819,8 @@ impl Default for Collection {
                 requests: Default::default(),
                 folders: Default::default(),
             })),
-            script: "".to_string(),
+            pre_request_script: "".to_string(),
+            test_script: "".to_string(),
         }
     }
 }
@@ -803,7 +829,8 @@ impl Collection {
     fn to_save_data(&self) -> SaveCollection {
         SaveCollection {
             envs: self.envs.clone(),
-            script: self.script.clone(),
+            pre_request_script: self.pre_request_script.clone(),
+            test_script: self.test_script.clone(),
         }
     }
     pub fn build_envs(&self) -> BTreeMap<String, EnvironmentItemValue> {
@@ -840,7 +867,8 @@ impl Collection {
                             let mut folder = CollectionFolder::default();
                             folder.load(persistence, dir_path.join(folder_name));
                             self.folder = Rc::new(RefCell::new(folder));
-                            self.script = c.script
+                            self.pre_request_script = c.pre_request_script;
+                            self.test_script = c.test_script;
                         });
                     });
                 }
@@ -1326,6 +1354,7 @@ pub struct HttpRecord {
     pub response: Response,
     pub status: ResponseStatus,
     pub pre_request_script: String,
+    pub test_script: String,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -1860,5 +1889,23 @@ pub enum ExportType {
 impl Default for ExportType {
     fn default() -> Self {
         ExportType::Collection
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct TestResult {
+    status: TestStatus,
+}
+
+#[derive(Clone)]
+pub enum TestStatus {
+    None,
+    Success,
+    Failed,
+}
+
+impl Default for TestStatus {
+    fn default() -> Self {
+        TestStatus::None
     }
 }

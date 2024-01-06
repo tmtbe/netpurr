@@ -203,7 +203,6 @@ impl SaveWindows {
             } else {
                 if ui.button("+").clicked() {
                     workspace_data.collections.insert_collection(Collection {
-                        envs: Default::default(),
                         folder: Rc::new(RefCell::new(CollectionFolder {
                             name: self.add_name.clone(),
                             parent_path: ".".to_string(),
@@ -213,7 +212,7 @@ impl SaveWindows {
                             requests: Default::default(),
                             folders: BTreeMap::default(),
                         })),
-                        script: "".to_string(),
+                        ..Default::default()
                     });
                     self.add_name = "".to_string();
                     self.add_collection = false;
