@@ -15,8 +15,6 @@ use reqwest::blocking::{multipart, Client};
 use reqwest::header::CONTENT_TYPE;
 use reqwest::Method;
 
-use reqwest_cookie_store::CookieStoreMutex;
-
 use crate::data::{
     BodyRawType, BodyType, Collection, CollectionFolder, EnvironmentItemValue, Header, HttpBody,
     HttpRecord, LockWith, Logger, MultipartDataType,
@@ -52,7 +50,7 @@ impl Operation {
         request: data::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
         scripts: Vec<ScriptScope>,
-        cookie_store: Arc<CookieStoreMutex>,
+        client: Client,
     ) -> Promise<Result<(data::Request, data::Response), String>> {
         let mut logger = Logger::default();
         Promise::spawn_thread("send_with_script", move || {
@@ -86,7 +84,7 @@ impl Operation {
                         "fetch".to_string(),
                         format!("start fetch request: {:?}", build_request),
                     );
-                    match RestSender::reqwest_block_send(build_request, cookie_store) {
+                    match RestSender::reqwest_block_send(build_request, client) {
                         Ok((after_request, response)) => {
                             let mut after_response = response;
                             logger.add_info(
@@ -133,12 +131,8 @@ pub struct RestSender {}
 impl RestSender {
     pub fn reqwest_block_send(
         request: data::Request,
-        cookie_store: Arc<CookieStoreMutex>,
+        client: Client,
     ) -> reqwest::Result<(data::Request, data::Response)> {
-        let client = Client::builder()
-            .cookie_provider(cookie_store)
-            .build()
-            .unwrap();
         let reqwest_request = Self::build_reqwest_request(request.clone())?;
         let mut new_request = request.clone();
         for (hn, hv) in reqwest_request.headers().iter() {

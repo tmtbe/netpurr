@@ -133,7 +133,7 @@ impl RestPanel {
         ui: &mut Ui,
     ) {
         let mut send_rest = None;
-        let cookie_store = workspace_data.cookies_manager.cookie_store.clone();
+        let client = workspace_data.build_client();
         let (data, envs, auth, script_scope) =
             workspace_data.get_mut_crt_and_envs_auth_script(cursor.clone());
         egui::SidePanel::right("editor_right_panel")
@@ -161,7 +161,7 @@ impl RestPanel {
                                 data.rest.request.clone(),
                                 envs.clone(),
                                 script_scopes,
-                                cookie_store,
+                                client,
                             );
                             self.send_promise = Some(send_response);
                             send_rest = Some(data.rest.clone());

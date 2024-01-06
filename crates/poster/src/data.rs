@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use base64::engine::general_purpose;
 use base64::Engine;
@@ -15,11 +16,13 @@ use chrono::{DateTime, Local, NaiveDate, Utc};
 use eframe::epaint::ahash::HashMap;
 use egui::TextBuffer;
 use log::info;
+use reqwest::blocking::Client;
 use reqwest::header::HeaderMap;
 use rustygit::Repository;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
+use url::Url;
 use uuid::Uuid;
 
 use cookie_store::{CookieDomain, RawCookie};
@@ -189,12 +192,33 @@ pub struct WorkspaceData {
     pub history_data_list: HistoryDataList,
     pub environment: Environment,
     pub collections: Collections,
+    client: Option<Client>,
+}
+
+impl WorkspaceData {
+    pub(crate) fn build_client(&mut self) -> Client {
+        match &self.client {
+            None => {
+                let client = Client::builder()
+                    .cookie_provider(self.cookies_manager.cookie_store.clone())
+                    .trust_dns(true)
+                    .tcp_nodelay(true)
+                    .timeout(Duration::from_secs(60))
+                    .build()
+                    .unwrap();
+                self.client = Some(client.clone());
+                client
+            }
+            Some(client) => client.clone(),
+        }
+    }
 }
 
 #[derive(Default, Clone, Debug)]
 pub struct CookiesManager {
     persistence: Persistence,
     pub cookie_store: Arc<CookieStoreMutex>,
+    pub client: Option<Client>,
 }
 
 impl CookiesManager {
@@ -244,6 +268,41 @@ impl CookiesManager {
             .iter_any()
             .find(|c| c.domain() == Some(domain.as_str()) && c.name() == key.as_str())
             .is_some()
+    }
+    pub fn get_url_cookies(&self, mut url: String) -> BTreeMap<String, Cookie> {
+        let mut result = BTreeMap::new();
+        if !url.starts_with("http") {
+            url = "http://".to_string() + url.as_str();
+        }
+        let url_parse = Url::parse(url.as_str());
+        match url_parse {
+            Ok(url_parse_ok) => {
+                self.cookie_store
+                    .lock()
+                    .unwrap()
+                    .matches(&url_parse_ok)
+                    .iter()
+                    .map(|c| Cookie {
+                        name: c.name().to_string(),
+                        value: c.value().to_string(),
+                        domain: c.domain().unwrap_or("").to_string(),
+                        path: c.path().unwrap_or("").to_string(),
+                        expires: c
+                            .expires_datetime()
+                            .map(|e| e.to_string())
+                            .unwrap_or("".to_string()),
+                        max_age: c.max_age().map(|d| d.to_string()).unwrap_or("".to_string()),
+                        raw: c.to_string(),
+                        http_only: c.http_only().unwrap_or(false),
+                        secure: c.secure().unwrap_or(false),
+                    })
+                    .for_each(|c| {
+                        result.insert(c.name.clone(), c);
+                    });
+                result
+            }
+            Err(_) => BTreeMap::default(),
+        }
     }
     pub fn get_domain_cookies(&self, domain: String) -> Option<BTreeMap<String, Cookie>> {
         let mut result = BTreeMap::new();
@@ -1756,23 +1815,6 @@ impl Cookie {
             }
         }
         cookie
-    }
-}
-
-impl Response {
-    //BAIDUID=67147D03A8E2F75F66619A1CFADFAAF2:FG=1; expires=Thu, 31-Dec-37 23:55:55 GMT; max-age=2147483647; path=/; domain=.baidu.com
-    pub fn get_cookies(&self) -> BTreeMap<String, Cookie> {
-        let mut result = BTreeMap::default();
-        let cookies: Vec<Cookie> = self
-            .headers
-            .iter()
-            .filter(|h| h.key.starts_with("set-cookie"))
-            .map(|h| Cookie::from_raw(h.value.clone()))
-            .collect();
-        for c in cookies {
-            result.insert(c.name.clone(), c);
-        }
-        result
     }
 }
 

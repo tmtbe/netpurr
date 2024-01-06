@@ -1,8 +1,10 @@
+use std::collections::BTreeMap;
+
 use egui::{RichText, Ui};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{CentralRequestItem, Response, ResponseStatus, WorkspaceData};
+use crate::data::{CentralRequestItem, Cookie, Response, ResponseStatus, WorkspaceData};
 use crate::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
@@ -35,10 +37,14 @@ impl Default for ResponsePanelEnum {
 }
 
 impl ResponsePanel {
-    fn get_count(response: &Response, panel_enum: ResponsePanelEnum) -> usize {
+    fn get_count(
+        response: &Response,
+        cookies: &BTreeMap<String, Cookie>,
+        panel_enum: ResponsePanelEnum,
+    ) -> usize {
         match panel_enum {
             ResponsePanelEnum::Body => 0,
-            ResponsePanelEnum::Cookies => response.get_cookies().len(),
+            ResponsePanelEnum::Cookies => cookies.len(),
             ResponsePanelEnum::Headers => response.headers.iter().count(),
             ResponsePanelEnum::Logs => response.logger.logs.len(),
         }
@@ -51,6 +57,7 @@ impl ResponsePanel {
         cursor: String,
         ui: &mut Ui,
         data: &CentralRequestItem,
+        cookies: BTreeMap<String, Cookie>,
     ) {
         utils::left_right_panel(
             ui,
@@ -63,7 +70,7 @@ impl ResponsePanel {
                             x.clone(),
                             utils::build_with_count_ui_header(
                                 x.to_string(),
-                                ResponsePanel::get_count(&data.rest.response, x),
+                                ResponsePanel::get_count(&data.rest.response, &cookies, x),
                                 ui,
                             ),
                         );
@@ -102,8 +109,7 @@ impl ResponsePanel {
                     .set_and_render(ui, operation, workspace_data, cursor);
             }
             ResponsePanelEnum::Cookies => {
-                self.response_cookies_panel
-                    .set_and_render(ui, operation, workspace_data, cursor);
+                self.response_cookies_panel.set_and_render(ui, &cookies);
             }
             ResponsePanelEnum::Headers => {
                 self.response_headers_panel
@@ -133,6 +139,9 @@ impl DataView for ResponsePanel {
             .get(cursor.as_str())
             .cloned()
             .unwrap();
+        let cookies = workspace_data
+            .cookies_manager
+            .get_url_cookies(data.rest.request.base_url.clone());
         match data.rest.status {
             ResponseStatus::None => {
                 ui.strong("Response");
@@ -148,7 +157,7 @@ impl DataView for ResponsePanel {
             }
 
             ResponseStatus::Ready => {
-                self.build_ready_panel(operation, workspace_data, cursor, ui, &data);
+                self.build_ready_panel(operation, workspace_data, cursor, ui, &data, cookies);
             }
             ResponseStatus::Error => {
                 ui.centered_and_justified(|ui| {

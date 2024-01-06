@@ -1,28 +1,16 @@
+use std::collections::BTreeMap;
+
 use eframe::emath::Align;
 use egui::{Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBuilder};
 
-use crate::data::WorkspaceData;
-use crate::operation::Operation;
-use crate::panels::DataView;
+use crate::data::Cookie;
 
 #[derive(Default)]
 pub struct ResponseCookiesPanel {}
 
-impl DataView for ResponseCookiesPanel {
-    type CursorType = String;
-    fn set_and_render(
-        &mut self,
-        ui: &mut egui::Ui,
-        operation: &mut Operation,
-        workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
-    ) {
-        let data = workspace_data
-            .central_request_data_list
-            .data_map
-            .get_mut(cursor.as_str())
-            .unwrap();
+impl ResponseCookiesPanel {
+    pub fn set_and_render(&mut self, ui: &mut egui::Ui, cookies: &BTreeMap<String, Cookie>) {
         ui.label("Cookies");
         ui.push_id("response_cookies_table", |ui| {
             let table = TableBuilder::new(ui)
@@ -61,7 +49,7 @@ impl DataView for ResponseCookiesPanel {
                     });
                 })
                 .body(|mut body| {
-                    for (_, cookie) in data.rest.response.get_cookies().iter_mut() {
+                    for (_, cookie) in cookies {
                         body.row(18.0, |mut row| {
                             row.col(|ui| {
                                 ui.text_edit_singleline(&mut cookie.name.clone());
