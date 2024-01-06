@@ -1494,12 +1494,7 @@ impl Default for AuthType {
 }
 
 impl HttpRecord {
-    pub fn sync(
-        &mut self,
-        envs: BTreeMap<String, EnvironmentItemValue>,
-        auth: Auth,
-        cookies_manager: CookiesManager,
-    ) {
+    pub fn sync(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, auth: Auth) {
         self.request
             .auth
             .build_head(&mut self.request.headers, envs.clone(), auth);

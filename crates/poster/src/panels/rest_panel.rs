@@ -91,9 +91,8 @@ impl RestPanel {
         cursor: String,
         ui: &mut Ui,
     ) {
-        let cookies_manager = workspace_data.cookies_manager.clone();
         let (mut data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
-        data.rest.sync(envs.clone(), auth.clone(), cookies_manager);
+        data.rest.sync(envs.clone(), auth.clone());
         if data
             .rest
             .request
@@ -147,6 +146,7 @@ impl RestPanel {
                     } else {
                         if ui.button("Send").clicked() {
                             data.rest.request.clear_lock_with();
+                            data.rest.sync(envs.clone(), auth.clone());
                             let mut script_scopes = Vec::new();
                             if let Some(collect_script_scope) = script_scope {
                                 script_scopes.push(collect_script_scope);
