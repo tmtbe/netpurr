@@ -55,8 +55,8 @@ impl ResponsePanel {
             ResponsePanelEnum::Logs => response.logger.logs.len(),
             ResponsePanelEnum::TestResult => match test_result.status {
                 TestStatus::None => 0,
-                TestStatus::Success => usize::MAX,
-                TestStatus::Failed => usize::MAX,
+                TestStatus::PASS => usize::MAX,
+                TestStatus::FAIL => usize::MAX,
             },
         }
     }

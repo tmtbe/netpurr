@@ -2,7 +2,7 @@ use egui::TextBuffer;
 
 use crate::data::WorkspaceData;
 use crate::operation::Operation;
-use crate::panels::DataView;
+use crate::panels::{DataView, HORIZONTAL_GAP};
 
 #[derive(Default)]
 pub struct TestResultPanel {}
@@ -25,14 +25,22 @@ impl DataView for TestResultPanel {
         ui.push_id("test_info", |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 for test_info in data.test_result.test_info_list.iter() {
-                    let mut content = test_info.name.clone();
-                    egui::TextEdit::multiline(&mut content)
-                        .font(egui::TextStyle::Monospace)
-                        .code_editor()
-                        .desired_rows(1)
-                        .lock_focus(true)
-                        .desired_width(f32::INFINITY)
-                        .show(ui);
+                    ui.horizontal(|ui| {
+                        ui.add_space(HORIZONTAL_GAP * 2.0);
+                        ui.strong(test_info.status.to_string());
+                        ui.separator();
+                        ui.vertical(|ui| {
+                            ui.label(test_info.name.clone());
+                            for tar in test_info.results.iter() {
+                                ui.horizontal(|ui| {
+                                    ui.add_space(HORIZONTAL_GAP * 2.0);
+                                    ui.separator();
+                                    ui.strong(tar.assert_result.to_string());
+                                    ui.label(tar.msg.to_string());
+                                });
+                            }
+                        });
+                    });
                 }
             });
         });

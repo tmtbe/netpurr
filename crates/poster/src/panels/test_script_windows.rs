@@ -79,7 +79,7 @@ impl TestScriptWindows {
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
             let mut layout_job =
-                egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, "log");
+                egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, "json");
             layout_job.wrap.max_width = wrap_width;
             ui.fonts(|f| f.layout_job(layout_job))
         };

@@ -362,7 +362,7 @@ impl RestPanel {
                         data.test_result = test_result.clone();
                         match test_result.status {
                             TestStatus::None => {}
-                            TestStatus::Success => {
+                            TestStatus::PASS => {
                                 operation.toasts().add(Toast {
                                     text: format!("Test success.").into(),
                                     kind: ToastKind::Info,
@@ -371,7 +371,7 @@ impl RestPanel {
                                         .show_progress(true),
                                 });
                             }
-                            TestStatus::Failed => {
+                            TestStatus::FAIL => {
                                 operation.toasts().add(Toast {
                                     text: format!("Test failed.").into(),
                                     kind: ToastKind::Error,
