@@ -1894,10 +1894,58 @@ impl Default for ExportType {
 
 #[derive(Default, Clone)]
 pub struct TestResult {
+    pub status: TestStatus,
+    open_test: Option<String>,
+    append: Vec<TestAssertResult>,
+    pub test_info_list: Vec<TestInfo>,
+}
+
+#[derive(Default, Clone)]
+pub struct TestInfo {
+    name: String,
+    results: Vec<TestAssertResult>,
     status: TestStatus,
 }
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
+pub struct TestAssertResult {
+    assert_result: bool,
+    msg: String,
+}
+
+impl TestResult {
+    pub fn open(&mut self, name: String) {
+        self.open_test = Some(name);
+    }
+    pub fn close(&mut self, name: String) {
+        self.open_test = None;
+        let mut status = TestStatus::Success;
+        for tar in self.append.iter() {
+            if !tar.assert_result {
+                status = TestStatus::Failed;
+                break;
+            }
+        }
+        self.test_info_list.push(TestInfo {
+            name,
+            results: self.append.clone(),
+            status,
+        });
+        self.append.clear();
+        self.status = TestStatus::Success;
+        for ti in self.test_info_list.iter() {
+            if ti.status == TestStatus::Failed {
+                self.status = TestStatus::Failed;
+                break;
+            }
+        }
+    }
+    pub fn append(&mut self, assert_result: bool, msg: String) {
+        self.append.push(TestAssertResult { assert_result, msg });
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
 pub enum TestStatus {
     None,
     Success,

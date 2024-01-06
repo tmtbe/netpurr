@@ -48,6 +48,9 @@ impl TestScriptPanel {
                             if ui.link("Set a shared").clicked() {
                                 script = script.clone().add("\nposter.set_shared(\"shared_key\",\"shared_value\");");
                             }
+                            if ui.link("Get response").clicked() {
+                                script = script.clone().add("\nlet response = poster.resp();\nconsole.log(response)");
+                            }
                         });
                 });
             egui::SidePanel::left("test_script_left_".to_string() + id.as_str())

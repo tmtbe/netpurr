@@ -5,7 +5,9 @@ use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{Auth, AuthType, BodyType, HttpRecord, LockWith, Method, WorkspaceData};
+use crate::data::{
+    Auth, AuthType, BodyType, HttpRecord, LockWith, Method, TestStatus, WorkspaceData,
+};
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
@@ -351,12 +353,33 @@ impl RestPanel {
                         data.rest.response = response.clone();
                         data.rest.ready();
                         operation.toasts().add(Toast {
-                            text: format!("Send request succrss").into(),
+                            text: format!("Send request success").into(),
                             kind: ToastKind::Info,
                             options: ToastOptions::default()
                                 .duration_in_seconds(2.0)
                                 .show_progress(true),
                         });
+                        match test_result.status {
+                            TestStatus::None => {}
+                            TestStatus::Success => {
+                                operation.toasts().add(Toast {
+                                    text: format!("Test success.").into(),
+                                    kind: ToastKind::Info,
+                                    options: ToastOptions::default()
+                                        .duration_in_seconds(2.0)
+                                        .show_progress(true),
+                                });
+                            }
+                            TestStatus::Failed => {
+                                operation.toasts().add(Toast {
+                                    text: format!("Test failed.").into(),
+                                    kind: ToastKind::Error,
+                                    options: ToastOptions::default()
+                                        .duration_in_seconds(2.0)
+                                        .show_progress(true),
+                                });
+                            }
+                        }
                     }
                     Err(e) => {
                         data.rest.error();

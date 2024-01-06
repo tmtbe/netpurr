@@ -19,7 +19,7 @@ use crate::data::{
     BodyRawType, BodyType, Collection, CollectionFolder, EnvironmentItemValue, Header, HttpBody,
     HttpRecord, LockWith, Logger, MultipartDataType,
 };
-use crate::script::script::{Context, ScriptRuntime, ScriptScope};
+use crate::script::script::{Context, JsResponse, ScriptRuntime, ScriptScope};
 use crate::{data, utils};
 
 pub struct Operation {
@@ -94,11 +94,12 @@ impl Operation {
                             );
                             after_response.logger = logger;
                             let mut test_result: data::TestResult = Default::default();
+                            let mut test_context = pre_request_context.clone();
+                            test_context.response =
+                                JsResponse::from_data_response(after_response.clone());
                             if test_scripts.len() > 0 {
-                                pre_request_context_result = ScriptRuntime::run_block_many(
-                                    test_scripts,
-                                    pre_request_context.clone(),
-                                );
+                                pre_request_context_result =
+                                    ScriptRuntime::run_block_many(test_scripts, test_context);
                                 match pre_request_context_result {
                                     Ok(test_context) => {
                                         for log in test_context.logger.logs.iter() {

@@ -13,6 +13,7 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
 
+use crate::data;
 use crate::data::{
     EnvironmentItemValue, EnvironmentValueType, Header, LockWith, Logger, QueryParam, Request,
     TestResult,
@@ -26,6 +27,7 @@ pub struct ScriptRuntime {}
 pub struct Context {
     pub scope_name: String,
     pub request: Request,
+    pub response: JsResponse,
     pub envs: BTreeMap<String, EnvironmentItemValue>,
     pub shared_map: BTreeMap<String, String>,
     pub logger: Logger,
@@ -66,6 +68,7 @@ impl ScriptRuntime {
             context.request = step_context.request.clone();
             context.logger = step_context.logger.clone();
             context.shared_map = step_context.shared_map.clone();
+            context.test_result = step_context.test_result.clone();
         }
         Ok(context)
     }
@@ -83,6 +86,10 @@ impl ScriptRuntime {
                 op_http_fetch::DECL,
                 op_get_shared::DECL,
                 op_set_shared::DECL,
+                op_response::DECL,
+                op_open_test::DECL,
+                op_close_test::DECL,
+                op_append_assert::DECL,
             ])
             .build();
         let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
@@ -258,7 +265,7 @@ fn op_warn(state: &mut OpState, #[string] msg: String) {
 
 #[derive(Default, Serialize, Deserialize, Clone)]
 #[serde(default)]
-struct JsRequest {
+pub struct JsRequest {
     method: String,
     url: String,
     headers: Vec<JsHeader>,
@@ -266,18 +273,34 @@ struct JsRequest {
 }
 
 #[derive(Default, Serialize, Deserialize, Clone)]
-struct JsHeader {
+pub struct JsHeader {
     name: String,
     value: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-struct JsResponse {
+#[derive(Default, Serialize, Deserialize, Clone)]
+pub struct JsResponse {
     status: u16,
     headers: Vec<JsHeader>,
     text: String,
 }
 
+impl JsResponse {
+    pub fn from_data_response(response: data::Response) -> Self {
+        Self {
+            status: response.status,
+            headers: response
+                .headers
+                .iter()
+                .map(|h| JsHeader {
+                    name: h.key.clone(),
+                    value: h.value.clone(),
+                })
+                .collect(),
+            text: String::from_utf8(response.body.to_vec()).unwrap_or("".to_string()),
+        }
+    }
+}
 #[op2(async)]
 #[serde]
 async fn op_http_fetch(#[serde] request: JsRequest) -> Result<JsResponse, AnyError> {
@@ -311,4 +334,41 @@ async fn op_http_fetch(#[serde] request: JsRequest) -> Result<JsResponse, AnyErr
         headers: response_headers,
     };
     Ok(result)
+}
+
+#[op2]
+#[serde]
+fn op_response(state: &mut OpState) -> JsResponse {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => JsResponse::default(),
+        Some(c) => c.response.clone(),
+    }
+}
+
+#[op2(fast)]
+fn op_open_test(state: &mut OpState, #[string] test_name: String) {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => {}
+        Some(c) => c.test_result.open(test_name),
+    }
+}
+
+#[op2(fast)]
+fn op_close_test(state: &mut OpState, #[string] test_name: String) {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => {}
+        Some(c) => c.test_result.close(test_name),
+    }
+}
+
+#[op2(fast)]
+fn op_append_assert(state: &mut OpState, result: bool, #[string] msg: String) {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => {}
+        Some(c) => c.test_result.append(result, msg),
+    }
 }

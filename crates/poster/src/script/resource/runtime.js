@@ -13,6 +13,15 @@
         }
         return response
     }
+
+    globalThis.assert = function (expect, actual) {
+        if (expect === actual) {
+            core.ops.op_append_assert(true, "");
+        } else {
+            core.ops.op_append_assert(false, "failed");
+        }
+    }
+
     globalThis.console = {
         log: (...args) => {
             core.ops.op_log(argsToMessage(...args));
@@ -45,6 +54,19 @@
             let json_value = core.ops.op_get_shared(key)
             return JSON.parse(json_value)
         },
+        resp: () => {
+            let response = core.ops.op_response();
+            try {
+                response.json = JSON.parse(response.text);
+            } catch (e) {
+            }
+            return response
+        },
+        test: (name, func) => {
+            core.ops.op_open_test(name);
+            func();
+            core.ops.op_close_test(name);
+        }
     }
 
 })(globalThis);
