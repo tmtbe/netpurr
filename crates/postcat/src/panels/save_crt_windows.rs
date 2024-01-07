@@ -283,7 +283,7 @@ impl DataView for SaveCRTWindows {
             .resizable(true)
             .open(&mut save_windows_open)
             .show(ui.ctx(), |ui| {
-                ui.label("Requests in Poster are saved in collections (a group of requests).");
+                ui.label("Requests in Postcat are saved in collections (a group of requests).");
                 ui.add_space(VERTICAL_GAP);
                 ui.label("Request name");
                 utils::text_edit_singleline_filter_justify(ui, &mut self.save_name);

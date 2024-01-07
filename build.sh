@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-cd ./crates/poster
+cd ./crates/postcat
 cargo bundle --release

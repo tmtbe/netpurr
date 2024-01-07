@@ -8,6 +8,8 @@ use log::error;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+use crate::APP_NAME;
+
 pub trait PersistenceItem {
     fn save<T: Serialize>(&self, path: PathBuf, key: String, data: &T);
 
@@ -143,7 +145,7 @@ impl PersistenceItem for Persistence {
         return self
             .root
             .clone()
-            .join("Poster")
+            .join(APP_NAME)
             .join("workspaces")
             .join(self.workspace.clone());
     }

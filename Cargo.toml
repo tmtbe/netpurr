@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/poster",
+    "crates/postcat",
     "crates/cookie_store",
     "crates/reqwest_cookie_store"
 ]

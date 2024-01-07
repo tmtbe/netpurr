@@ -71,22 +71,22 @@ impl RequestPreScriptPanel {
                             script = script.clone().add("\nconsole.error(\"error1\",\"error2\");");
                         }
                         if ui.link("Get a variable").clicked() {
-                            script = script.clone().add("\nposter.get_env(\"variable_key\");");
+                            script = script.clone().add("\npostcat.get_env(\"variable_key\");");
                         }
                         if ui.link("Set a variable").clicked() {
-                            script = script.clone().add("\nposter.set_env(\"variable_key\",\"variable_value\");");
+                            script = script.clone().add("\npostcat.set_env(\"variable_key\",\"variable_value\");");
                         }
                         if ui.link("Add a header").clicked() {
-                            script = script.clone().add("\nposter.add_header(\"header_key\",\"header_value\");");
+                            script = script.clone().add("\npostcat.add_header(\"header_key\",\"header_value\");");
                         }
                         if ui.link("Add a params").clicked() {
-                            script = script.clone().add("\nposter.add_params(\"params_key\",\"params_value\");");
+                            script = script.clone().add("\npostcat.add_params(\"params_key\",\"params_value\");");
                         }
                         if ui.link("Get a shared").clicked() {
-                            script = script.clone().add("\nposter.get_shared(\"shared_key\");");
+                            script = script.clone().add("\npostcat.get_shared(\"shared_key\");");
                         }
                         if ui.link("Set a shared").clicked() {
-                            script = script.clone().add("\nposter.set_shared(\"shared_key\",\"shared_value\");");
+                            script = script.clone().add("\npostcat.set_shared(\"shared_key\",\"shared_value\");");
                         }
                         if ui.link("Fetch a http request").clicked() {
                             script = script.clone().add(

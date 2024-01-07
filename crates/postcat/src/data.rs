@@ -31,7 +31,7 @@ use reqwest_cookie_store::CookieStoreMutex;
 use crate::env_func::EnvFunction;
 use crate::save::{Persistence, PersistenceItem};
 use crate::script::script::ScriptScope;
-use crate::utils;
+use crate::{utils, APP_NAME};
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(default)]
@@ -89,7 +89,7 @@ impl Default for ConfigData {
                 name: "default".to_string(),
                 path: dirs::home_dir()
                     .unwrap_or(Path::new("/home").to_path_buf())
-                    .join("Poster")
+                    .join(APP_NAME)
                     .join("workspaces")
                     .join("default"),
                 enable_git: None,
@@ -106,7 +106,7 @@ impl Default for ConfigData {
 impl ConfigData {
     pub fn load() -> Self {
         let mut config_data = if let Some(home_dir) = dirs::home_dir() {
-            let config_path = home_dir.join("Poster").join("config.json");
+            let config_path = home_dir.join(APP_NAME).join("config.json");
             match File::open(config_path) {
                 Ok(mut file) => {
                     let mut content = String::new();
@@ -129,7 +129,7 @@ impl ConfigData {
     }
     pub fn new_workspace(&mut self, name: String) {
         if let Some(home_dir) = dirs::home_dir() {
-            let workspaces_path = home_dir.join("Poster").join("workspaces").join(name);
+            let workspaces_path = home_dir.join(APP_NAME).join("workspaces").join(name);
             fs::create_dir_all(workspaces_path);
             self.refresh_workspaces();
         }
@@ -137,7 +137,7 @@ impl ConfigData {
     pub fn refresh_workspaces(&mut self) {
         self.workspaces.clear();
         if let Some(home_dir) = dirs::home_dir() {
-            let workspaces_path = home_dir.join("Poster").join("workspaces");
+            let workspaces_path = home_dir.join(APP_NAME).join("workspaces");
             if let Ok(entries) = fs::read_dir(workspaces_path) {
                 for entry in entries {
                     if let Ok(entry) = entry {
@@ -170,7 +170,7 @@ impl ConfigData {
     fn save(&self) -> Result<(), Error> {
         let json = serde_json::to_string(self)?;
         if let Some(home_dir) = dirs::home_dir() {
-            let config_path = home_dir.join("Poster").join("config.json");
+            let config_path = home_dir.join(APP_NAME).join("config.json");
             let mut file = File::create(config_path.clone())?;
             file.write_all(json.as_bytes())?;
         }
@@ -1417,7 +1417,9 @@ impl HistoryDataList {
     pub fn get_group(&self) -> &BTreeMap<NaiveDate, DateGroupHistoryList> {
         &self.date_group
     }
-    pub fn record(&mut self, rest: HttpRecord) {
+    pub fn record(&mut self, mut rest: HttpRecord) {
+        rest.name = "".to_string();
+        rest.desc = "".to_string();
         let today = Local::now().naive_local().date();
         if !self.date_group.contains_key(&today) {
             self.date_group.insert(

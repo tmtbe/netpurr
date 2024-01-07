@@ -1,4 +1,4 @@
-# Poster
+# Postcat
 
 An API tool similar to postman, very small and fast, built with rust.
 ![img.png](pics%2Fimg.png)

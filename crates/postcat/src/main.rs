@@ -12,6 +12,8 @@ use log4rs::config::{Appender, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::Config;
 
+use postcat::APP_NAME;
+
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {
@@ -26,11 +28,11 @@ fn main() -> eframe::Result<()> {
         ..Default::default()
     };
     eframe::run_native(
-        "Poster",
+        APP_NAME,
         native_options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Box::new(poster::App::new(cc))
+            Box::new(postcat::App::new(cc))
         }),
     )
 }
@@ -49,7 +51,7 @@ fn set_log_config() {
     );
     let log_path = dirs::home_dir()
         .unwrap()
-        .join("Poster")
+        .join(APP_NAME)
         .join("logs")
         .join(file_name);
     let stdout = ConsoleAppender::builder().build();
