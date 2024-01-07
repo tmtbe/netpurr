@@ -1310,8 +1310,8 @@ impl CentralRequestItem {
 
     fn compute_signature(&self) -> String {
         format!(
-            "{}/{}/{}",
-            serde_json::to_string(&self.rest.request).unwrap(),
+            "Request:[{}] TestScript:[{}] PreRequestScript:[{}]",
+            &self.rest.request.compute_signature(),
             self.rest.test_script.clone(),
             self.rest.pre_request_script.clone()
         )
@@ -1521,6 +1521,29 @@ pub struct Request {
 }
 
 impl Request {
+    pub fn compute_signature(&self) -> String {
+        let parmas: Vec<String> = self
+            .params
+            .iter()
+            .filter(|q| q.lock_with == LockWith::NoLock)
+            .map(|q| q.compute_signature())
+            .collect();
+        let headers: Vec<String> = self
+            .headers
+            .iter()
+            .filter(|h| h.lock_with == LockWith::NoLock)
+            .map(|h| h.compute_signature())
+            .collect();
+        format!(
+            "Method:{} BaseUrl:{} Params:[{}] Headers:[{}] Body:{} Auth:{}",
+            self.method,
+            self.base_url,
+            parmas.join(";"),
+            headers.join(";"),
+            self.body.compute_signature(),
+            self.auth.compute_signature()
+        )
+    }
     pub fn clear_lock_with(&mut self) {
         self.params.retain(|s| s.lock_with == LockWith::NoLock);
         self.headers.retain(|s| s.lock_with == LockWith::NoLock);
@@ -1574,6 +1597,12 @@ pub enum AuthType {
 }
 
 impl Auth {
+    pub fn compute_signature(&self) -> String {
+        format!(
+            "Type:{} BasicUsername:{} BasicPassword:{} BearerToken:{}",
+            self.auth_type, self.basic_username, self.basic_password, self.bearer_token
+        )
+    }
     pub fn get_final_type(&self, auth: Auth) -> AuthType {
         match self.auth_type {
             AuthType::NoAuth => AuthType::NoAuth,
@@ -1725,6 +1754,14 @@ pub struct QueryParam {
     pub enable: bool,
 }
 
+impl QueryParam {
+    pub fn compute_signature(&self) -> String {
+        format!(
+            "Key:{} Value:{} Desc:{} Enable:{}",
+            self.key, self.value, self.desc, self.enable
+        )
+    }
+}
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum LockWith {
     LockWithScript,
@@ -1747,6 +1784,15 @@ pub struct MultipartData {
     pub desc: String,
     pub lock_with: LockWith,
     pub enable: bool,
+}
+
+impl MultipartData {
+    pub fn compute_signature(&self) -> String {
+        format!(
+            "Key:{} Value:{} Desc:{} Enable:{}",
+            self.key, self.value, self.desc, self.enable
+        )
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Display, EnumIter, EnumString, Serialize, Deserialize)]
@@ -1772,19 +1818,6 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn new_from_tuple(headers: Vec<(String, String)>) -> Vec<Header> {
-        let mut result = vec![];
-        for (key, value) in headers {
-            result.push(Header {
-                key,
-                value,
-                desc: "".to_string(),
-                enable: true,
-                lock_with: LockWith::NoLock,
-            })
-        }
-        result
-    }
     pub fn new_from_map(headers: &HeaderMap) -> Vec<Header> {
         let mut result = vec![];
         for (key, value) in headers.iter() {
@@ -1797,6 +1830,12 @@ impl Header {
             })
         }
         result
+    }
+    pub fn compute_signature(&self) -> String {
+        format!(
+            "Key:{} Value:{} Desc:{} Enable:{}",
+            self.key, self.value, self.desc, self.enable
+        )
     }
 }
 
@@ -1826,6 +1865,29 @@ pub struct HttpBody {
 }
 
 impl HttpBody {
+    pub fn compute_signature(&self) -> String {
+        let body_form_data: Vec<String> = self
+            .body_form_data
+            .iter()
+            .filter(|b| b.lock_with == LockWith::NoLock)
+            .map(|b| b.compute_signature())
+            .collect();
+        let body_xxx_form: Vec<String> = self
+            .body_xxx_form
+            .iter()
+            .filter(|b| b.lock_with == LockWith::NoLock)
+            .map(|b| b.compute_signature())
+            .collect();
+        format!(
+            "BodyStr:{} BodyFile:{} BodyType:{} BodyRawType:{} FormData:[{}] XXXForm:[{}]",
+            self.body_str,
+            self.body_file,
+            self.body_type,
+            self.body_raw_type,
+            body_form_data.join(";"),
+            body_xxx_form.join(";")
+        )
+    }
     pub fn to_vec(&self) -> Vec<u8> {
         general_purpose::STANDARD.decode(&self.base64).unwrap()
     }
