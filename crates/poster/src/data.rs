@@ -659,6 +659,16 @@ impl Collections {
         );
     }
 
+    pub fn remove_http_record(&mut self, folder: Rc<RefCell<CollectionFolder>>, name: String) {
+        folder.borrow_mut().requests.remove(name.as_str());
+        self.persistence.remove(
+            Path::new("collections")
+                .join(folder.borrow().parent_path.as_str())
+                .join(folder.borrow().name.as_str()),
+            name.clone(),
+        )
+    }
+
     pub fn insert_folder(
         &mut self,
         parent_folder: Rc<RefCell<CollectionFolder>>,
@@ -1260,6 +1270,19 @@ impl CentralRequestDataList {
     }
     pub fn auto_save(&self) {
         self.save();
+    }
+
+    pub fn update_old_to_new(&mut self, old: String, new: String) {
+        for (index, id) in self.data_list.iter().enumerate() {
+            if id == old.as_str() {
+                self.data_list[index] = new.clone();
+                break;
+            }
+        }
+        let old = self.data_map.remove(old.as_str());
+        old.map(|o| {
+            self.data_map.insert(new.clone(), o);
+        });
     }
 }
 

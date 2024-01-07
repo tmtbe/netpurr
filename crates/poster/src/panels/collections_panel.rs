@@ -374,7 +374,9 @@ impl CollectionsPanel {
                     .collections
                     .get_mut_folder_with_path(path.clone());
                 folder.map(|f| {
-                    f.borrow_mut().requests.remove(request.name.as_str());
+                    workspace_data
+                        .collections
+                        .remove_http_record(f.clone(), request.name.clone());
                 });
                 ui.close_menu();
             }

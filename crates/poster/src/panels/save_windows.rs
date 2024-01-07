@@ -264,14 +264,21 @@ impl SaveWindows {
                                         None => {}
                                         Some(cf) => {
                                             if self.edit {
-                                                cf.borrow_mut()
-                                                    .requests
-                                                    .remove(self.old_name.as_str());
+                                                workspace_data.collections.remove_http_record(
+                                                    cf.clone(),
+                                                    self.old_name.clone(),
+                                                )
                                             }
                                             workspace_data.collections.insert_http_record(
                                                 cf.clone(),
                                                 self.http_record.clone(),
                                             );
+                                            workspace_data
+                                                .central_request_data_list
+                                                .update_old_to_new(
+                                                    self.old_name.clone(),
+                                                    self.http_record.name.clone(),
+                                                );
                                         }
                                     }
                                     self.save_windows_open = false;

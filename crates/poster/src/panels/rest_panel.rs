@@ -2,14 +2,11 @@ use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
 use egui_toast::{Toast, ToastKind, ToastOptions};
 use poll_promise::Promise;
-use std::cell::RefCell;
-use std::rc::Rc;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::{
-    Auth, AuthType, BodyType, CollectionFolder, HttpRecord, LockWith, Method, TestStatus,
-    WorkspaceData,
+    Auth, AuthType, BodyType, HttpRecord, LockWith, Method, TestStatus, WorkspaceData,
 };
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
@@ -201,11 +198,9 @@ impl RestPanel {
                                 operation.open_windows().open_save(data.rest.clone(), None);
                             }
                             Some(collection_path) => {
-                                // operation
-                                //     .open_windows()
-                                //     .open_edit(data.rest.clone(), collection_path.clone());
                                 just_need_replace_save =
                                     Some((collection_path.clone(), data.rest.clone()));
+                                data.set_baseline();
                             }
                         }
                     }
