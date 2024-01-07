@@ -10,7 +10,7 @@ use url::Url;
 use cookie_store::CookieDomain;
 use reqwest_cookie_store::{CookieStoreMutex, RawCookie};
 
-use crate::save::{Persistence, PersistenceItem};
+use crate::persistence::{Persistence, PersistenceItem};
 
 #[derive(Default, Clone, Debug)]
 pub struct CookiesManager {

@@ -7,8 +7,8 @@ use strum::IntoEnumIterator;
 use strum_macros::Display;
 
 use crate::data::collections::Collection;
-use crate::env_func::EnvFunction;
-use crate::save::{Persistence, PersistenceItem};
+use crate::data::environment_function::EnvFunction;
+use crate::persistence::{Persistence, PersistenceItem};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct Environment {

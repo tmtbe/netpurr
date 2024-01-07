@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::data::auth::{Auth, AuthType};
 use crate::data::environment::{EnvironmentConfig, EnvironmentItemValue};
 use crate::data::http::HttpRecord;
-use crate::save::{Persistence, PersistenceItem};
+use crate::persistence::{Persistence, PersistenceItem};
 use crate::script::script::ScriptScope;
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]

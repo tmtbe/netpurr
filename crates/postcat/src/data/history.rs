@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::data::http::HttpRecord;
-use crate::save::{Persistence, PersistenceItem};
+use crate::persistence::{Persistence, PersistenceItem};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct HistoryDataList {

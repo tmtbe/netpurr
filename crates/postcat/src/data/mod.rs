@@ -7,7 +7,7 @@ use egui::TextBuffer;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
-use crate::save::PersistenceItem;
+use crate::persistence::PersistenceItem;
 
 pub mod auth;
 pub mod central_request_data;
@@ -15,6 +15,7 @@ pub mod collections;
 pub mod config_data;
 pub mod cookies_manager;
 pub mod environment;
+pub mod environment_function;
 pub mod export;
 pub mod history;
 pub mod http;

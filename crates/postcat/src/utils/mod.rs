@@ -13,8 +13,8 @@ use egui::{
 use regex::Regex;
 
 use crate::data::environment::{EnvironmentItemValue, EnvironmentValueType};
+use crate::data::environment_function::{get_env_result, EnvFunction};
 use crate::data::http::HttpRecord;
-use crate::env_func::{get_env_result, EnvFunction};
 use crate::panels::HORIZONTAL_GAP;
 
 pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) -> LayoutJob {

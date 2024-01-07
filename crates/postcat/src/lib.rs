@@ -8,10 +8,9 @@ pub const APP_NAME: &str = "Postcat";
 
 mod app;
 mod data;
-mod env_func;
 mod operation;
 mod panels;
-mod save;
+mod persistence;
 mod script;
 mod utils;
 mod widgets;
