@@ -5,9 +5,11 @@ use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{
-    Auth, AuthType, BodyType, HttpRecord, LockWith, Method, TestStatus, WorkspaceData,
-};
+use crate::data::auth::{Auth, AuthType};
+use crate::data::http::{BodyType, HttpRecord, LockWith, Method};
+use crate::data::test::TestStatus;
+use crate::data::workspace::WorkspaceData;
+use crate::data::{http, test};
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
@@ -18,8 +20,8 @@ use crate::panels::response_panel::ResponsePanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP};
 use crate::script::script::ScriptScope;
+use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
-use crate::{data, utils};
 
 #[derive(Default)]
 pub struct RestPanel {
@@ -32,7 +34,7 @@ pub struct RestPanel {
     request_pre_script_panel: RequestPreScriptPanel,
     test_script_panel: TestScriptPanel,
     send_promise:
-        Option<Promise<Result<(data::Request, data::Response, data::TestResult), String>>>,
+        Option<Promise<Result<(http::Request, http::Response, test::TestResult), String>>>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]

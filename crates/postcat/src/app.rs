@@ -6,7 +6,8 @@ use egui_toast::{Toast, ToastKind, ToastOptions};
 use log::info;
 use poll_promise::Promise;
 
-use crate::data::{ConfigData, WorkspaceData};
+use crate::data::config_data::ConfigData;
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;

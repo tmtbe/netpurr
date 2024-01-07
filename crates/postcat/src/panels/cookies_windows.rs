@@ -4,7 +4,8 @@ use eframe::emath::Align;
 use egui::{Button, Layout, ScrollArea, Ui};
 use egui_toast::{Toast, ToastKind};
 
-use crate::data::{Cookie, WorkspaceData};
+use crate::data::cookies_manager::Cookie;
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;

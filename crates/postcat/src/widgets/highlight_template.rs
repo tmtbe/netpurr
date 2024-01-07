@@ -7,7 +7,7 @@ use egui::text_edit::{CursorRange, TextEditState};
 use egui::{Context, Id, Pos2, Response, RichText, TextBuffer, TextEdit, Ui, Widget};
 use serde::{Deserialize, Serialize};
 
-use crate::data::EnvironmentItemValue;
+use crate::data::environment::EnvironmentItemValue;
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
 use crate::utils::{popup_widget, replace_variable};

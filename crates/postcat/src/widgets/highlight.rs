@@ -4,7 +4,7 @@ use eframe::epaint::text::{LayoutJob, TextFormat};
 use egui::{Color32, Ui};
 use regex::Regex;
 
-use crate::data::EnvironmentItemValue;
+use crate::data::environment::EnvironmentItemValue;
 
 pub fn highlight_template(
     mut text: &str,

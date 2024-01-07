@@ -2,7 +2,9 @@ use eframe::emath::Align;
 use egui::{FontSelection, Response, RichText, Style, Ui, WidgetText};
 use uuid::Uuid;
 
-use crate::data::{CentralRequestItem, WorkspaceData, ENVIRONMENT_GLOBALS};
+use crate::data::central_request_data::CentralRequestItem;
+use crate::data::environment::ENVIRONMENT_GLOBALS;
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::cookies_windows::CookiesWindows;
 use crate::panels::environment_windows::EnvironmentWindows;

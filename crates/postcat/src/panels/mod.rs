@@ -1,4 +1,4 @@
-use crate::data::WorkspaceData;
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 
 mod auth_panel;

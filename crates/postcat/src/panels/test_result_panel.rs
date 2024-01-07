@@ -1,6 +1,6 @@
 use egui::TextBuffer;
 
-use crate::data::WorkspaceData;
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 

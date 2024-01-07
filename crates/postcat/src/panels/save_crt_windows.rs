@@ -5,7 +5,8 @@ use std::rc::Rc;
 use egui::{Align, Button, Layout, ScrollArea, Ui};
 use egui_toast::{Toast, ToastKind};
 
-use crate::data::{Collection, CollectionFolder, WorkspaceData};
+use crate::data::collections::{Collection, CollectionFolder};
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;

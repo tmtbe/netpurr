@@ -7,7 +7,8 @@ use poll_promise::Promise;
 use rustygit::types::BranchName;
 use rustygit::Repository;
 
-use crate::data::{ConfigData, Workspace};
+use crate::data::config_data::ConfigData;
+use crate::data::workspace::Workspace;
 use crate::operation::Operation;
 use crate::panels::HORIZONTAL_GAP;
 use crate::utils;

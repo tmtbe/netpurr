@@ -15,12 +15,15 @@ use reqwest::blocking::{multipart, Client};
 use reqwest::header::CONTENT_TYPE;
 use reqwest::Method;
 
-use crate::data::{
-    BodyRawType, BodyType, Collection, CollectionFolder, EnvironmentItemValue, Header, HttpBody,
-    HttpRecord, LockWith, Logger, MultipartDataType,
+use crate::data::collections::{Collection, CollectionFolder};
+use crate::data::environment::EnvironmentItemValue;
+use crate::data::http::{
+    BodyRawType, BodyType, Header, HttpBody, HttpRecord, LockWith, MultipartDataType,
 };
+use crate::data::logger::Logger;
+use crate::data::{http, test};
 use crate::script::script::{Context, JsResponse, ScriptRuntime, ScriptScope};
-use crate::{data, utils};
+use crate::utils;
 
 pub struct Operation {
     rest_sender: RestSender,
@@ -47,12 +50,12 @@ impl Default for Operation {
 impl Operation {
     pub fn send_with_script(
         &self,
-        request: data::Request,
+        request: http::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
         pre_request_scripts: Vec<ScriptScope>,
         test_scripts: Vec<ScriptScope>,
         client: Client,
-    ) -> Promise<Result<(data::Request, data::Response, data::TestResult), String>> {
+    ) -> Promise<Result<(http::Request, http::Response, test::TestResult), String>> {
         let mut logger = Logger::default();
         Promise::spawn_thread("send_with_script", move || {
             let mut pre_request_context_result = Ok(Context {
@@ -93,7 +96,7 @@ impl Operation {
                                 format!("get response: {:?}", after_response),
                             );
                             after_response.logger = logger;
-                            let mut test_result: data::TestResult = Default::default();
+                            let mut test_result: test::TestResult = Default::default();
                             let mut test_context = pre_request_context.clone();
                             test_context.response =
                                 JsResponse::from_data_response(after_response.clone());
@@ -150,9 +153,9 @@ pub struct RestSender {}
 
 impl RestSender {
     pub fn reqwest_block_send(
-        request: data::Request,
+        request: http::Request,
         client: Client,
-    ) -> reqwest::Result<(data::Request, data::Response)> {
+    ) -> reqwest::Result<(http::Request, http::Response)> {
         let reqwest_request = Self::build_reqwest_request(request.clone())?;
         let mut new_request = request.clone();
         for (hn, hv) in reqwest_request.headers().iter() {
@@ -179,7 +182,7 @@ impl RestSender {
         let total_time = start_time.elapsed();
         Ok((
             new_request,
-            data::Response {
+            http::Response {
                 headers: Header::new_from_map(reqwest_response.headers()),
                 status: reqwest_response.status().as_u16(),
                 status_text: reqwest_response.status().to_string(),
@@ -191,7 +194,7 @@ impl RestSender {
     }
 
     pub fn build_reqwest_request(
-        request: data::Request,
+        request: http::Request,
     ) -> reqwest::Result<reqwest::blocking::Request> {
         let client = Client::new();
         let method = Method::from_str(request.method.to_string().to_uppercase().as_str()).unwrap();
@@ -272,9 +275,9 @@ impl RestSender {
     }
 
     fn build_request(
-        request: data::Request,
+        request: http::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
-    ) -> data::Request {
+    ) -> http::Request {
         let mut build_request = request.clone();
         if !build_request.base_url.starts_with("http://")
             && !build_request.base_url.starts_with("https://")

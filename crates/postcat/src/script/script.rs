@@ -13,11 +13,11 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
 
-use crate::data;
-use crate::data::{
-    EnvironmentItemValue, EnvironmentValueType, Header, LockWith, Logger, QueryParam, Request,
-    TestResult,
-};
+use crate::data::environment::{EnvironmentItemValue, EnvironmentValueType};
+use crate::data::http;
+use crate::data::http::{Header, LockWith, QueryParam, Request};
+use crate::data::logger::Logger;
+use crate::data::test::TestResult;
 use crate::script::loader::SimpleModuleLoader;
 
 #[derive(Default)]
@@ -286,7 +286,7 @@ pub struct JsResponse {
 }
 
 impl JsResponse {
-    pub fn from_data_response(response: data::Response) -> Self {
+    pub fn from_data_response(response: http::Response) -> Self {
         Self {
             status: response.status,
             headers: response

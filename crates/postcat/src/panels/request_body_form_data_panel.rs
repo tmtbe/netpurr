@@ -5,9 +5,10 @@ use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder, TableRow};
 use strum::IntoEnumIterator;
 
-use crate::data::{
-    CentralRequestItem, EnvironmentItemValue, MultipartData, MultipartDataType, WorkspaceData,
-};
+use crate::data::central_request_data::CentralRequestItem;
+use crate::data::environment::EnvironmentItemValue;
+use crate::data::http::{MultipartData, MultipartDataType};
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::utils;

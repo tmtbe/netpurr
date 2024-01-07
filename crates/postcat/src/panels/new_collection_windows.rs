@@ -8,10 +8,10 @@ use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{
-    Collection, CollectionFolder, EnvironmentItem, EnvironmentItemValue, EnvironmentValueType,
-    Request, WorkspaceData,
-};
+use crate::data::collections::{Collection, CollectionFolder};
+use crate::data::environment::{EnvironmentItem, EnvironmentItemValue, EnvironmentValueType};
+use crate::data::http::Request;
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;

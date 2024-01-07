@@ -4,9 +4,11 @@ use egui::{RichText, Ui};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::{
-    CentralRequestItem, Cookie, Response, ResponseStatus, TestResult, TestStatus, WorkspaceData,
-};
+use crate::data::central_request_data::CentralRequestItem;
+use crate::data::cookies_manager::Cookie;
+use crate::data::http::{Response, ResponseStatus};
+use crate::data::test::{TestResult, TestStatus};
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;

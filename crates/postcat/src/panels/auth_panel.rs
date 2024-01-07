@@ -5,7 +5,9 @@ use std::rc::Rc;
 use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
-use crate::data::{Auth, AuthType, Collection, CollectionFolder, EnvironmentItemValue};
+use crate::data::auth::{Auth, AuthType};
+use crate::data::collections::{Collection, CollectionFolder};
+use crate::data::environment::EnvironmentItemValue;
 use crate::panels::{AlongDataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;

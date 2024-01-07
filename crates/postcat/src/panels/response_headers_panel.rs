@@ -2,7 +2,7 @@ use eframe::emath::Align;
 use egui::{Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBuilder};
 
-use crate::data::WorkspaceData;
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::DataView;
 

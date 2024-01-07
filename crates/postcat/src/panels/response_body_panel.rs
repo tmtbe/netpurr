@@ -1,6 +1,7 @@
 use egui::{Image, TextBuffer};
 
-use crate::data::{Response, WorkspaceData};
+use crate::data::http::Response;
+use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::DataView;
 

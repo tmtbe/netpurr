@@ -12,7 +12,8 @@ use egui::{
 };
 use regex::Regex;
 
-use crate::data::{EnvironmentItemValue, EnvironmentValueType, HttpRecord};
+use crate::data::environment::{EnvironmentItemValue, EnvironmentValueType};
+use crate::data::http::HttpRecord;
 use crate::env_func::{get_env_result, EnvFunction};
 use crate::panels::HORIZONTAL_GAP;
 
