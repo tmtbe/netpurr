@@ -1272,17 +1272,24 @@ impl CentralRequestDataList {
         self.save();
     }
 
-    pub fn update_old_to_new(&mut self, old: String, new: String) {
+    pub fn update_old_to_new(&mut self, path: String, old_name: String, new_name: String) {
+        let old_id = format!("{}/{}", path, old_name);
+        let new_id = format!("{}/{}", path, new_name);
         for (index, id) in self.data_list.iter().enumerate() {
-            if id == old.as_str() {
-                self.data_list[index] = new.clone();
+            if id == old_id.as_str() {
+                self.data_list[index] = new_id.clone();
                 break;
             }
         }
-        let old = self.data_map.remove(old.as_str());
-        old.map(|o| {
-            self.data_map.insert(new.clone(), o);
+        let old_crt = self.data_map.remove(old_id.as_str());
+        old_crt.map(|mut crt| {
+            crt.rest.name = new_name.clone();
+            crt.id = new_id.clone();
+            self.data_map.insert(new_id.clone(), crt);
         });
+        if self.select_id == Some(old_id.clone()) {
+            self.select_id = Some(new_id.clone());
+        }
     }
 }
 
@@ -1401,6 +1408,7 @@ pub struct HttpRecord {
     pub name: String,
     pub desc: String,
     pub request: Request,
+    #[serde(skip)]
     pub response: Response,
     pub status: ResponseStatus,
     pub pre_request_script: String,

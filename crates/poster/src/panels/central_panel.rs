@@ -195,6 +195,7 @@ impl MyCentralPanel {
                                     if ui.button("Duplicate Tab").clicked() {
                                         let mut duplicate = request_data.clone();
                                         duplicate.id = Uuid::new_v4().to_string();
+                                        duplicate.collection_path = None;
                                         workspace_data.central_request_data_list.add_crt(duplicate);
                                         ui.close_menu();
                                     }
