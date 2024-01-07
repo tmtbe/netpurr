@@ -85,7 +85,7 @@ impl RequestCloseWindows {
                 operation.open_windows().open_save(crt.rest.clone(), None);
             }
             Some(collection_path) => {
-                workspace_data.save_crt(self.crt_id.clone(), collection_path.clone());
+                workspace_data.save_crt(self.crt_id.clone(), collection_path.clone(), |_| {});
                 operation.toasts().add(Toast {
                     kind: ToastKind::Success,
                     text: "Save success.".into(),

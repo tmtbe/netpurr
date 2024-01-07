@@ -325,9 +325,15 @@ pub struct OpenWindows {
     pub collection: Option<Collection>,
     pub parent_folder: Rc<RefCell<CollectionFolder>>,
     pub folder: Option<Rc<RefCell<CollectionFolder>>>,
+    pub crt_id: String,
+    pub save_crt_opened: bool,
 }
 
 impl OpenWindows {
+    pub fn open_crt_save(&mut self, crt_id: String) {
+        self.crt_id = crt_id;
+        self.save_crt_opened = true;
+    }
     pub fn open_save(&mut self, http_record: HttpRecord, default_path: Option<String>) {
         self.http_record = http_record;
         self.default_path = default_path;

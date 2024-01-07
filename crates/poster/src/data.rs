@@ -212,7 +212,12 @@ impl WorkspaceData {
             Some(client) => client.clone(),
         }
     }
-    pub fn save_crt(&mut self, crt_id: String, collection_path: String) {
+    pub fn save_crt(
+        &mut self,
+        crt_id: String,
+        collection_path: String,
+        modify_http_record: impl FnOnce(&mut HttpRecord),
+    ) {
         self.central_request_data_list
             .data_map
             .get_mut(crt_id.as_str())
@@ -221,8 +226,9 @@ impl WorkspaceData {
                     .collections
                     .get_mut_folder_with_path(collection_path.clone());
                 cf_option.map(|cf| {
-                    self.collections
-                        .insert_http_record(cf.clone(), crt.rest.clone());
+                    let mut http_record = crt.rest.clone();
+                    modify_http_record(&mut http_record);
+                    self.collections.insert_http_record(cf.clone(), http_record);
                     crt.set_baseline();
                 });
             });

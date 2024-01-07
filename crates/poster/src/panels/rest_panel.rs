@@ -206,7 +206,7 @@ impl RestPanel {
                     if ui.button("Save").clicked() {
                         match &data.collection_path {
                             None => {
-                                operation.open_windows().open_save(data.rest.clone(), None);
+                                operation.open_windows().open_crt_save(data.id.clone());
                             }
                             Some(collection_path) => {
                                 just_need_replace_save =
@@ -221,7 +221,7 @@ impl RestPanel {
             workspace_data.history_data_list.record(r);
         });
         just_need_replace_save.map(|(collection_path, id)| {
-            workspace_data.save_crt(id, collection_path);
+            workspace_data.save_crt(id, collection_path, |_| {});
             operation.toasts().add(Toast {
                 kind: ToastKind::Success,
                 text: "Save success.".into(),

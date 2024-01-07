@@ -22,6 +22,7 @@ mod response_headers_panel;
 mod response_log_panel;
 mod response_panel;
 pub mod rest_panel;
+mod save_crt_windows;
 mod save_windows;
 mod test_result_panel;
 mod test_script_panel;

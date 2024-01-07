@@ -9,6 +9,7 @@ use crate::panels::environment_windows::EnvironmentWindows;
 use crate::panels::new_collection_windows::NewCollectionWindows;
 use crate::panels::request_close_windows::RequestCloseWindows;
 use crate::panels::rest_panel::RestPanel;
+use crate::panels::save_crt_windows::SaveCRTWindows;
 use crate::panels::save_windows::SaveWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::utils;
@@ -21,6 +22,7 @@ pub struct MyCentralPanel {
     new_collection_windows: NewCollectionWindows,
     cookies_windows: CookiesWindows,
     request_close_windows: RequestCloseWindows,
+    save_crt_windows: SaveCRTWindows,
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -98,6 +100,13 @@ impl DataView for MyCentralPanel {
             operation.open_windows().cookies_opened = false;
         }
         self.cookies_windows
+            .set_and_render(ui, operation, workspace_data, 0);
+        if operation.open_windows().save_crt_opened {
+            self.save_crt_windows
+                .open(operation.open_windows().crt_id.clone());
+            operation.open_windows().save_crt_opened = false;
+        }
+        self.save_crt_windows
             .set_and_render(ui, operation, workspace_data, 0);
     }
 }
