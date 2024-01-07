@@ -218,6 +218,7 @@ impl WorkspaceData {
         collection_path: String,
         modify_http_record: impl FnOnce(&mut HttpRecord),
     ) {
+        let mut new_name_option = None;
         self.central_request_data_list
             .data_map
             .get_mut(crt_id.as_str())
@@ -228,10 +229,18 @@ impl WorkspaceData {
                 cf_option.map(|cf| {
                     let mut http_record = crt.rest.clone();
                     modify_http_record(&mut http_record);
+                    new_name_option = Some(http_record.name.clone());
                     self.collections.insert_http_record(cf.clone(), http_record);
                     crt.set_baseline();
                 });
             });
+        new_name_option.map(|new_name| {
+            self.central_request_data_list.update_old_id_to_new(
+                crt_id,
+                collection_path.clone(),
+                new_name.clone(),
+            );
+        });
     }
 }
 
@@ -1292,9 +1301,7 @@ impl CentralRequestDataList {
     pub fn auto_save(&self) {
         self.save();
     }
-
-    pub fn update_old_to_new(&mut self, path: String, old_name: String, new_name: String) {
-        let old_id = format!("{}/{}", path, old_name);
+    pub fn update_old_id_to_new(&mut self, old_id: String, path: String, new_name: String) {
         let new_id = format!("{}/{}", path, new_name);
         for (index, id) in self.data_list.iter().enumerate() {
             if id == old_id.as_str() {
@@ -1311,6 +1318,15 @@ impl CentralRequestDataList {
         if self.select_id == Some(old_id.clone()) {
             self.select_id = Some(new_id.clone());
         }
+    }
+    pub fn update_old_name_to_new_name(
+        &mut self,
+        path: String,
+        old_name: String,
+        new_name: String,
+    ) {
+        let old_id = format!("{}/{}", path, old_name);
+        self.update_old_id_to_new(old_id, path, new_name)
     }
 }
 

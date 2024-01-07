@@ -275,7 +275,7 @@ impl SaveWindows {
                                             );
                                             workspace_data
                                                 .central_request_data_list
-                                                .update_old_to_new(
+                                                .update_old_name_to_new_name(
                                                     collection_path.clone(),
                                                     self.old_name.clone(),
                                                     self.http_record.name.clone(),

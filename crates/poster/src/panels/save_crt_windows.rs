@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use egui::{Align, Button, Layout, ScrollArea, Ui};
+use egui_toast::{Toast, ToastKind};
 
 use crate::data::{Collection, CollectionFolder, WorkspaceData};
 use crate::operation::Operation;
@@ -197,7 +198,12 @@ impl SaveCRTWindows {
         });
     }
 
-    fn render_save_bottom_panel(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
+    fn render_save_bottom_panel(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        operation: &mut Operation,
+        ui: &mut Ui,
+    ) {
         egui::TopBottomPanel::bottom("save_bottom_panel_".to_string() + self.id.as_str())
             .resizable(false)
             .min_height(0.0)
@@ -235,6 +241,11 @@ impl SaveCRTWindows {
                                             hr.desc = self.save_desc.clone();
                                         },
                                     );
+                                    operation.toasts().add(Toast {
+                                        kind: ToastKind::Success,
+                                        text: "Save success.".into(),
+                                        options: Default::default(),
+                                    });
                                     self.save_windows_open = false;
                                 }
                             });
@@ -284,7 +295,7 @@ impl DataView for SaveCRTWindows {
                 ui.add_space(VERTICAL_GAP);
                 self.render(workspace_data, ui);
                 ui.add_space(VERTICAL_GAP);
-                self.render_save_bottom_panel(workspace_data, ui);
+                self.render_save_bottom_panel(workspace_data, operation, ui);
             });
         if !save_windows_open {
             self.save_windows_open = save_windows_open;
