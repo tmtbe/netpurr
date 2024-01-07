@@ -436,7 +436,7 @@ impl WorkspaceData {
             .get_variable_hash_map(self.get_collection(collection_path))
     }
 
-    pub fn get_mut_crt_and_envs_auth(
+    pub fn get_mut_crt_and_envs_parent_auth(
         &mut self,
         id: String,
     ) -> (
@@ -475,7 +475,7 @@ impl WorkspaceData {
         )
     }
 
-    pub fn get_mut_crt_and_envs_auth_script(
+    pub fn get_mut_crt_and_envs_parent_auth_script(
         &mut self,
         id: String,
     ) -> (
@@ -526,7 +526,7 @@ impl WorkspaceData {
         )
     }
 
-    pub fn get_crt_and_envs_auth(
+    pub fn get_crt_and_envs_parent_auth(
         &self,
         id: String,
     ) -> (
@@ -557,7 +557,7 @@ impl WorkspaceData {
         (data.clone(), envs, auth)
     }
 
-    pub fn get_crt_and_envs_auth_script(
+    pub fn get_crt_and_envs_parent_auth_script(
         &self,
         id: String,
     ) -> (
@@ -1640,10 +1640,10 @@ impl Default for AuthType {
 }
 
 impl HttpRecord {
-    pub fn sync(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, auth: Auth) {
+    pub fn sync(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, parent_auth: Auth) {
         self.request
             .auth
-            .build_head(&mut self.request.headers, envs.clone(), auth);
+            .build_head(&mut self.request.headers, envs.clone(), parent_auth);
         match self.request.body.body_type {
             BodyType::NONE => {}
             BodyType::FROM_DATA => {

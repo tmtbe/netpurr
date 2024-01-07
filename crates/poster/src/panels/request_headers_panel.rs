@@ -23,7 +23,7 @@ impl DataView for RequestHeadersPanel {
         workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+        let (data, envs, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
         ui.label("Headers");
         let mut delete_index = None;
         ui.push_id("request_headers_table", |ui| {

@@ -25,7 +25,7 @@ impl DataView for RequestBodyPanel {
         workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+        let (data, envs, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
         ui.horizontal(|ui| {
             ui.add_space(HORIZONTAL_GAP);
             for x in BodyType::iter() {

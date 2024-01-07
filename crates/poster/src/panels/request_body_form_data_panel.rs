@@ -27,7 +27,7 @@ impl DataView for RequestBodyFormDataPanel {
         workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+        let (data, envs, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
             .resizable(false)

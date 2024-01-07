@@ -52,15 +52,17 @@ impl Default for RequestPanelEnum {
 }
 
 impl RestPanel {
-    fn get_count(hr: &HttpRecord, panel_enum: RequestPanelEnum, auth: &Auth) -> usize {
+    fn get_count(hr: &HttpRecord, panel_enum: RequestPanelEnum, parnet_auth: &Auth) -> usize {
         match panel_enum {
             RequestPanelEnum::Params => hr.request.params.iter().filter(|i| i.enable).count(),
-            RequestPanelEnum::Authorization => match auth.get_final_type(auth.clone()) {
-                AuthType::InheritAuthFromParent => 0,
-                AuthType::NoAuth => 0,
-                AuthType::BearerToken => usize::MAX,
-                AuthType::BasicAuth => usize::MAX,
-            },
+            RequestPanelEnum::Authorization => {
+                match hr.request.auth.get_final_type(parnet_auth.clone()) {
+                    AuthType::InheritAuthFromParent => 0,
+                    AuthType::NoAuth => 0,
+                    AuthType::BearerToken => usize::MAX,
+                    AuthType::BasicAuth => usize::MAX,
+                }
+            }
             RequestPanelEnum::Headers => hr.request.headers.iter().filter(|i| i.enable).count(),
             RequestPanelEnum::Body => match hr.request.body.body_type {
                 BodyType::NONE => 0,
@@ -104,8 +106,9 @@ impl RestPanel {
         cursor: String,
         ui: &mut Ui,
     ) {
-        let (mut data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
-        data.rest.sync(envs.clone(), auth.clone());
+        let (mut data, envs, parent_auth) =
+            workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
+        data.rest.sync(envs.clone(), parent_auth.clone());
         if data
             .rest
             .request
@@ -120,7 +123,11 @@ impl RestPanel {
             match &data.collection_path {
                 None => {
                     ui.horizontal(|ui| {
-                        ui.strong(data.rest.request.base_url.clone());
+                        if data.rest.name != "" {
+                            ui.strong(data.rest.name.clone());
+                        } else {
+                            ui.strong(data.rest.request.base_url.clone());
+                        }
                     });
                 }
                 Some(collection_path) => {
@@ -128,10 +135,14 @@ impl RestPanel {
                         Label::new(
                             RichText::new(collection_path)
                                 .strong()
-                                .background_color(ui.visuals().code_bg_color),
+                                .background_color(ui.visuals().extreme_bg_color),
                         )
                         .ui(ui);
-                        ui.strong(data.rest.request.base_url.as_str());
+                        if data.rest.name != "" {
+                            ui.strong(data.rest.name.clone());
+                        } else {
+                            ui.strong(data.rest.request.base_url.clone());
+                        }
                     });
                 }
             }
@@ -148,8 +159,8 @@ impl RestPanel {
         let mut send_rest = None;
         let client = workspace_data.build_client();
         let mut just_need_replace_save = None;
-        let (data, envs, auth, pre_request_script_scope, test_script_scope) =
-            workspace_data.get_mut_crt_and_envs_auth_script(cursor.clone());
+        let (data, envs, parent_auth, pre_request_script_scope, test_script_scope) =
+            workspace_data.get_mut_crt_and_envs_parent_auth_script(cursor.clone());
         egui::SidePanel::right("editor_right_panel")
             .resizable(false)
             .show_inside(ui, |ui| {
@@ -160,7 +171,7 @@ impl RestPanel {
                     } else {
                         if ui.button("Send").clicked() {
                             data.rest.request.clear_lock_with();
-                            data.rest.sync(envs.clone(), auth.clone());
+                            data.rest.sync(envs.clone(), parent_auth.clone());
                             let mut pre_request_script_scopes = Vec::new();
                             if let Some(collect_script_scope) = pre_request_script_scope {
                                 pre_request_script_scopes.push(collect_script_scope);
@@ -237,7 +248,7 @@ impl RestPanel {
         cursor: String,
         ui: &mut Ui,
     ) {
-        let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+        let (data, envs, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
         egui::SidePanel::left("editor_left_panel")
             .min_width(ui.available_width() - HORIZONTAL_GAP)
             .show_separator_line(false)
@@ -280,8 +291,8 @@ impl RestPanel {
         workspace_data: &mut WorkspaceData,
         cursor: String,
     ) {
-        let (data, envs, auth, script_scope) =
-            workspace_data.get_crt_and_envs_auth_script(cursor.clone());
+        let (data, envs, _, script_scope) =
+            workspace_data.get_crt_and_envs_parent_auth_script(cursor.clone());
         match self.open_request_panel_enum {
             RequestPanelEnum::Params => self.request_params_panel.set_and_render(
                 ui,
@@ -300,8 +311,8 @@ impl RestPanel {
                 }
                 self.auth_panel.set_envs(envs.clone(), parent_auth);
                 {
-                    let (data, envs, auth) =
-                        workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+                    let (data, _, _) =
+                        workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
                     self.auth_panel
                         .set_and_render(ui, &mut data.rest.request.auth);
                 }
@@ -330,8 +341,8 @@ impl RestPanel {
                     "rest".to_string(),
                 );
                 {
-                    let (data, envs, auth) =
-                        workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+                    let (data, _, _) =
+                        workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
                     data.rest.pre_request_script = script;
                 }
             }
@@ -342,8 +353,8 @@ impl RestPanel {
                     "rest".to_string(),
                 );
                 {
-                    let (data, envs, auth) =
-                        workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+                    let (data, _, _) =
+                        workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
                     data.rest.test_script = script;
                 }
             }
@@ -359,7 +370,7 @@ impl RestPanel {
     ) {
         if let Some(promise) = &self.send_promise {
             let cookies_manager = workspace_data.cookies_manager.clone();
-            let (data, envs, auth) = workspace_data.get_mut_crt_and_envs_auth(cursor.clone());
+            let (data, _, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
             if let Some(result) = promise.ready() {
                 cookies_manager.save();
                 match result {
@@ -433,7 +444,8 @@ impl RestPanel {
         cursor: String,
         ui: &mut Ui,
     ) {
-        let (mut data, envs, auth) = workspace_data.get_crt_and_envs_auth(cursor.clone());
+        let (mut data, envs, parent_auth) =
+            workspace_data.get_crt_and_envs_parent_auth(cursor.clone());
         utils::left_right_panel(
             ui,
             "rest_middle_select_label".to_string(),
@@ -445,7 +457,7 @@ impl RestPanel {
                             x.clone(),
                             utils::build_with_count_ui_header(
                                 x.to_string(),
-                                RestPanel::get_count(&data.rest, x, &auth),
+                                RestPanel::get_count(&data.rest, x, &parent_auth),
                                 ui,
                             ),
                         );
