@@ -24,9 +24,10 @@ impl DataView for RequestBodyXXXFormPanel {
         ui: &mut egui::Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let (data, envs, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
+        let envs = workspace_data.get_crt_envs(crt_id.clone());
+        let crt = workspace_data.get_mut_crt(crt_id.clone());
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
             .resizable(false)
@@ -56,11 +57,11 @@ impl DataView for RequestBodyXXXFormPanel {
                 });
             })
             .body(|mut body| {
-                delete_index = self.build_body(data, &envs, &mut body);
+                delete_index = self.build_body(crt, &envs, &mut body);
                 self.build_new_body(envs, body);
             });
         if delete_index.is_some() {
-            data.rest
+            crt.rest
                 .request
                 .body
                 .body_xxx_form
@@ -68,7 +69,7 @@ impl DataView for RequestBodyXXXFormPanel {
         }
         if self.new_form.key != "" || self.new_form.value != "" || self.new_form.desc != "" {
             self.new_form.enable = true;
-            data.rest
+            crt.rest
                 .request
                 .body
                 .body_xxx_form

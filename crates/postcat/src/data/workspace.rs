@@ -141,77 +141,43 @@ impl WorkspaceData {
         self.environment
             .get_variable_hash_map(self.get_collection(collection_path))
     }
-
-    pub fn get_mut_crt_and_envs_parent_auth(
-        &mut self,
-        id: String,
-    ) -> (
-        &mut CentralRequestItem,
-        BTreeMap<String, EnvironmentItemValue>,
-        Auth,
-    ) {
-        let data = self
-            .central_request_data_list
+    pub fn get_crt(&self, id: String) -> &CentralRequestItem {
+        self.central_request_data_list
             .data_map
             .get(id.as_str())
-            .unwrap();
-        let envs = self.get_variable_hash_map(data.collection_path.clone());
-
-        let mut auth;
-        match &data.collection_path {
-            None => {
-                auth = Auth {
-                    auth_type: AuthType::NoAuth,
-                    basic_username: "".to_string(),
-                    basic_password: "".to_string(),
-                    bearer_token: "".to_string(),
-                }
-            }
-            Some(collection_path) => {
-                auth = self.collections.get_auth(collection_path.clone());
-            }
-        }
-        (
-            self.central_request_data_list
-                .data_map
-                .get_mut(id.as_str())
-                .unwrap(),
-            envs,
-            auth,
-        )
+            .unwrap()
+    }
+    pub fn get_mut_crt(&mut self, id: String) -> &mut CentralRequestItem {
+        self.central_request_data_list
+            .data_map
+            .get_mut(id.as_str())
+            .unwrap()
+    }
+    pub fn get_crt_envs(&self, id: String) -> BTreeMap<String, EnvironmentItemValue> {
+        let crt = self.get_crt(id);
+        self.get_variable_hash_map(crt.collection_path.clone())
     }
 
-    pub fn get_mut_crt_and_envs_parent_auth_script(
-        &mut self,
-        id: String,
-    ) -> (
-        &mut CentralRequestItem,
-        BTreeMap<String, EnvironmentItemValue>,
-        Auth,
-        Option<ScriptScope>,
-        Option<ScriptScope>,
-    ) {
-        let data = self
-            .central_request_data_list
-            .data_map
-            .get(id.as_str())
-            .unwrap();
-        let envs = self.get_variable_hash_map(data.collection_path.clone());
+    pub fn get_crt_parent_auth(&self, id: String) -> Auth {
+        let crt = self.get_crt(id);
+        match &crt.collection_path {
+            None => Auth {
+                auth_type: AuthType::NoAuth,
+                basic_username: "".to_string(),
+                basic_password: "".to_string(),
+                bearer_token: "".to_string(),
+            },
+            Some(collection_path) => self.collections.get_auth(collection_path.clone()),
+        }
+    }
 
-        let mut auth;
+    pub fn get_crt_parent_scripts(&self, id: String) -> (Option<ScriptScope>, Option<ScriptScope>) {
+        let crt = self.get_crt(id);
         let mut pre_request_script_scope = None;
         let mut test_script_scope = None;
-        match &data.collection_path {
-            None => {
-                auth = Auth {
-                    auth_type: AuthType::NoAuth,
-                    basic_username: "".to_string(),
-                    basic_password: "".to_string(),
-                    bearer_token: "".to_string(),
-                }
-            }
+        match &crt.collection_path {
+            None => {}
             Some(collection_path) => {
-                auth = self.collections.get_auth(collection_path.clone());
                 pre_request_script_scope = self
                     .collections
                     .get_pre_request_script_scope(collection_path.clone());
@@ -220,82 +186,6 @@ impl WorkspaceData {
                     .get_test_script_scope(collection_path.clone());
             }
         }
-        (
-            self.central_request_data_list
-                .data_map
-                .get_mut(id.as_str())
-                .unwrap(),
-            envs,
-            auth,
-            pre_request_script_scope,
-            test_script_scope,
-        )
-    }
-
-    pub fn get_crt_and_envs_parent_auth(
-        &self,
-        id: String,
-    ) -> (
-        CentralRequestItem,
-        BTreeMap<String, EnvironmentItemValue>,
-        Auth,
-    ) {
-        let data = self
-            .central_request_data_list
-            .data_map
-            .get(id.as_str())
-            .unwrap();
-        let envs = self.get_variable_hash_map(data.collection_path.clone());
-        let mut auth;
-        match &data.collection_path {
-            None => {
-                auth = Auth {
-                    auth_type: AuthType::NoAuth,
-                    basic_username: "".to_string(),
-                    basic_password: "".to_string(),
-                    bearer_token: "".to_string(),
-                }
-            }
-            Some(collection_path) => {
-                auth = self.collections.get_auth(collection_path.clone());
-            }
-        }
-        (data.clone(), envs, auth)
-    }
-
-    pub fn get_crt_and_envs_parent_auth_script(
-        &self,
-        id: String,
-    ) -> (
-        CentralRequestItem,
-        BTreeMap<String, EnvironmentItemValue>,
-        Auth,
-        Option<ScriptScope>,
-    ) {
-        let data = self
-            .central_request_data_list
-            .data_map
-            .get(id.as_str())
-            .unwrap();
-        let envs = self.get_variable_hash_map(data.collection_path.clone());
-        let mut auth;
-        let mut script_scope = None;
-        match &data.collection_path {
-            None => {
-                auth = Auth {
-                    auth_type: AuthType::NoAuth,
-                    basic_username: "".to_string(),
-                    basic_password: "".to_string(),
-                    bearer_token: "".to_string(),
-                }
-            }
-            Some(collection_path) => {
-                auth = self.collections.get_auth(collection_path.clone());
-                script_scope = self
-                    .collections
-                    .get_pre_request_script_scope(collection_path.clone());
-            }
-        }
-        (data.clone(), envs, auth, script_scope)
+        (pre_request_script_scope, test_script_scope)
     }
 }

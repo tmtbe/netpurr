@@ -24,9 +24,10 @@ impl DataView for RequestParamsPanel {
         ui: &mut egui::Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let (data, envs, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
+        let envs = workspace_data.get_crt_envs(crt_id.clone());
+        let crt = workspace_data.get_mut_crt(crt_id.clone());
         ui.label("Query Params");
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
@@ -57,15 +58,15 @@ impl DataView for RequestParamsPanel {
                 });
             })
             .body(|mut body| {
-                delete_index = self.build_body(data, &envs, &mut body);
+                delete_index = self.build_body(crt, &envs, &mut body);
                 self.build_new_body(envs, body);
             });
         if delete_index.is_some() {
-            data.rest.request.params.remove(delete_index.unwrap());
+            crt.rest.request.params.remove(delete_index.unwrap());
         }
         if self.new_param.key != "" || self.new_param.value != "" || self.new_param.desc != "" {
             self.new_param.enable = true;
-            data.rest.request.params.push(self.new_param.clone());
+            crt.rest.request.params.push(self.new_param.clone());
             self.new_param.key = "".to_string();
             self.new_param.value = "".to_string();
             self.new_param.desc = "".to_string();

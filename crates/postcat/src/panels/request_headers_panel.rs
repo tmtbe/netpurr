@@ -24,9 +24,10 @@ impl DataView for RequestHeadersPanel {
         ui: &mut egui::Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let (data, envs, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
+        let envs = workspace_data.get_crt_envs(crt_id.clone());
+        let crt = workspace_data.get_mut_crt(crt_id.clone());
         ui.label("Headers");
         let mut delete_index = None;
         ui.push_id("request_headers_table", |ui| {
@@ -58,16 +59,16 @@ impl DataView for RequestHeadersPanel {
                     });
                 })
                 .body(|mut body| {
-                    delete_index = self.build_body(data, &envs, &mut body);
+                    delete_index = self.build_body(crt, &envs, &mut body);
                     self.build_new_body(envs, body);
                 });
         });
         if delete_index.is_some() {
-            data.rest.request.headers.remove(delete_index.unwrap());
+            crt.rest.request.headers.remove(delete_index.unwrap());
         }
         if self.new_header.key != "" || self.new_header.value != "" || self.new_header.desc != "" {
             self.new_header.enable = true;
-            data.rest.request.headers.push(self.new_header.clone());
+            crt.rest.request.headers.push(self.new_header.clone());
             self.new_header.key = "".to_string();
             self.new_header.value = "".to_string();
             self.new_header.desc = "".to_string();

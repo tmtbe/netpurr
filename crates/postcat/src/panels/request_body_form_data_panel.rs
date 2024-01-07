@@ -26,9 +26,10 @@ impl DataView for RequestBodyFormDataPanel {
         ui: &mut egui::Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let (data, envs, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
+        let envs = workspace_data.get_crt_envs(crt_id.clone());
+        let crt = workspace_data.get_mut_crt(crt_id.clone());
         let mut delete_index = None;
         let table = TableBuilder::new(ui)
             .resizable(false)
@@ -41,11 +42,11 @@ impl DataView for RequestBodyFormDataPanel {
             .column(Column::remainder())
             .max_scroll_height(100.0);
         table.header(20.0, self.build_header()).body(|mut body| {
-            delete_index = self.build_body(data, &mut body, envs.clone());
+            delete_index = self.build_body(crt, &mut body, envs.clone());
             self.build_new_body(body, envs.clone());
         });
         if delete_index.is_some() {
-            data.rest
+            crt.rest
                 .request
                 .body
                 .body_form_data
@@ -53,7 +54,7 @@ impl DataView for RequestBodyFormDataPanel {
         }
         if self.new_form.key != "" || self.new_form.value != "" || self.new_form.desc != "" {
             self.new_form.enable = true;
-            data.rest
+            crt.rest
                 .request
                 .body
                 .body_form_data

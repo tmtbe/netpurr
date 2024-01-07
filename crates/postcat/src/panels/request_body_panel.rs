@@ -24,28 +24,29 @@ impl DataView for RequestBodyPanel {
         ui: &mut Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let (data, envs, _) = workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
+        let envs = workspace_data.get_crt_envs(crt_id.clone());
+        let crt = workspace_data.get_mut_crt(crt_id.clone());
         ui.horizontal(|ui| {
             ui.add_space(HORIZONTAL_GAP);
             for x in BodyType::iter() {
                 utils::selectable_check(
                     ui,
-                    &mut data.rest.request.body.body_type,
+                    &mut crt.rest.request.body.body_type,
                     x.clone(),
                     x.to_string(),
                 );
             }
-            if data.rest.request.body.body_type == BodyType::RAW {
+            if crt.rest.request.body.body_type == BodyType::RAW {
                 egui::ComboBox::from_id_source("body_raw_type")
-                    .selected_text(data.rest.request.body.body_raw_type.clone().to_string())
+                    .selected_text(crt.rest.request.body.body_raw_type.clone().to_string())
                     .show_ui(ui, |ui| {
                         ui.style_mut().wrap = Some(false);
                         ui.set_min_width(60.0);
                         for x in BodyRawType::iter() {
                             ui.selectable_value(
-                                &mut data.rest.request.body.body_raw_type,
+                                &mut crt.rest.request.body.body_raw_type,
                                 x.clone(),
                                 x.to_string(),
                             );
@@ -54,7 +55,7 @@ impl DataView for RequestBodyPanel {
             }
         });
         ui.add_space(VERTICAL_GAP);
-        match data.rest.request.body.body_type {
+        match crt.rest.request.body.body_type {
             BodyType::NONE => {
                 ui.label("This request does not have a body");
             }
@@ -62,13 +63,13 @@ impl DataView for RequestBodyPanel {
                 ui,
                 operation,
                 workspace_data,
-                cursor,
+                crt_id,
             ),
             BodyType::X_WWW_FROM_URLENCODED => self.request_body_xxx_form_panel.set_and_render(
                 ui,
                 operation,
                 workspace_data,
-                cursor,
+                crt_id,
             ),
             BodyType::RAW => {
                 ui.push_id("request_body", |ui| {
@@ -81,7 +82,7 @@ impl DataView for RequestBodyPanel {
                                 .all_space(true)
                                 .build(
                                     "request_body".to_string(),
-                                    &mut data.rest.request.body.body_str,
+                                    &mut crt.rest.request.body.body_str,
                                 )
                                 .ui(ui);
                         });
@@ -90,17 +91,17 @@ impl DataView for RequestBodyPanel {
             BodyType::BINARY => {
                 let mut button_name =
                     utils::build_with_count_ui_header("Select File".to_string(), 0, ui);
-                if data.rest.request.body.body_file != "" {
+                if crt.rest.request.body.body_file != "" {
                     button_name =
                         utils::build_with_count_ui_header("Select File".to_string(), 1, ui);
                 }
                 ui.horizontal(|ui| {
                     if ui.button(button_name).clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_file() {
-                            data.rest.request.body.body_file = path.display().to_string();
+                            crt.rest.request.body.body_file = path.display().to_string();
                         }
                     }
-                    let mut path = data.rest.request.body.body_file.clone();
+                    let mut path = crt.rest.request.body.body_file.clone();
                     utils::text_edit_singleline_justify(ui, &mut path);
                 });
             }
