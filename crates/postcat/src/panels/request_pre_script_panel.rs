@@ -7,9 +7,9 @@ use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::Request;
 use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
-use crate::panels::test_script_windows::TestScriptWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::script::script::{Context, ScriptScope};
+use crate::windows::test_script_windows::TestScriptWindows;
 
 #[derive(Default)]
 pub struct RequestPreScriptPanel {

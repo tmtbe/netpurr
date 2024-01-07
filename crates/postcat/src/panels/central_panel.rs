@@ -6,15 +6,15 @@ use crate::data::central_request_data::CentralRequestItem;
 use crate::data::environment::ENVIRONMENT_GLOBALS;
 use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
-use crate::panels::cookies_windows::CookiesWindows;
-use crate::panels::environment_windows::EnvironmentWindows;
-use crate::panels::new_collection_windows::NewCollectionWindows;
-use crate::panels::request_close_windows::RequestCloseWindows;
 use crate::panels::rest_panel::RestPanel;
-use crate::panels::save_crt_windows::SaveCRTWindows;
-use crate::panels::save_windows::SaveWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::utils;
+use crate::windows::cookies_windows::CookiesWindows;
+use crate::windows::environment_windows::EnvironmentWindows;
+use crate::windows::new_collection_windows::NewCollectionWindows;
+use crate::windows::request_close_windows::RequestCloseWindows;
+use crate::windows::save_crt_windows::SaveCRTWindows;
+use crate::windows::save_windows::SaveWindows;
 
 #[derive(Default)]
 pub struct MyCentralPanel {

@@ -11,8 +11,8 @@ use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
-use crate::panels::workspace_windows::WorkspaceWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
+use crate::windows::workspace_windows::WorkspaceWindows;
 
 #[derive(Default)]
 pub struct App {
