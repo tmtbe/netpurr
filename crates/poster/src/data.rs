@@ -1341,6 +1341,25 @@ pub struct CentralRequestItem {
 }
 
 impl CentralRequestItem {
+    pub fn get_tab_name(&self) -> String {
+        if self
+            .rest
+            .request
+            .base_url
+            .trim()
+            .trim_start_matches("https://")
+            .trim_start_matches("http://")
+            == ""
+        {
+            "Untitled Request".to_string()
+        } else {
+            if self.rest.name != "" {
+                self.rest.name.clone()
+            } else {
+                self.rest.request.base_url.clone()
+            }
+        }
+    }
     pub fn set_baseline(&mut self) {
         self.modify_baseline = self.compute_signature();
     }

@@ -109,42 +109,23 @@ impl RestPanel {
         let (mut data, envs, parent_auth) =
             workspace_data.get_mut_crt_and_envs_parent_auth(cursor.clone());
         data.rest.sync(envs.clone(), parent_auth.clone());
-        if data
-            .rest
-            .request
-            .base_url
-            .trim()
-            .trim_start_matches("https://")
-            .trim_start_matches("http://")
-            == ""
-        {
-            ui.strong("Untitled Request");
-        } else {
-            match &data.collection_path {
-                None => {
-                    ui.horizontal(|ui| {
-                        if data.rest.name != "" {
-                            ui.strong(data.rest.name.clone());
-                        } else {
-                            ui.strong(data.rest.request.base_url.clone());
-                        }
-                    });
-                }
-                Some(collection_path) => {
-                    ui.horizontal(|ui| {
-                        Label::new(
-                            RichText::new(collection_path)
-                                .strong()
-                                .background_color(ui.visuals().extreme_bg_color),
-                        )
-                        .ui(ui);
-                        if data.rest.name != "" {
-                            ui.strong(data.rest.name.clone());
-                        } else {
-                            ui.strong(data.rest.request.base_url.clone());
-                        }
-                    });
-                }
+        let tab_name = data.get_tab_name();
+        match &data.collection_path {
+            None => {
+                ui.horizontal(|ui| {
+                    ui.strong(tab_name);
+                });
+            }
+            Some(collection_path) => {
+                ui.horizontal(|ui| {
+                    Label::new(
+                        RichText::new(collection_path)
+                            .strong()
+                            .background_color(ui.visuals().extreme_bg_color),
+                    )
+                    .ui(ui);
+                    ui.strong(tab_name);
+                });
             }
         }
     }

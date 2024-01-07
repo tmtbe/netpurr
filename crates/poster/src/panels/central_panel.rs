@@ -217,8 +217,10 @@ impl MyCentralPanel {
                                         if !request_data.is_modify() {
                                             self.close_tab(workspace_data, &request_data);
                                         } else {
-                                            self.request_close_windows
-                                                .open(request_data.id.clone());
+                                            self.request_close_windows.open(
+                                                request_data.id.clone(),
+                                                request_data.get_tab_name(),
+                                            );
                                         }
                                         ui.close_menu();
                                     }
@@ -226,16 +228,11 @@ impl MyCentralPanel {
                                         self.close_tab(workspace_data, &request_data);
                                         ui.close_menu();
                                     }
-                                    if ui.button("Close Other Tabs").clicked() {
+                                    if ui.button("Force Close Other Tabs").clicked() {
                                         workspace_data.central_request_data_list.clear();
                                         workspace_data
                                             .central_request_data_list
                                             .add_crt(request_data.clone());
-                                        ui.close_menu();
-                                    }
-                                    if ui.button("Close All Tabs").clicked() {
-                                        workspace_data.central_request_data_list.clear();
-                                        workspace_data.central_request_data_list.select_id = None;
                                         ui.close_menu();
                                     }
                                     if ui.button("Force Close All Tabs").clicked() {
