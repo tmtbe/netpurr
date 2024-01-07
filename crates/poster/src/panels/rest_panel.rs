@@ -210,7 +210,7 @@ impl RestPanel {
                             }
                             Some(collection_path) => {
                                 just_need_replace_save =
-                                    Some((collection_path.clone(), data.rest.clone()));
+                                    Some((collection_path.clone(), data.id.clone()));
                                 data.set_baseline();
                             }
                         }
@@ -220,26 +220,16 @@ impl RestPanel {
         send_rest.map(|r| {
             workspace_data.history_data_list.record(r);
         });
-        just_need_replace_save.map(|(collection_path, http_record)| {
-            let (_, option) = workspace_data
-                .collections
-                .get_mut_folder_with_path(collection_path.clone());
-            match option {
-                None => {}
-                Some(cf) => {
-                    workspace_data
-                        .collections
-                        .insert_http_record(cf.clone(), http_record);
-                    operation.toasts().add(Toast {
-                        kind: ToastKind::Success,
-                        text: "Save success.".into(),
-                        options: ToastOptions::default()
-                            .duration_in_seconds(2.0)
-                            .show_icon(true)
-                            .show_progress(true),
-                    });
-                }
-            }
+        just_need_replace_save.map(|(collection_path, id)| {
+            workspace_data.save_crt(id, collection_path);
+            operation.toasts().add(Toast {
+                kind: ToastKind::Success,
+                text: "Save success.".into(),
+                options: ToastOptions::default()
+                    .duration_in_seconds(2.0)
+                    .show_icon(true)
+                    .show_progress(true),
+            });
         });
     }
     fn render_editor_left_panel(

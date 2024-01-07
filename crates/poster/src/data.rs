@@ -196,7 +196,7 @@ pub struct WorkspaceData {
 }
 
 impl WorkspaceData {
-    pub(crate) fn build_client(&mut self) -> Client {
+    pub fn build_client(&mut self) -> Client {
         match &self.client {
             None => {
                 let client = Client::builder()
@@ -211,6 +211,21 @@ impl WorkspaceData {
             }
             Some(client) => client.clone(),
         }
+    }
+    pub fn save_crt(&mut self, crt_id: String, collection_path: String) {
+        self.central_request_data_list
+            .data_map
+            .get_mut(crt_id.as_str())
+            .map(|crt| {
+                let (_, cf_option) = self
+                    .collections
+                    .get_mut_folder_with_path(collection_path.clone());
+                cf_option.map(|cf| {
+                    self.collections
+                        .insert_http_record(cf.clone(), crt.rest.clone());
+                    crt.set_baseline();
+                });
+            });
     }
 }
 

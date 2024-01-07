@@ -7,6 +7,7 @@ use crate::operation::Operation;
 use crate::panels::cookies_windows::CookiesWindows;
 use crate::panels::environment_windows::EnvironmentWindows;
 use crate::panels::new_collection_windows::NewCollectionWindows;
+use crate::panels::request_close_windows::RequestCloseWindows;
 use crate::panels::rest_panel::RestPanel;
 use crate::panels::save_windows::SaveWindows;
 use crate::panels::{DataView, HORIZONTAL_GAP};
@@ -19,6 +20,7 @@ pub struct MyCentralPanel {
     save_windows: SaveWindows,
     new_collection_windows: NewCollectionWindows,
     cookies_windows: CookiesWindows,
+    request_close_windows: RequestCloseWindows,
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -74,6 +76,8 @@ impl DataView for MyCentralPanel {
         }
         self.save_windows
             .set_and_render(ui, operation, workspace_data, 0);
+        self.request_close_windows
+            .set_and_render(ui, operation, workspace_data);
         if operation.open_windows().collection_opened {
             self.new_collection_windows
                 .open_collection(operation.open_windows().collection.clone());
@@ -152,7 +156,7 @@ impl MyCentralPanel {
             });
     }
 
-    fn central_request_table(&self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
+    fn central_request_table(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         egui::SidePanel::left("central_request_table_panel")
             .resizable(true)
             .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
@@ -201,7 +205,12 @@ impl MyCentralPanel {
                                     }
                                     ui.separator();
                                     if ui.button("Close").clicked() {
-                                        self.close_tab(workspace_data, &request_data);
+                                        if !request_data.is_modify() {
+                                            self.close_tab(workspace_data, &request_data);
+                                        } else {
+                                            self.request_close_windows
+                                                .open(request_data.id.clone());
+                                        }
                                         ui.close_menu();
                                     }
                                     if ui.button("Force Close").clicked() {

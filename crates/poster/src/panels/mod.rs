@@ -12,6 +12,7 @@ mod new_collection_windows;
 mod request_body_form_data_panel;
 mod request_body_panel;
 mod request_body_xxx_form_panel;
+mod request_close_windows;
 mod request_headers_panel;
 pub mod request_params_panel;
 mod request_pre_script_panel;

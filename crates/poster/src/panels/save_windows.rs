@@ -235,13 +235,13 @@ impl SaveWindows {
                                 ui.button("Save");
                             });
                         }
-                        Some(path) => {
+                        Some(collection_path) => {
                             let mut ui_enable = true;
                             let button_name =
-                                "Save to ".to_string() + path.split("/").last().unwrap();
+                                "Save to ".to_string() + collection_path.split("/").last().unwrap();
                             let (_, option) = workspace_data
                                 .collections
-                                .get_mut_folder_with_path(path.clone());
+                                .get_mut_folder_with_path(collection_path.clone());
                             match &option {
                                 None => {}
                                 Some(cf) => {
@@ -276,7 +276,7 @@ impl SaveWindows {
                                             workspace_data
                                                 .central_request_data_list
                                                 .update_old_to_new(
-                                                    path.clone(),
+                                                    collection_path.clone(),
                                                     self.old_name.clone(),
                                                     self.http_record.name.clone(),
                                                 );
