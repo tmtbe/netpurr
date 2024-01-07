@@ -1,6 +1,9 @@
 use std::io::Read;
+use std::time::{SystemTime, UNIX_EPOCH};
 
+use egui::Event;
 use egui_toast::{Toast, ToastKind, ToastOptions};
+use log::info;
 use poll_promise::Promise;
 
 use crate::data::{ConfigData, WorkspaceData};
@@ -22,6 +25,7 @@ pub struct App {
     current_workspace: String,
     workspace_windows: WorkspaceWindows,
     sync_promise: Option<Promise<rustygit::types::Result<()>>>,
+    auto_save_time: u64,
 }
 
 impl App {
@@ -235,6 +239,27 @@ impl eframe::App for App {
             if !self.allowed_to_close {
                 ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
                 self.show_confirmation_dialog = true;
+            }
+        }
+        // auto save
+        if ctx.input(|i| {
+            i.events
+                .iter()
+                .filter(|event| match event {
+                    Event::Key { .. } => true,
+                    _ => false,
+                })
+                .count()
+                > 0
+        }) {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards")
+                .as_secs();
+            if now - self.auto_save_time > 5 {
+                self.auto_save_time = now;
+                self.workspace_data.central_request_data_list.auto_save();
+                info!("auto save");
             }
         }
         if self.show_confirmation_dialog {
