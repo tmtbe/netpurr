@@ -141,7 +141,7 @@ impl RestPanel {
         ui: &mut Ui,
     ) {
         let mut send_rest = None;
-        let client = workspace_data.build_client();
+        let client = workspace_data.build_http_client();
         let mut just_need_replace_save = None;
         let (pre_request_parent_script_scope, test_parent_script_scope) =
             workspace_data.get_crt_parent_scripts(crt_id.clone());

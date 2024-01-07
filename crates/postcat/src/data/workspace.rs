@@ -66,7 +66,7 @@ pub struct WorkspaceData {
 }
 
 impl WorkspaceData {
-    pub fn build_client(&mut self) -> Client {
+    pub fn build_http_client(&mut self) -> Client {
         match &self.client {
             None => {
                 let client = Client::builder()
@@ -81,6 +81,12 @@ impl WorkspaceData {
             }
             Some(client) => client.clone(),
         }
+    }
+
+    pub fn get_collection(&self, option_path: Option<String>) -> Option<Collection> {
+        let path = option_path?;
+        let collection_name = path.splitn(2, "/").next()?;
+        self.collections.data.get(collection_name).cloned()
     }
     pub fn save_crt(
         &mut self,
@@ -112,35 +118,6 @@ impl WorkspaceData {
             );
         });
     }
-}
-
-impl WorkspaceData {
-    pub fn load_all(&mut self, workspace: String) {
-        self.central_request_data_list.load_all(workspace.clone());
-        self.history_data_list.load_all(workspace.clone());
-        self.environment.load_all(workspace.clone());
-        self.collections.load_all(workspace.clone());
-        self.cookies_manager.load_all(workspace.clone())
-    }
-    pub fn reload_data(&mut self, workspace: String) {
-        self.history_data_list.load_all(workspace.clone());
-        self.environment.load_all(workspace.clone());
-        self.collections.load_all(workspace.clone());
-        self.cookies_manager.load_all(workspace.clone())
-    }
-
-    pub fn get_collection(&self, option_path: Option<String>) -> Option<Collection> {
-        let path = option_path?;
-        let collection_name = path.splitn(2, "/").next()?;
-        self.collections.data.get(collection_name).cloned()
-    }
-    fn get_variable_hash_map(
-        &self,
-        collection_path: Option<String>,
-    ) -> BTreeMap<String, EnvironmentItemValue> {
-        self.environment
-            .get_variable_hash_map(self.get_collection(collection_path))
-    }
     pub fn get_crt(&self, id: String) -> &CentralRequestItem {
         self.central_request_data_list
             .data_map
@@ -155,7 +132,8 @@ impl WorkspaceData {
     }
     pub fn get_crt_envs(&self, id: String) -> BTreeMap<String, EnvironmentItemValue> {
         let crt = self.get_crt(id);
-        self.get_variable_hash_map(crt.collection_path.clone())
+        self.environment
+            .get_variable_hash_map(self.get_collection(crt.collection_path.clone()))
     }
 
     pub fn get_crt_parent_auth(&self, id: String) -> Auth {
@@ -187,5 +165,21 @@ impl WorkspaceData {
             }
         }
         (pre_request_script_scope, test_script_scope)
+    }
+}
+
+impl WorkspaceData {
+    pub fn load_all(&mut self, workspace: String) {
+        self.central_request_data_list.load_all(workspace.clone());
+        self.history_data_list.load_all(workspace.clone());
+        self.environment.load_all(workspace.clone());
+        self.collections.load_all(workspace.clone());
+        self.cookies_manager.load_all(workspace.clone())
+    }
+    pub fn reload_data(&mut self, workspace: String) {
+        self.history_data_list.load_all(workspace.clone());
+        self.environment.load_all(workspace.clone());
+        self.collections.load_all(workspace.clone());
+        self.cookies_manager.load_all(workspace.clone())
     }
 }
