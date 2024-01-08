@@ -46,15 +46,15 @@ impl Window for RequestCloseWindows {
         ui.horizontal(|ui| {
             if ui.button("Don't Save").clicked() {
                 workspace_data.close_crt(self.crt_id.clone());
-                self.windows_open = false;
+                self.set_open(false);
             }
             if ui.button("Cancel").clicked() {
-                self.windows_open = false;
+                self.set_open(false);
             }
             ui.add_space(ui.available_width() - 100.0);
             if ui.button("Save change").clicked() {
                 self.save_tab(workspace_data, &operation);
-                self.windows_open = false;
+                self.set_open(false);
             }
         });
     }
