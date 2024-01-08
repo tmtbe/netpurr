@@ -3,8 +3,9 @@ use egui_extras::{Column, TableBuilder};
 
 use crate::data::environment::{EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
 use crate::data::workspace_data::WorkspaceData;
+use crate::operation::windows::{Window, WindowSetting};
 use crate::operation::Operation;
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 
 #[derive(Default)]
@@ -16,11 +17,35 @@ pub struct EnvironmentWindows {
     new_select_env_item: EnvironmentItem,
 }
 
-impl EnvironmentWindows {
-    pub(crate) fn open(&mut self) {
-        self.environment_windows_open = true;
+impl Window for EnvironmentWindows {
+    fn window_setting(&self) -> WindowSetting {
+        WindowSetting::new("MANAGE ENVIRONMENTS".to_string())
+            .modal(true)
+            .default_width(500.0)
+            .default_height(300.0)
+            .collapsible(false)
+            .resizable(true)
     }
 
+    fn set_open(&mut self, open: bool) {
+        self.environment_windows_open = open
+    }
+
+    fn get_open(&self) -> bool {
+        self.environment_windows_open
+    }
+
+    fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData, operation: Operation) {
+        if self.select_env.is_none() {
+            self.env_list(workspace_data, ui);
+        } else {
+            self.select_modify(ui);
+        }
+        self.env_bottom(workspace_data, ui);
+    }
+}
+
+impl EnvironmentWindows {
     fn env_list(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.label("An environment is a set of variables that allow you to switch the context of your requests. Environments can be shared between multiple workspaces.");
         ui.add_space(VERTICAL_GAP * 2.0);
@@ -186,36 +211,5 @@ impl EnvironmentWindows {
                     }
                 });
             });
-    }
-}
-
-impl DataView for EnvironmentWindows {
-    type CursorType = i32;
-
-    fn set_and_render(
-        &mut self,
-        ui: &mut Ui,
-        operation: &mut Operation,
-        workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
-    ) {
-        operation.lock_ui("env".to_string(), self.environment_windows_open);
-        let mut environment_windows_open = self.environment_windows_open;
-        egui::Window::new("MANAGE ENVIRONMENTS")
-            .default_open(true)
-            .default_width(500.0)
-            .default_height(300.0)
-            .collapsible(false)
-            .resizable(true)
-            .open(&mut environment_windows_open)
-            .show(ui.ctx(), |ui| {
-                if self.select_env.is_none() {
-                    self.env_list(workspace_data, ui);
-                } else {
-                    self.select_modify(ui);
-                }
-                self.env_bottom(workspace_data, ui);
-            });
-        self.environment_windows_open = environment_windows_open;
     }
 }

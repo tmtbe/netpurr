@@ -19,7 +19,6 @@ pub struct CookiesWindows {
     select_key_name: Option<String>,
     select_content: String,
     new_cookie_names: BTreeSet<String>,
-    windows_setting: WindowSetting,
 }
 
 impl Default for CookiesWindows {
@@ -32,21 +31,19 @@ impl Default for CookiesWindows {
             select_key_name: None,
             select_content: "".to_string(),
             new_cookie_names: Default::default(),
-            windows_setting: WindowSetting::new("MANAGE COOKIES".to_string())
-                .max_width(500.0)
-                .min_height(400.0)
-                .max_height(400.0)
-                .collapsible(false)
-                .resizable(true)
-                .modal(true)
-                .clone(),
         }
     }
 }
 
 impl Window for CookiesWindows {
-    fn window_setting(&self) -> &WindowSetting {
-        &self.windows_setting
+    fn window_setting(&self) -> WindowSetting {
+        WindowSetting::new("MANAGE COOKIES".to_string())
+            .max_width(500.0)
+            .min_height(400.0)
+            .max_height(400.0)
+            .collapsible(false)
+            .resizable(true)
+            .modal(true)
     }
 
     fn set_open(&mut self, open: bool) {

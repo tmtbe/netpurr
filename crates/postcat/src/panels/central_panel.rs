@@ -17,7 +17,6 @@ use crate::windows::save_windows::SaveWindows;
 #[derive(Default)]
 pub struct MyCentralPanel {
     editor_panel: RestPanel,
-    environment_windows: EnvironmentWindows,
     save_windows: SaveWindows,
     new_collection_windows: NewCollectionWindows,
     cookies_windows: CookiesWindows,
@@ -47,7 +46,7 @@ impl DataView for MyCentralPanel {
         cursor: Self::CursorType,
     ) {
         ui.horizontal(|ui| {
-            self.central_environment(workspace_data, ui);
+            self.central_environment(workspace_data, operation, ui);
             self.central_request_table(workspace_data, ui);
         });
         ui.separator();
@@ -58,8 +57,6 @@ impl DataView for MyCentralPanel {
             }
             _ => {}
         }
-        self.environment_windows
-            .set_and_render(ui, operation, workspace_data, cursor);
 
         workspace_data.get_env_select().map(|s| {
             if !workspace_data.get_env_configs().contains_key(s.as_str()) {
@@ -120,7 +117,12 @@ impl MyCentralPanel {
         response
     }
 
-    fn central_environment(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
+    fn central_environment(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        operation: &Operation,
+        ui: &mut Ui,
+    ) {
         egui::SidePanel::right("central_right_environment_panel")
             .resizable(true)
             .show_separator_line(false)
@@ -150,7 +152,7 @@ impl MyCentralPanel {
                             }
                         });
                     if ui.button("⚙").clicked() {
-                        self.environment_windows.open()
+                        operation.add_window(Box::new(EnvironmentWindows::default()));
                     }
                 });
             });
