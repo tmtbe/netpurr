@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashSet};
+use std::rc::Rc;
 use std::time::Duration;
 
 use chrono::NaiveDate;
@@ -8,7 +9,7 @@ use uuid::Uuid;
 
 use crate::data::auth::{Auth, AuthType};
 use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
-use crate::data::collections::{Collection, Collections};
+use crate::data::collections::{Collection, CollectionFolder, Collections};
 use crate::data::cookies_manager::{Cookie, CookiesManager};
 use crate::data::environment::{Environment, EnvironmentConfig, EnvironmentItemValue};
 use crate::data::history::{DateGroupHistoryList, HistoryDataList};
@@ -22,7 +23,7 @@ pub struct WorkspaceData {
     central_request_data_list: RefCell<CentralRequestDataList>,
     history_data_list: RefCell<HistoryDataList>,
     environment: RefCell<Environment>,
-    pub collections: Collections,
+    collections: RefCell<Collections>,
     client: Option<Client>,
 }
 
@@ -45,11 +46,84 @@ impl WorkspaceData {
     }
 }
 
+//collections
 impl WorkspaceData {
     pub fn get_collection(&self, option_path: Option<String>) -> Option<Collection> {
         let path = option_path?;
         let collection_name = path.splitn(2, "/").next()?;
-        self.collections.data.get(collection_name).cloned()
+        self.collections.borrow().data.get(collection_name).cloned()
+    }
+
+    pub fn get_folder_with_path(
+        &self,
+        path: String,
+    ) -> (String, Option<Rc<RefCell<CollectionFolder>>>) {
+        self.collections.borrow().get_folder_with_path(path)
+    }
+
+    pub fn collection_insert_http_record(
+        &self,
+        folder: Rc<RefCell<CollectionFolder>>,
+        record: HttpRecord,
+    ) {
+        self.collections
+            .borrow_mut()
+            .insert_http_record(folder, record)
+    }
+    pub fn collection_remove_http_record(
+        &self,
+        folder: Rc<RefCell<CollectionFolder>>,
+        collection_name: String,
+    ) {
+        self.collections
+            .borrow_mut()
+            .remove_http_record(folder, collection_name)
+    }
+
+    pub fn collection_insert_folder(
+        &self,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
+        folder: Rc<RefCell<CollectionFolder>>,
+    ) {
+        self.collections
+            .borrow_mut()
+            .insert_folder(parent_folder, folder)
+    }
+
+    pub fn get_collection_auth(&self, path: String) -> Auth {
+        self.collections.borrow().get_auth(path)
+    }
+
+    pub fn get_collection_pre_request_script_scope(&self, path: String) -> Option<ScriptScope> {
+        self.collections.borrow().get_pre_request_script_scope(path)
+    }
+    pub fn get_collection_test_script_scope(&self, path: String) -> Option<ScriptScope> {
+        self.collections.borrow().get_test_script_scope(path)
+    }
+
+    pub fn get_collection_names(&self) -> HashSet<String> {
+        self.collections
+            .borrow()
+            .get_data()
+            .iter()
+            .map(|(k, _)| k.to_string())
+            .collect()
+    }
+    pub fn add_collection(&self, collection: Collection) {
+        self.collections.borrow_mut().insert_collection(collection)
+    }
+    pub fn remove_collection(&self, collection_name: String) {
+        self.collections
+            .borrow_mut()
+            .remove_collection(collection_name)
+    }
+
+    pub fn get_collections(&self) -> BTreeMap<String, Collection> {
+        self.collections.borrow().data.clone()
+    }
+
+    pub fn update_collection_folder(&self, folder: Rc<RefCell<CollectionFolder>>) {
+        self.collections.borrow().update_folder(folder)
     }
 }
 
@@ -155,14 +229,12 @@ impl WorkspaceData {
             .data_map
             .get_mut(crt_id.as_str())
             .map(|crt| {
-                let (_, cf_option) = self
-                    .collections
-                    .get_mut_folder_with_path(collection_path.clone());
+                let (_, cf_option) = self.get_folder_with_path(collection_path.clone());
                 cf_option.map(|cf| {
                     let mut http_record = crt.rest.clone();
                     modify_http_record(&mut http_record);
                     new_name_option = Some(http_record.name.clone());
-                    self.collections.insert_http_record(cf.clone(), http_record);
+                    self.collection_insert_http_record(cf.clone(), http_record);
                     crt.set_baseline();
                 });
             });
@@ -196,7 +268,7 @@ impl WorkspaceData {
                 basic_password: "".to_string(),
                 bearer_token: "".to_string(),
             },
-            Some(collection_path) => self.collections.get_auth(collection_path.clone()),
+            Some(collection_path) => self.get_collection_auth(collection_path.clone()),
         }
     }
 
@@ -207,12 +279,9 @@ impl WorkspaceData {
         match &crt.collection_path {
             None => {}
             Some(collection_path) => {
-                pre_request_script_scope = self
-                    .collections
-                    .get_pre_request_script_scope(collection_path.clone());
-                test_script_scope = self
-                    .collections
-                    .get_test_script_scope(collection_path.clone());
+                pre_request_script_scope =
+                    self.get_collection_pre_request_script_scope(collection_path.clone());
+                test_script_scope = self.get_collection_test_script_scope(collection_path.clone());
             }
         }
         (pre_request_script_scope, test_script_scope)
@@ -321,7 +390,7 @@ impl WorkspaceData {
             .borrow_mut()
             .load_all(workspace.clone());
         self.environment.borrow_mut().load_all(workspace.clone());
-        self.collections.load_all(workspace.clone());
+        self.collections.borrow_mut().load_all(workspace.clone());
         self.cookies_manager
             .borrow_mut()
             .load_all(workspace.clone())
@@ -331,7 +400,7 @@ impl WorkspaceData {
             .borrow_mut()
             .load_all(workspace.clone());
         self.environment.borrow_mut().load_all(workspace.clone());
-        self.collections.load_all(workspace.clone());
+        self.collections.borrow_mut().load_all(workspace.clone());
         self.cookies_manager
             .borrow_mut()
             .load_all(workspace.clone())

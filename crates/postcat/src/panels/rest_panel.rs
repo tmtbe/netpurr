@@ -291,7 +291,7 @@ impl RestPanel {
                     None => {}
                     Some(collection_path) => {
                         parent_auth =
-                            Some(workspace_data.collections.get_auth(collection_path.clone()));
+                            Some(workspace_data.get_collection_auth(collection_path.clone()));
                     }
                 }
                 self.auth_panel.set_envs(envs.clone(), parent_auth);

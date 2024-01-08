@@ -234,8 +234,7 @@ impl NewCollectionWindows {
                             None => match &self.old_collection_name {
                                 None => {
                                     if workspace_data
-                                        .collections
-                                        .get_data()
+                                        .get_collections()
                                         .contains_key(self.folder.borrow().name.as_str())
                                     {
                                         ui.set_enabled(false)
@@ -244,8 +243,7 @@ impl NewCollectionWindows {
                                 Some(old_name) => {
                                     if old_name != self.folder.borrow().name.as_str()
                                         && workspace_data
-                                            .collections
-                                            .get_data()
+                                            .get_collections()
                                             .contains_key(self.folder.borrow().name.as_str())
                                     {
                                         ui.set_enabled(false);
@@ -280,16 +278,12 @@ impl NewCollectionWindows {
                             match &self.old_collection_name {
                                 None => {}
                                 Some(old_name) => {
-                                    workspace_data
-                                        .collections
-                                        .remove_collection(old_name.clone());
+                                    workspace_data.remove_collection(old_name.clone());
                                 }
                             }
                             match &self.parent_folder {
                                 None => {
-                                    workspace_data
-                                        .collections
-                                        .insert_collection(self.new_collection.clone());
+                                    workspace_data.add_collection(self.new_collection.clone());
                                 }
                                 Some(parent_folder) => {
                                     match &self.old_folder_name {
@@ -304,9 +298,7 @@ impl NewCollectionWindows {
                                     );
                                     self.folder.borrow_mut().parent_path =
                                         parent_folder.borrow().get_path();
-                                    workspace_data
-                                        .collections
-                                        .update_folder(self.folder.clone());
+                                    workspace_data.update_collection_folder(self.folder.clone());
                                 }
                             }
                         }

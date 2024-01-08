@@ -82,7 +82,7 @@ impl SaveCRTWindows {
         ScrollArea::vertical().max_height(200.0).show(ui, |ui| {
             match self.select_collection_path.clone() {
                 None => {
-                    for (name, collection) in workspace_data.collections.get_data().iter() {
+                    for (name, collection) in workspace_data.get_collections().iter() {
                         if utils::select_label(ui, name).clicked() {
                             self.add_folder = false;
                             self.add_collection = false;
@@ -93,8 +93,7 @@ impl SaveCRTWindows {
                 }
                 Some(path) => {
                     workspace_data
-                        .collections
-                        .get_mut_folder_with_path(path.clone())
+                        .get_folder_with_path(path.clone())
                         .1
                         .map(|cf| {
                             for (name, cf_child) in cf.borrow().folders.iter() {
@@ -123,9 +122,7 @@ impl SaveCRTWindows {
             match &self.select_collection_path {
                 None => {}
                 Some(path) => {
-                    let (_, option) = workspace_data
-                        .collections
-                        .get_folder_with_path(path.clone());
+                    let (_, option) = workspace_data.get_folder_with_path(path.clone());
                     match option {
                         None => {}
                         Some(folder) => {
@@ -140,13 +137,11 @@ impl SaveCRTWindows {
                 match &self.select_collection_path {
                     None => {}
                     Some(path) => {
-                        let (_, option) = workspace_data
-                            .collections
-                            .get_mut_folder_with_path(path.clone());
+                        let (_, option) = workspace_data.get_folder_with_path(path.clone());
                         match option {
                             None => {}
                             Some(folder) => {
-                                workspace_data.collections.insert_folder(
+                                workspace_data.collection_insert_folder(
                                     folder.clone(),
                                     Rc::new(RefCell::new(CollectionFolder {
                                         name: self.add_name.to_string(),
@@ -172,14 +167,13 @@ impl SaveCRTWindows {
     fn render_add_collection(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.horizontal(|ui| {
             if workspace_data
-                .collections
-                .get_data()
+                .get_collections()
                 .contains_key(self.add_name.as_str())
             {
                 ui.add_enabled(false, Button::new("+"));
             } else {
                 if ui.button("+").clicked() {
-                    workspace_data.collections.insert_collection(Collection {
+                    workspace_data.add_collection(Collection {
                         folder: Rc::new(RefCell::new(CollectionFolder {
                             name: self.add_name.clone(),
                             parent_path: ".".to_string(),
@@ -221,9 +215,8 @@ impl SaveCRTWindows {
                             let mut ui_enable = true;
                             let button_name =
                                 "Save to ".to_string() + collection_path.split("/").last().unwrap();
-                            let (_, option) = workspace_data
-                                .collections
-                                .get_mut_folder_with_path(collection_path.clone());
+                            let (_, option) =
+                                workspace_data.get_folder_with_path(collection_path.clone());
                             match &option {
                                 None => {}
                                 Some(cf) => {

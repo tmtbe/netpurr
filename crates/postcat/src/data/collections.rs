@@ -115,29 +115,6 @@ impl Collections {
         self.data.clone()
     }
 
-    pub fn get_mut_folder_with_path(
-        &mut self,
-        path: String,
-    ) -> (String, Option<Rc<RefCell<CollectionFolder>>>) {
-        let collection_paths: Vec<&str> = path.split("/").collect();
-        let collection_name = &collection_paths[0].to_string();
-        return match self.data.get(collection_name) {
-            None => (collection_name.to_string(), None),
-            Some(collection) => {
-                let mut folder = collection.folder.clone();
-                let folder_paths = &collection_paths[1..];
-                for folder_name in folder_paths.iter() {
-                    let get = folder.borrow().folders.get(folder_name.to_owned()).cloned();
-                    if get.is_none() {
-                        return (collection_name.to_string(), None);
-                    } else {
-                        folder = get.unwrap().clone();
-                    }
-                }
-                (collection_name.to_string(), Some(folder))
-            }
-        };
-    }
     pub fn get_pre_request_script_scope(&self, path: String) -> Option<ScriptScope> {
         let name = path.split("/").next()?;
         let collection = self.data.get(name)?;

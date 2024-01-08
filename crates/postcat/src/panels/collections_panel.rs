@@ -130,9 +130,7 @@ impl CollectionsPanel {
                     requests: folder.borrow().requests.clone(),
                     folders: folder.borrow().folders.clone(),
                 }));
-                workspace_data
-                    .collections
-                    .insert_folder(parent_folder.clone(), new_folder.clone());
+                workspace_data.collection_insert_folder(parent_folder.clone(), new_folder.clone());
                 ui.close_menu();
             }
             if utils::select_label(ui, "Remove").clicked() {
@@ -172,23 +170,14 @@ impl CollectionsPanel {
                 let new_collections = collection.clone();
                 let new_name = utils::build_copy_name(
                     collection_name.to_string(),
-                    workspace_data
-                        .collections
-                        .get_data()
-                        .iter()
-                        .map(|(k, _)| k.to_string())
-                        .collect(),
+                    workspace_data.get_collection_names(),
                 );
                 new_collections.folder.borrow_mut().name = new_name;
-                workspace_data
-                    .collections
-                    .insert_collection(new_collections);
+                workspace_data.add_collection(new_collections);
                 ui.close_menu();
             }
             if utils::select_label(ui, "Remove").clicked() {
-                workspace_data
-                    .collections
-                    .remove_collection(collection.folder.borrow().name.clone());
+                workspace_data.remove_collection(collection.folder.borrow().name.clone());
                 ui.close_menu();
             }
             ui.separator();
@@ -262,7 +251,7 @@ impl CollectionsPanel {
             ui.painter()
                 .circle_filled(response.rect.center(), radius, stroke.color);
         }
-        for (collection_name, collection) in workspace_data.collections.get_data().iter() {
+        for (collection_name, collection) in workspace_data.get_collections().iter() {
             let response = CollapsingHeader::new(RichText::new(collection_name).strong())
                 .icon(circle_icon)
                 .default_open(false)
@@ -337,9 +326,7 @@ impl CollectionsPanel {
                 ui.close_menu();
             }
             if utils::select_label(ui, "Duplicate").clicked() {
-                let (_, folder) = workspace_data
-                    .collections
-                    .get_mut_folder_with_path(path.clone());
+                let (_, folder) = workspace_data.get_folder_with_path(path.clone());
                 folder.map(|f| {
                     let cf = f.borrow().clone();
                     let request = cf.requests.get(request.name.as_str());
@@ -351,21 +338,15 @@ impl CollectionsPanel {
                             f.borrow().requests.iter().map(|(k, v)| k.clone()).collect(),
                         );
                         new_request.name = new_name.to_string();
-                        workspace_data
-                            .collections
-                            .insert_http_record(f.clone(), new_request);
+                        workspace_data.collection_insert_http_record(f.clone(), new_request);
                     });
                 });
                 ui.close_menu();
             }
             if utils::select_label(ui, "Remove").clicked() {
-                let (_, folder) = workspace_data
-                    .collections
-                    .get_mut_folder_with_path(path.clone());
+                let (_, folder) = workspace_data.get_folder_with_path(path.clone());
                 folder.map(|f| {
-                    workspace_data
-                        .collections
-                        .remove_http_record(f.clone(), request.name.clone());
+                    workspace_data.collection_remove_http_record(f.clone(), request.name.clone());
                 });
                 ui.close_menu();
             }
