@@ -9,9 +9,11 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::collections::{Collection, CollectionFolder};
+use crate::data::config_data::ConfigData;
 use crate::data::environment::{EnvironmentItem, EnvironmentItemValue, EnvironmentValueType};
 use crate::data::http::Request;
 use crate::data::workspace_data::WorkspaceData;
+use crate::operation::windows::{Window, WindowSetting};
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
@@ -50,8 +52,94 @@ impl Default for NewCollectionContentType {
     }
 }
 
+impl Window for NewCollectionWindows {
+    fn window_setting(&self) -> WindowSetting {
+        WindowSetting::new(self.title_name.clone())
+            .modal(true)
+            .max_width(800.0)
+            .min_width(500.0)
+            .max_height(600.0)
+            .collapsible(false)
+            .resizable(true)
+    }
+
+    fn set_open(&mut self, open: bool) {
+        self.new_collection_windows_open = open;
+    }
+
+    fn get_open(&self) -> bool {
+        self.new_collection_windows_open
+    }
+
+    fn render(
+        &mut self,
+        ui: &mut Ui,
+        config_data: &mut ConfigData,
+        workspace_data: &mut WorkspaceData,
+        operation: Operation,
+    ) {
+        ui.label("Name");
+        utils::text_edit_singleline_filter_justify(ui, &mut self.folder.borrow_mut().name);
+        ui.horizontal(|ui| {
+            for x in NewCollectionContentType::iter() {
+                if x == NewCollectionContentType::Variables && self.parent_folder.is_some() {
+                    continue;
+                }
+                ui.selectable_value(
+                    &mut self.new_collection_content_type,
+                    x.clone(),
+                    x.to_string(),
+                );
+            }
+        });
+        ui.add_space(VERTICAL_GAP);
+        match &self.new_collection_content_type {
+            NewCollectionContentType::Description => {
+                self.build_desc(ui);
+            }
+            NewCollectionContentType::Authorization => {
+                self.build_auth(ui);
+            }
+            NewCollectionContentType::Variables => {
+                self.build_variables(ui);
+            }
+            NewCollectionContentType::PreRequestScript => {
+                let script = self.new_collection.pre_request_script.clone();
+                let mut env = BTreeMap::default();
+                for et in self.new_collection.envs.items.iter() {
+                    env.insert(
+                        et.key.clone(),
+                        EnvironmentItemValue {
+                            value: et.value.clone(),
+                            scope: self.new_collection.folder.borrow().name.clone(),
+                            value_type: EnvironmentValueType::String,
+                        },
+                    );
+                }
+                self.new_collection.pre_request_script =
+                    self.request_pre_script_panel.set_and_render(
+                        ui,
+                        &operation,
+                        workspace_data,
+                        script,
+                        None,
+                        Request::default(),
+                        env,
+                        "collection".to_string(),
+                    );
+            }
+            NewCollectionContentType::Tests => {
+                let script = self.new_collection.test_script.clone();
+                self.new_collection.test_script =
+                    self.test_script_panel
+                        .set_and_render(ui, script, "collection".to_string())
+            }
+        }
+        self.bottom_panel(workspace_data, ui);
+    }
+}
 impl NewCollectionWindows {
-    pub(crate) fn open_collection(&mut self, collection: Option<Collection>) {
+    pub fn with_open_collection(mut self, collection: Option<Collection>) -> Self {
         self.new_collection_windows_open = true;
         match collection {
             None => {
@@ -70,13 +158,14 @@ impl NewCollectionWindows {
         self.new_collection_content_type = NewCollectionContentType::Description;
         self.folder = self.new_collection.folder.clone();
         self.parent_folder = None;
+        self
     }
-    pub(crate) fn open_folder(
-        &mut self,
+    pub fn with_open_folder(
+        mut self,
         collection: Collection,
         parent_folder: Rc<RefCell<CollectionFolder>>,
         folder: Option<Rc<RefCell<CollectionFolder>>>,
-    ) {
+    ) -> Self {
         self.new_collection_windows_open = true;
         match folder {
             None => {
@@ -109,6 +198,7 @@ impl NewCollectionWindows {
         }
         self.parent_folder = Some(parent_folder.clone());
         self.new_collection_content_type = NewCollectionContentType::Description;
+        self
     }
 
     fn build_variables(&mut self, ui: &mut Ui) {
@@ -310,97 +400,5 @@ impl NewCollectionWindows {
                     }
                 });
             });
-    }
-}
-
-impl DataView for NewCollectionWindows {
-    type CursorType = i32;
-
-    fn set_and_render(
-        &mut self,
-        ui: &mut Ui,
-        operation: &mut Operation,
-        workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
-    ) {
-        operation.lock_ui(
-            "new_collection".to_string(),
-            self.new_collection_windows_open,
-        );
-        let mut new_collection_windows_open = self.new_collection_windows_open;
-        egui::Window::new(self.title_name.clone())
-            .default_open(true)
-            .max_width(800.0)
-            .min_width(500.0)
-            .max_height(600.0)
-            .collapsible(false)
-            .resizable(true)
-            .open(&mut new_collection_windows_open)
-            .show(ui.ctx(), |ui| {
-                ui.label("Name");
-                utils::text_edit_singleline_filter_justify(ui, &mut self.folder.borrow_mut().name);
-                ui.horizontal(|ui| {
-                    for x in NewCollectionContentType::iter() {
-                        if x == NewCollectionContentType::Variables && self.parent_folder.is_some()
-                        {
-                            continue;
-                        }
-                        ui.selectable_value(
-                            &mut self.new_collection_content_type,
-                            x.clone(),
-                            x.to_string(),
-                        );
-                    }
-                });
-                ui.add_space(VERTICAL_GAP);
-                match &self.new_collection_content_type {
-                    NewCollectionContentType::Description => {
-                        self.build_desc(ui);
-                    }
-                    NewCollectionContentType::Authorization => {
-                        self.build_auth(ui);
-                    }
-                    NewCollectionContentType::Variables => {
-                        self.build_variables(ui);
-                    }
-                    NewCollectionContentType::PreRequestScript => {
-                        let script = self.new_collection.pre_request_script.clone();
-                        let mut env = BTreeMap::default();
-                        for et in self.new_collection.envs.items.iter() {
-                            env.insert(
-                                et.key.clone(),
-                                EnvironmentItemValue {
-                                    value: et.value.clone(),
-                                    scope: self.new_collection.folder.borrow().name.clone(),
-                                    value_type: EnvironmentValueType::String,
-                                },
-                            );
-                        }
-                        self.new_collection.pre_request_script =
-                            self.request_pre_script_panel.set_and_render(
-                                ui,
-                                operation,
-                                workspace_data,
-                                script,
-                                None,
-                                Request::default(),
-                                env,
-                                "collection".to_string(),
-                            );
-                    }
-                    NewCollectionContentType::Tests => {
-                        let script = self.new_collection.test_script.clone();
-                        self.new_collection.test_script = self.test_script_panel.set_and_render(
-                            ui,
-                            script,
-                            "collection".to_string(),
-                        )
-                    }
-                }
-                self.bottom_panel(workspace_data, ui);
-            });
-        if !new_collection_windows_open {
-            self.new_collection_windows_open = new_collection_windows_open;
-        }
     }
 }

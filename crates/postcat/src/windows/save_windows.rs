@@ -5,10 +5,12 @@ use std::rc::Rc;
 use egui::{Align, Button, Layout, ScrollArea, Ui};
 
 use crate::data::collections::{Collection, CollectionFolder};
+use crate::data::config_data::ConfigData;
 use crate::data::http::HttpRecord;
 use crate::data::workspace_data::WorkspaceData;
+use crate::operation::windows::{Window, WindowSetting};
 use crate::operation::Operation;
-use crate::panels::{DataView, VERTICAL_GAP};
+use crate::panels::VERTICAL_GAP;
 use crate::utils;
 
 #[derive(Default)]
@@ -25,13 +27,55 @@ pub struct SaveWindows {
     old_name: String,
 }
 
-impl SaveWindows {
-    pub(crate) fn open(
+impl Window for SaveWindows {
+    fn window_setting(&self) -> WindowSetting {
+        WindowSetting::new(self.title.clone())
+            .max_width(500.0)
+            .default_height(400.0)
+            .collapsible(false)
+            .resizable(true)
+    }
+
+    fn set_open(&mut self, open: bool) {
+        self.save_windows_open = open;
+    }
+
+    fn get_open(&self) -> bool {
+        self.save_windows_open
+    }
+
+    fn render(
         &mut self,
+        ui: &mut Ui,
+        _: &mut ConfigData,
+        workspace_data: &mut WorkspaceData,
+        operation: Operation,
+    ) {
+        ui.label("Requests in Postcat are saved in collections (a group of requests).");
+        ui.add_space(VERTICAL_GAP);
+        ui.label("Request name");
+        utils::text_edit_singleline_filter_justify(ui, &mut self.http_record.name);
+        ui.add_space(VERTICAL_GAP);
+        ui.label("Request description (Optional)");
+        utils::text_edit_multiline_justify(ui, &mut self.http_record.desc);
+        ui.add_space(VERTICAL_GAP);
+        if !self.edit {
+            ui.label("Select a collection or folder to save to:");
+            ui.add_space(VERTICAL_GAP);
+            self.render(workspace_data, ui);
+            ui.add_space(VERTICAL_GAP);
+        }
+        self.render_save_bottom_panel(workspace_data, ui);
+    }
+}
+
+impl SaveWindows {
+    pub fn with(
+        mut self,
         http_record: HttpRecord,
         default_path: Option<String>,
         edit: bool,
-    ) {
+    ) -> Self {
         self.save_windows_open = true;
         self.http_record = http_record;
         self.old_name = self.http_record.name.clone();
@@ -58,6 +102,7 @@ impl SaveWindows {
         }
         self.select_collection_path = default_path.clone();
         self.id = default_path.clone().unwrap_or("new".to_string());
+        self
     }
 
     fn render(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
@@ -287,50 +332,5 @@ impl SaveWindows {
                     }
                 });
             });
-    }
-}
-
-impl DataView for SaveWindows {
-    type CursorType = i32;
-
-    fn set_and_render(
-        &mut self,
-        ui: &mut Ui,
-        operation: &mut Operation,
-        workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
-    ) {
-        let mut save_windows_open = self.save_windows_open;
-        operation.lock_ui(
-            "save_".to_string() + self.id.as_str(),
-            self.save_windows_open,
-        );
-        egui::Window::new(self.title.clone())
-            .default_open(true)
-            .max_width(500.0)
-            .default_height(400.0)
-            .collapsible(false)
-            .resizable(true)
-            .open(&mut save_windows_open)
-            .show(ui.ctx(), |ui| {
-                ui.label("Requests in Postcat are saved in collections (a group of requests).");
-                ui.add_space(VERTICAL_GAP);
-                ui.label("Request name");
-                utils::text_edit_singleline_filter_justify(ui, &mut self.http_record.name);
-                ui.add_space(VERTICAL_GAP);
-                ui.label("Request description (Optional)");
-                utils::text_edit_multiline_justify(ui, &mut self.http_record.desc);
-                ui.add_space(VERTICAL_GAP);
-                if !self.edit {
-                    ui.label("Select a collection or folder to save to:");
-                    ui.add_space(VERTICAL_GAP);
-                    self.render(workspace_data, ui);
-                    ui.add_space(VERTICAL_GAP);
-                }
-                self.render_save_bottom_panel(workspace_data, ui);
-            });
-        if !save_windows_open {
-            self.save_windows_open = save_windows_open;
-        }
     }
 }

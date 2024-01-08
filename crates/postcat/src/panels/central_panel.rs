@@ -7,21 +7,12 @@ use crate::operation::Operation;
 use crate::panels::rest_panel::RestPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::utils;
-use crate::windows::cookies_windows::CookiesWindows;
 use crate::windows::environment_windows::EnvironmentWindows;
-use crate::windows::new_collection_windows::NewCollectionWindows;
 use crate::windows::request_close_windows::RequestCloseWindows;
-use crate::windows::save_crt_windows::SaveCRTWindows;
-use crate::windows::save_windows::SaveWindows;
 
 #[derive(Default)]
 pub struct MyCentralPanel {
     editor_panel: RestPanel,
-    save_windows: SaveWindows,
-    new_collection_windows: NewCollectionWindows,
-    cookies_windows: CookiesWindows,
-    request_close_windows: RequestCloseWindows,
-    save_crt_windows: SaveCRTWindows,
     select_crt_id: Option<String>,
 }
 
@@ -47,7 +38,7 @@ impl DataView for MyCentralPanel {
     ) {
         ui.horizontal(|ui| {
             self.central_environment(workspace_data, operation, ui);
-            self.central_request_table(workspace_data, ui);
+            self.central_request_table(workspace_data, operation, ui);
         });
         ui.separator();
         match &workspace_data.get_crt_select_id() {
@@ -63,40 +54,6 @@ impl DataView for MyCentralPanel {
                 workspace_data.set_env_select(None)
             }
         });
-        if operation.open_windows().save_opened {
-            self.save_windows.open(
-                operation.open_windows().http_record.clone(),
-                operation.open_windows().default_path.clone(),
-                operation.open_windows().edit,
-            );
-            operation.open_windows().save_opened = false;
-        }
-        self.save_windows
-            .set_and_render(ui, operation, workspace_data, 0);
-        self.request_close_windows
-            .set_and_render(ui, operation, workspace_data);
-        if operation.open_windows().collection_opened {
-            self.new_collection_windows
-                .open_collection(operation.open_windows().collection.clone());
-            operation.open_windows().collection_opened = false;
-        }
-        if operation.open_windows().folder_opened {
-            self.new_collection_windows.open_folder(
-                operation.open_windows().collection.clone().unwrap(),
-                operation.open_windows().parent_folder.clone(),
-                operation.open_windows().folder.clone(),
-            );
-            operation.open_windows().folder_opened = false;
-        }
-        self.new_collection_windows
-            .set_and_render(ui, operation, workspace_data, 0);
-        if operation.open_windows().save_crt_opened {
-            self.save_crt_windows
-                .open(operation.open_windows().crt_id.clone());
-            operation.open_windows().save_crt_opened = false;
-        }
-        self.save_crt_windows
-            .set_and_render(ui, operation, workspace_data, 0);
     }
 }
 
@@ -158,7 +115,12 @@ impl MyCentralPanel {
             });
     }
 
-    fn central_request_table(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
+    fn central_request_table(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        operation: &Operation,
+        ui: &mut Ui,
+    ) {
         egui::SidePanel::left("central_request_table_panel")
             .resizable(true)
             .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
@@ -208,10 +170,12 @@ impl MyCentralPanel {
                                         if !request_data.is_modify() {
                                             workspace_data.close_crt(request_data.id.clone());
                                         } else {
-                                            self.request_close_windows.open(
-                                                request_data.id.clone(),
-                                                request_data.get_tab_name(),
-                                            );
+                                            operation.add_window(Box::new(
+                                                RequestCloseWindows::default().with(
+                                                    request_data.id.clone(),
+                                                    request_data.get_tab_name(),
+                                                ),
+                                            ))
                                         }
                                         ui.close_menu();
                                     }

@@ -7,20 +7,18 @@ use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::Request;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
-use crate::panels::{DataView, HORIZONTAL_GAP};
+use crate::panels::HORIZONTAL_GAP;
 use crate::script::script::{Context, ScriptScope};
 use crate::windows::test_script_windows::TestScriptWindows;
 
 #[derive(Default)]
-pub struct RequestPreScriptPanel {
-    test_script_windows: TestScriptWindows,
-}
+pub struct RequestPreScriptPanel {}
 
 impl RequestPreScriptPanel {
-    pub(crate) fn set_and_render(
+    pub fn set_and_render(
         &mut self,
         ui: &mut Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         mut script: String,
         parent_script: Option<ScriptScope>,
@@ -58,7 +56,7 @@ impl RequestPreScriptPanel {
                             envs,
                             ..Default::default()
                         };
-                        self.test_script_windows.open(script_scopes, context);
+                        operation.add_window(Box::new(TestScriptWindows::default().with(script_scopes, context)));
                     }
                     ui.separator();
                     ui.strong("SNIPPETS");
@@ -127,7 +125,6 @@ console.log(response)"#)
                     });
                 });
         });
-        self.test_script_windows.set_and_render(ui, operation);
         script
     }
 }

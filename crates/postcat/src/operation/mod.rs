@@ -9,8 +9,8 @@ use poll_promise::Promise;
 use reqwest::blocking::Client;
 
 use rest_sender::RestSender;
-use windows::OpenWindows;
 
+use crate::data::config_data::ConfigData;
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::logger::Logger;
 use crate::data::workspace_data::WorkspaceData;
@@ -24,7 +24,6 @@ pub mod windows;
 #[derive(Clone)]
 pub struct Operation {
     rest_sender: RestSender,
-    open_windows: OpenWindows,
     lock_ui: HashMap<String, bool>,
     script_runtime: ScriptRuntime,
     modal_flag: Rc<RefCell<ModalFlag>>,
@@ -53,7 +52,6 @@ impl Default for Operation {
     fn default() -> Self {
         Operation {
             rest_sender: Default::default(),
-            open_windows: Default::default(),
             lock_ui: Default::default(),
             script_runtime: Default::default(),
             modal_flag: Rc::new(RefCell::new(ModalFlag::default())),
@@ -148,9 +146,6 @@ impl Operation {
     pub fn rest_sender(&self) -> &RestSender {
         &self.rest_sender
     }
-    pub fn open_windows(&mut self) -> &mut OpenWindows {
-        &mut self.open_windows
-    }
     pub fn script_runtime(&self) -> &ScriptRuntime {
         &self.script_runtime
     }
@@ -169,10 +164,15 @@ impl Operation {
         self.windows.borrow_mut().add(window);
     }
 
-    pub fn show(&self, ctx: &egui::Context, workspace_data: &mut WorkspaceData) {
+    pub fn show(
+        &self,
+        ctx: &egui::Context,
+        config_data: &mut ConfigData,
+        workspace_data: &mut WorkspaceData,
+    ) {
         self.toasts.borrow_mut().show(ctx);
         self.windows
             .borrow_mut()
-            .show(ctx, workspace_data, self.clone());
+            .show(ctx, config_data, workspace_data, self.clone());
     }
 }

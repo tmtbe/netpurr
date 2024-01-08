@@ -1,6 +1,7 @@
 use egui::{Align, Button, Checkbox, Layout, ScrollArea, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
+use crate::data::config_data::ConfigData;
 use crate::data::environment::{EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::windows::{Window, WindowSetting};
@@ -35,7 +36,13 @@ impl Window for EnvironmentWindows {
         self.environment_windows_open
     }
 
-    fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData, operation: Operation) {
+    fn render(
+        &mut self,
+        ui: &mut Ui,
+        _: &mut ConfigData,
+        workspace_data: &mut WorkspaceData,
+        operation: Operation,
+    ) {
         if self.select_env.is_none() {
             self.env_list(workspace_data, ui);
         } else {

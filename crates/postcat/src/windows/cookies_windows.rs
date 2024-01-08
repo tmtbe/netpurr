@@ -4,6 +4,7 @@ use eframe::emath::Align;
 use egui::{Button, Layout, ScrollArea, Ui};
 use egui_toast::{Toast, ToastKind};
 
+use crate::data::config_data::ConfigData;
 use crate::data::cookies_manager::Cookie;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::windows::{Window, WindowSetting};
@@ -54,7 +55,13 @@ impl Window for CookiesWindows {
         self.cookies_windows_open
     }
 
-    fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData, operation: Operation) {
+    fn render(
+        &mut self,
+        ui: &mut Ui,
+        _: &mut ConfigData,
+        workspace_data: &mut WorkspaceData,
+        operation: Operation,
+    ) {
         ui.vertical(|ui| {
             ui.add_space(VERTICAL_GAP);
             self.render_add(workspace_data, ui);

@@ -109,7 +109,8 @@ impl App {
 impl eframe::App for App {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.operation.show(ctx, &mut self.workspace_data);
+        self.operation
+            .show(ctx, &mut self.config_data, &mut self.workspace_data);
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
                 // The top panel is often a good place for a menu bar:

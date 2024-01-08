@@ -2,6 +2,9 @@ use deno_core::anyhow::Error;
 use egui::Ui;
 use poll_promise::Promise;
 
+use crate::data::config_data::ConfigData;
+use crate::data::workspace_data::WorkspaceData;
+use crate::operation::windows::{Window, WindowSetting};
 use crate::operation::Operation;
 use crate::script::script::{Context, ScriptScope};
 use crate::utils;
@@ -14,67 +17,80 @@ pub struct TestScriptWindows {
     run_result: Option<Promise<Result<Context, Error>>>,
 }
 
-impl TestScriptWindows {
-    pub(crate) fn open(&mut self, script_scopes: Vec<ScriptScope>, context: Context) {
-        self.test_windows_open = true;
-        self.script_scopes = script_scopes;
-        self.context = Some(context);
-        self.run_result = None;
-    }
-}
-
-impl TestScriptWindows {
-    pub fn set_and_render(&mut self, ui: &mut Ui, operation: &mut Operation) {
-        operation.lock_ui("test_script".to_string(), self.test_windows_open);
-        let mut test_windows_open = self.test_windows_open;
-        egui::Window::new("TEST SCRIPT")
-            .default_open(true)
+impl Window for TestScriptWindows {
+    fn window_setting(&self) -> WindowSetting {
+        WindowSetting::new("TEST SCRIPT".to_string())
+            .modal(true)
             .max_width(500.0)
             .min_height(400.0)
             .max_height(400.0)
             .collapsible(false)
             .resizable(true)
-            .open(&mut test_windows_open)
-            .show(ui.ctx(), |ui| {
-                ui.vertical(|ui| match &self.run_result {
-                    None => {
-                        if ui.button("Run Script").clicked() {
-                            if let Some(context) = &self.context {
-                                self.run_result = Some(
-                                    operation
-                                        .script_runtime()
-                                        .run(self.script_scopes.clone(), context.clone()),
-                                );
-                            }
-                        }
-                        ui.separator();
-                    }
-                    Some(result) => {
-                        ui.add_enabled_ui(false, |ui| {
-                            ui.button("Run Script");
-                            ui.separator();
-                        });
-                        match result.ready() {
-                            None => {
-                                ui.ctx().request_repaint();
-                            }
-                            Some(js_run_result) => match js_run_result {
-                                Ok(new_context) => {
-                                    Self::render_logs(ui, new_context);
-                                }
-                                Err(e) => {
-                                    ui.strong("Run Error:");
-                                    let mut msg = e.to_string();
-                                    utils::text_edit_multiline_justify(ui, &mut msg);
-                                }
-                            },
-                        }
-                    }
-                })
-            });
-        self.test_windows_open = test_windows_open;
     }
 
+    fn set_open(&mut self, open: bool) {
+        self.test_windows_open = open;
+    }
+
+    fn get_open(&self) -> bool {
+        self.test_windows_open
+    }
+
+    fn render(
+        &mut self,
+        ui: &mut Ui,
+        _: &mut ConfigData,
+        _: &mut WorkspaceData,
+        operation: Operation,
+    ) {
+        ui.vertical(|ui| match &self.run_result {
+            None => {
+                if ui.button("Run Script").clicked() {
+                    if let Some(context) = &self.context {
+                        self.run_result = Some(
+                            operation
+                                .script_runtime()
+                                .run(self.script_scopes.clone(), context.clone()),
+                        );
+                    }
+                }
+                ui.separator();
+            }
+            Some(result) => {
+                ui.add_enabled_ui(false, |ui| {
+                    ui.button("Run Script");
+                    ui.separator();
+                });
+                match result.ready() {
+                    None => {
+                        ui.ctx().request_repaint();
+                    }
+                    Some(js_run_result) => match js_run_result {
+                        Ok(new_context) => {
+                            Self::render_logs(ui, new_context);
+                        }
+                        Err(e) => {
+                            ui.strong("Run Error:");
+                            let mut msg = e.to_string();
+                            utils::text_edit_multiline_justify(ui, &mut msg);
+                        }
+                    },
+                }
+            }
+        });
+    }
+}
+impl TestScriptWindows {
+    pub fn with(mut self, script_scopes: Vec<ScriptScope>, context: Context) -> Self {
+        self.test_windows_open = true;
+        self.script_scopes = script_scopes;
+        self.context = Some(context);
+        self.run_result = None;
+        self
+    }
+}
+
+impl TestScriptWindows {
     fn render_logs(ui: &mut Ui, new_context: &Context) {
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {

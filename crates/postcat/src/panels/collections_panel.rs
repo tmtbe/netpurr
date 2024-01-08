@@ -15,6 +15,8 @@ use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::utils;
+use crate::windows::new_collection_windows::NewCollectionWindows;
+use crate::windows::save_windows::SaveWindows;
 
 #[derive(Default)]
 pub struct CollectionsPanel {}
@@ -30,7 +32,9 @@ impl DataView for CollectionsPanel {
         cursor: Self::CursorType,
     ) {
         if ui.link("+ New Collection").clicked() {
-            operation.open_windows().open_collection(None);
+            operation.add_window(Box::new(
+                NewCollectionWindows::default().with_open_collection(None),
+            ));
         };
         self.render_collection_item(ui, operation, workspace_data);
     }
@@ -98,17 +102,19 @@ impl CollectionsPanel {
     ) {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Edit").clicked() {
-                operation.open_windows().open_folder(
+                operation.add_window(Box::new(NewCollectionWindows::default().with_open_folder(
                     collection.clone(),
                     parent_folder.clone(),
                     Some(folder.clone()),
-                );
+                )));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Add Folder").clicked() {
-                operation
-                    .open_windows()
-                    .open_folder(collection.clone(), folder.clone(), None);
+                operation.add_window(Box::new(NewCollectionWindows::default().with_open_folder(
+                    collection.clone(),
+                    folder.clone(),
+                    None,
+                )));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Duplicate").clicked() {
@@ -153,17 +159,17 @@ impl CollectionsPanel {
     ) {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Edit").clicked() {
-                operation
-                    .open_windows()
-                    .open_collection(Some(collection.clone()));
+                operation.add_window(Box::new(
+                    NewCollectionWindows::default().with_open_collection(Some(collection.clone())),
+                ));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Add Folder").clicked() {
-                operation.open_windows().open_folder(
+                operation.add_window(Box::new(NewCollectionWindows::default().with_open_folder(
                     collection.clone(),
                     collection.folder.clone(),
                     None,
-                );
+                )));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Duplicate").clicked() {
@@ -314,15 +320,19 @@ impl CollectionsPanel {
                 ui.close_menu();
             }
             if utils::select_label(ui, "Save as").clicked() {
-                operation
-                    .open_windows()
-                    .open_save(request.clone(), Some(path.clone()));
+                operation.add_window(Box::new(SaveWindows::default().with(
+                    request.clone(),
+                    Some(path.clone()),
+                    false,
+                )));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Edit").clicked() {
-                operation
-                    .open_windows()
-                    .open_edit(request.clone(), path.clone());
+                operation.add_window(Box::new(SaveWindows::default().with(
+                    request.clone(),
+                    Some(path.clone()),
+                    true,
+                )));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Duplicate").clicked() {

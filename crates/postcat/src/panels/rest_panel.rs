@@ -23,6 +23,7 @@ use crate::script::script::ScriptScope;
 use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 use crate::windows::cookies_windows::CookiesWindows;
+use crate::windows::save_crt_windows::SaveCRTWindows;
 
 #[derive(Default)]
 pub struct RestPanel {
@@ -144,84 +145,87 @@ impl RestPanel {
     ) {
         let mut send_rest = None;
         let client = workspace_data.build_http_client();
-        let mut just_need_replace_save = None;
         let (pre_request_parent_script_scope, test_parent_script_scope) =
             workspace_data.get_crt_parent_scripts(crt_id.clone());
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(crt_id.clone());
-        workspace_data.get_mut_crt(crt_id.clone(), |crt| {
-            egui::SidePanel::right("editor_right_panel")
-                .resizable(false)
-                .show_inside(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.add_space(HORIZONTAL_GAP);
-                        if self.send_promise.is_some() {
-                            ui.add_enabled(false, Button::new("Send"));
-                        } else {
-                            if ui.button("Send").clicked() {
+        let crt = workspace_data.must_get_crt(crt_id.clone());
+        egui::SidePanel::right("editor_right_panel")
+            .resizable(false)
+            .show_inside(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.add_space(HORIZONTAL_GAP);
+                    if self.send_promise.is_some() {
+                        ui.add_enabled(false, Button::new("Send"));
+                    } else {
+                        if ui.button("Send").clicked() {
+                            workspace_data.get_mut_crt(crt_id.clone(), |crt| {
                                 crt.rest.request.clear_lock_with();
                                 crt.rest.sync(envs.clone(), parent_auth.clone());
-                                let mut pre_request_script_scopes = Vec::new();
-                                if let Some(collect_script_scope) = pre_request_parent_script_scope
-                                {
-                                    pre_request_script_scopes.push(collect_script_scope);
-                                }
-                                if crt.rest.pre_request_script.clone() != "" {
-                                    pre_request_script_scopes.push(ScriptScope {
-                                        scope: "request".to_string(),
-                                        script: crt.rest.pre_request_script.clone(),
-                                    });
-                                }
-                                let mut test_script_scopes = Vec::new();
-                                if let Some(collect_script_scope) = test_parent_script_scope {
-                                    test_script_scopes.push(collect_script_scope);
-                                }
-                                if crt.rest.test_script.clone() != "" {
-                                    test_script_scopes.push(ScriptScope {
-                                        scope: "request".to_string(),
-                                        script: crt.rest.test_script.clone(),
-                                    });
-                                }
-                                let send_response = operation.send_with_script(
-                                    crt.rest.request.clone(),
-                                    envs.clone(),
-                                    pre_request_script_scopes,
-                                    test_script_scopes,
-                                    client,
+                            });
+                            let mut pre_request_script_scopes = Vec::new();
+                            if let Some(collect_script_scope) = pre_request_parent_script_scope {
+                                pre_request_script_scopes.push(collect_script_scope);
+                            }
+                            if crt.rest.pre_request_script.clone() != "" {
+                                pre_request_script_scopes.push(ScriptScope {
+                                    scope: "request".to_string(),
+                                    script: crt.rest.pre_request_script.clone(),
+                                });
+                            }
+                            let mut test_script_scopes = Vec::new();
+                            if let Some(collect_script_scope) = test_parent_script_scope {
+                                test_script_scopes.push(collect_script_scope);
+                            }
+                            if crt.rest.test_script.clone() != "" {
+                                test_script_scopes.push(ScriptScope {
+                                    scope: "request".to_string(),
+                                    script: crt.rest.test_script.clone(),
+                                });
+                            }
+                            let send_response = operation.send_with_script(
+                                crt.rest.request.clone(),
+                                envs.clone(),
+                                pre_request_script_scopes,
+                                test_script_scopes,
+                                client,
+                            );
+                            self.send_promise = Some(send_response);
+                            send_rest = Some(crt.rest.clone());
+                        }
+                    }
+                    if ui.button("Save").clicked() {
+                        match &crt.collection_path {
+                            None => {
+                                operation.add_window(Box::new(
+                                    SaveCRTWindows::default().with(crt.id.clone()),
+                                ));
+                            }
+                            Some(collection_path) => {
+                                workspace_data.save_crt(
+                                    crt.id.clone(),
+                                    collection_path.clone(),
+                                    |_| {},
                                 );
-                                self.send_promise = Some(send_response);
-                                send_rest = Some(crt.rest.clone());
-                            }
-                        }
-                        if ui.button("Save").clicked() {
-                            match &crt.collection_path {
-                                None => {
-                                    operation.open_windows().open_crt_save(crt.id.clone());
-                                }
-                                Some(collection_path) => {
-                                    just_need_replace_save =
-                                        Some((collection_path.clone(), crt.id.clone()));
+                                operation.add_toast(Toast {
+                                    kind: ToastKind::Success,
+                                    text: "Save success.".into(),
+                                    options: ToastOptions::default()
+                                        .duration_in_seconds(2.0)
+                                        .show_icon(true)
+                                        .show_progress(true),
+                                });
+                                workspace_data.get_mut_crt(crt_id.clone(), |crt| {
                                     crt.set_baseline();
-                                }
+                                });
                             }
                         }
-                    });
+                    }
                 });
-        });
+            });
 
         send_rest.map(|r| {
             workspace_data.history_record(r);
-        });
-        just_need_replace_save.map(|(collection_path, id)| {
-            workspace_data.save_crt(id, collection_path, |_| {});
-            operation.add_toast(Toast {
-                kind: ToastKind::Success,
-                text: "Save success.".into(),
-                options: ToastOptions::default()
-                    .duration_in_seconds(2.0)
-                    .show_icon(true)
-                    .show_progress(true),
-            });
         });
     }
     fn render_editor_left_panel(

@@ -6,9 +6,11 @@ use egui::{Align, Button, Layout, ScrollArea, Ui};
 use egui_toast::{Toast, ToastKind};
 
 use crate::data::collections::{Collection, CollectionFolder};
+use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
+use crate::operation::windows::{Window, WindowSetting};
 use crate::operation::Operation;
-use crate::panels::{DataView, VERTICAL_GAP};
+use crate::panels::VERTICAL_GAP;
 use crate::utils;
 
 #[derive(Default)]
@@ -25,14 +27,55 @@ pub struct SaveCRTWindows {
     id: String,
 }
 
+impl Window for SaveCRTWindows {
+    fn window_setting(&self) -> WindowSetting {
+        WindowSetting::new(self.title.clone())
+            .max_width(500.0)
+            .default_height(400.0)
+            .collapsible(false)
+            .resizable(true)
+    }
+
+    fn set_open(&mut self, open: bool) {
+        self.save_windows_open = open;
+    }
+
+    fn get_open(&self) -> bool {
+        self.save_windows_open
+    }
+
+    fn render(
+        &mut self,
+        ui: &mut Ui,
+        _: &mut ConfigData,
+        workspace_data: &mut WorkspaceData,
+        operation: Operation,
+    ) {
+        ui.label("Requests in Postcat are saved in collections (a group of requests).");
+        ui.add_space(VERTICAL_GAP);
+        ui.label("Request name");
+        utils::text_edit_singleline_filter_justify(ui, &mut self.save_name);
+        ui.add_space(VERTICAL_GAP);
+        ui.label("Request description (Optional)");
+        utils::text_edit_multiline_justify(ui, &mut self.save_desc);
+        ui.add_space(VERTICAL_GAP);
+        ui.label("Select a collection or folder to save to:");
+        ui.add_space(VERTICAL_GAP);
+        self.render(workspace_data, ui);
+        ui.add_space(VERTICAL_GAP);
+        self.render_save_bottom_panel(workspace_data, &operation, ui);
+    }
+}
+
 impl SaveCRTWindows {
-    pub(crate) fn open(&mut self, crt_id: String) {
+    pub fn with(mut self, crt_id: String) -> Self {
         self.save_windows_open = true;
         self.crt_id = crt_id;
         self.add_folder = false;
         self.add_collection = false;
         self.add_name = "".to_string();
         self.title = "SAVE REQUEST".to_string();
+        self
     }
 
     fn render(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
@@ -196,7 +239,7 @@ impl SaveCRTWindows {
     fn render_save_bottom_panel(
         &mut self,
         workspace_data: &mut WorkspaceData,
-        operation: &mut Operation,
+        operation: &Operation,
         ui: &mut Ui,
     ) {
         egui::TopBottomPanel::bottom("save_bottom_panel_".to_string() + self.id.as_str())
@@ -251,48 +294,5 @@ impl SaveCRTWindows {
                     }
                 });
             });
-    }
-}
-
-impl DataView for SaveCRTWindows {
-    type CursorType = i32;
-
-    fn set_and_render(
-        &mut self,
-        ui: &mut Ui,
-        operation: &mut Operation,
-        workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
-    ) {
-        let mut save_windows_open = self.save_windows_open;
-        operation.lock_ui(
-            "save_".to_string() + self.id.as_str(),
-            self.save_windows_open,
-        );
-        egui::Window::new(self.title.clone())
-            .default_open(true)
-            .max_width(500.0)
-            .default_height(400.0)
-            .collapsible(false)
-            .resizable(true)
-            .open(&mut save_windows_open)
-            .show(ui.ctx(), |ui| {
-                ui.label("Requests in Postcat are saved in collections (a group of requests).");
-                ui.add_space(VERTICAL_GAP);
-                ui.label("Request name");
-                utils::text_edit_singleline_filter_justify(ui, &mut self.save_name);
-                ui.add_space(VERTICAL_GAP);
-                ui.label("Request description (Optional)");
-                utils::text_edit_multiline_justify(ui, &mut self.save_desc);
-                ui.add_space(VERTICAL_GAP);
-                ui.label("Select a collection or folder to save to:");
-                ui.add_space(VERTICAL_GAP);
-                self.render(workspace_data, ui);
-                ui.add_space(VERTICAL_GAP);
-                self.render_save_bottom_panel(workspace_data, operation, ui);
-            });
-        if !save_windows_open {
-            self.save_windows_open = save_windows_open;
-        }
     }
 }

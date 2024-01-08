@@ -4,6 +4,7 @@ use std::rc::Rc;
 use egui::{Context, Ui};
 
 use crate::data::collections::{Collection, CollectionFolder};
+use crate::data::config_data::ConfigData;
 use crate::data::http::HttpRecord;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
@@ -12,7 +13,13 @@ pub trait Window {
     fn window_setting(&self) -> WindowSetting;
     fn set_open(&mut self, open: bool);
     fn get_open(&self) -> bool;
-    fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData, operation: Operation);
+    fn render(
+        &mut self,
+        ui: &mut Ui,
+        config_data: &mut ConfigData,
+        workspace_data: &mut WorkspaceData,
+        operation: Operation,
+    );
 }
 
 #[derive(Default, Clone)]
@@ -88,6 +95,7 @@ impl Windows {
     pub fn show(
         &mut self,
         ctx: &Context,
+        config_data: &mut ConfigData,
         workspace_data: &mut WorkspaceData,
         operation: Operation,
     ) {
@@ -96,7 +104,7 @@ impl Windows {
             if window.window_setting().modal {
                 operation.lock_ui(window.window_setting().name.clone(), true);
             }
-            let mut w = egui::Window::new(window.window_setting().name.clone()).default_open(true);
+            let mut w = egui::Window::new(window.window_setting().name.clone());
             if let Some(v) = window.window_setting().max_width {
                 w = w.max_width(v)
             }
@@ -119,7 +127,7 @@ impl Windows {
                 .resizable(window.window_setting().resizable)
                 .open(&mut open)
                 .show(ctx, |ui| {
-                    window.render(ui, workspace_data, operation.clone())
+                    window.render(ui, config_data, workspace_data, operation.clone())
                 });
             window.set_open(open);
             if !open {
@@ -143,42 +151,4 @@ pub struct OpenWindows {
     pub folder: Option<Rc<RefCell<CollectionFolder>>>,
     pub crt_id: String,
     pub save_crt_opened: bool,
-}
-
-impl OpenWindows {
-    pub fn open_crt_save(&mut self, crt_id: String) {
-        self.crt_id = crt_id;
-        self.save_crt_opened = true;
-    }
-    pub fn open_save(&mut self, http_record: HttpRecord, default_path: Option<String>) {
-        self.http_record = http_record;
-        self.default_path = default_path;
-        self.save_opened = true;
-        self.edit = false;
-    }
-    pub fn open_edit(&mut self, http_record: HttpRecord, default_path: String) {
-        self.http_record = http_record;
-        self.default_path = Some(default_path);
-        self.save_opened = true;
-        self.edit = true
-    }
-    pub fn open_collection(&mut self, collection: Option<Collection>) {
-        self.collection = collection;
-        self.collection_opened = true;
-    }
-    pub fn open_folder(
-        &mut self,
-        collection: Collection,
-        parent_folder: Rc<RefCell<CollectionFolder>>,
-        folder: Option<Rc<RefCell<CollectionFolder>>>,
-    ) {
-        self.collection = Some(collection);
-        self.parent_folder = parent_folder;
-        self.folder = folder;
-        self.folder_opened = true;
-    }
-
-    pub fn open_cookies(&mut self) {
-        self.cookies_opened = true
-    }
 }
