@@ -8,7 +8,7 @@ use strum::IntoEnumIterator;
 use crate::data::central_request_data::CentralRequestItem;
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::{MultipartData, MultipartDataType};
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::utils;

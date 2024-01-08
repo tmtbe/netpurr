@@ -5,7 +5,7 @@ use egui::{Button, Layout, ScrollArea, Ui};
 use egui_toast::{Toast, ToastKind};
 
 use crate::data::cookies_manager::Cookie;
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;
@@ -31,9 +31,7 @@ impl CookiesWindows {
         ui.horizontal(|ui| {
             utils::text_edit_singleline_justify(ui, &mut self.new_cookie_name);
             if self.new_cookie_name == ""
-                || workspace_data
-                    .cookies_manager
-                    .contain_domain(self.new_cookie_name.clone())
+                || workspace_data.cookies_contain_domain(self.new_cookie_name.clone())
             {
                 ui.set_enabled(false);
             }
@@ -47,7 +45,7 @@ impl CookiesWindows {
 
     fn render_domain_list(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            let mut names = workspace_data.cookies_manager.get_cookie_domains();
+            let mut names = workspace_data.get_cookie_domains();
             for new_names in self.new_cookie_names.iter() {
                 names.push(new_names.clone());
             }
@@ -62,7 +60,7 @@ impl CookiesWindows {
                 }
                 response.context_menu(|ui| {
                     if ui.button("Remove").clicked() {
-                        workspace_data.cookies_manager.remove_domain(name.clone());
+                        workspace_data.remove_cookie_domain(name.clone());
                         self.new_cookie_names.remove(name.as_str());
                         ui.close_menu();
                     }
@@ -84,14 +82,15 @@ impl CookiesWindows {
                 Some(domain) => {
                     ui.horizontal(|ui| {
                         if self.new_key_name == ""
-                            || workspace_data
-                                .cookies_manager
-                                .contain_domain_key(domain.clone(), self.new_key_name.clone())
+                            || workspace_data.cookies_contain_domain_key(
+                                domain.clone(),
+                                self.new_key_name.clone(),
+                            )
                         {
                             ui.add_enabled(false, Button::new("+"));
                         } else {
                             if ui.button("+").clicked() {
-                                match workspace_data.cookies_manager.add_domain_cookies(Cookie {
+                                match workspace_data.add_domain_cookies(Cookie {
                                     name: self.new_key_name.clone(),
                                     value: "NONE".to_string(),
                                     domain: domain.clone(),
@@ -121,9 +120,7 @@ impl CookiesWindows {
                         }
                         utils::text_edit_singleline_filter_justify(ui, &mut self.new_key_name);
                     });
-                    let option_cookies = workspace_data
-                        .cookies_manager
-                        .get_domain_cookies(domain.to_string());
+                    let option_cookies = workspace_data.get_domain_cookies(domain.to_string());
                     match option_cookies {
                         None => {}
                         Some(cookies) => {
@@ -142,7 +139,7 @@ impl CookiesWindows {
                                     }
                                     response.context_menu(|ui| {
                                         if ui.button("Remove").clicked() {
-                                            workspace_data.cookies_manager.remove_domain_path_name(
+                                            workspace_data.remove_cookie_domain_path_name(
                                                 domain.to_string(),
                                                 c.path.clone(),
                                                 name.clone(),
@@ -167,9 +164,7 @@ impl CookiesWindows {
         match &self.select_domain_name {
             None => {}
             Some(domain) => {
-                let option_map = workspace_data
-                    .cookies_manager
-                    .get_domain_cookies(domain.to_string());
+                let option_map = workspace_data.get_domain_cookies(domain.to_string());
                 option_map.map(|map| match &self.select_key_name {
                     None => {}
                     Some(key) => {
@@ -180,14 +175,14 @@ impl CookiesWindows {
                             ui.with_layout(Layout::right_to_left(Align::TOP), |ui| {
                                 let new_cookie = Cookie::from_raw(self.select_content.clone());
                                 if ui.button("Remove").clicked() {
-                                    workspace_data.cookies_manager.remove_domain_path_name(
+                                    workspace_data.remove_cookie_domain_path_name(
                                         domain.clone(),
                                         c.path.clone(),
                                         key.clone(),
                                     );
                                 }
                                 if ui.button("Save").clicked() {
-                                    match workspace_data.cookies_manager.update_domain_cookies(
+                                    match workspace_data.update_domain_cookies(
                                         new_cookie,
                                         c.domain.clone(),
                                         c.name.clone(),

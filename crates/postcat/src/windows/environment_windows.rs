@@ -2,7 +2,7 @@ use egui::{Align, Button, Checkbox, Layout, ScrollArea, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::environment::{EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;

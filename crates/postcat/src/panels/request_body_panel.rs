@@ -2,7 +2,7 @@ use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
 use crate::data::http::{BodyRawType, BodyType};
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;

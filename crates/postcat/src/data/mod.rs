@@ -22,3 +22,4 @@ pub mod http;
 pub mod logger;
 pub mod test;
 pub mod workspace;
+pub mod workspace_data;

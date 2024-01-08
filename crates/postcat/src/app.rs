@@ -7,7 +7,7 @@ use log::info;
 use poll_promise::Promise;
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;

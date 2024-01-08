@@ -8,7 +8,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 use crate::data::auth::{Auth, AuthType};
 use crate::data::http::{BodyType, HttpRecord, LockWith, Method};
 use crate::data::test::TestStatus;
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::data::{http, test};
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
@@ -354,10 +354,8 @@ impl RestPanel {
         crt_id: String,
     ) {
         if let Some(promise) = &self.send_promise {
-            let cookies_manager = workspace_data.cookies_manager.clone();
-
             if let Some(result) = promise.ready() {
-                cookies_manager.save();
+                workspace_data.save_cookies();
                 workspace_data.get_mut_crt(crt_id.clone(), |crt| match result {
                     Ok((request, response, test_result)) => {
                         request

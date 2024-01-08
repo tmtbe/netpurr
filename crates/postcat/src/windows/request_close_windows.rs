@@ -1,7 +1,7 @@
 use egui::Ui;
 use egui_toast::{Toast, ToastKind};
 
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::VERTICAL_GAP;
 

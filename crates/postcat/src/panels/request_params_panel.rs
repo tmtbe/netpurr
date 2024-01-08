@@ -7,7 +7,7 @@ use egui_extras::{Column, TableBody, TableBuilder};
 use crate::data::central_request_data::CentralRequestItem;
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::{LockWith, QueryParam};
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::DataView;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;

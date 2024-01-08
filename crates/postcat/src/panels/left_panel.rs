@@ -1,6 +1,6 @@
 use egui::ScrollArea;
 
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::collections_panel::CollectionsPanel;
 use crate::panels::history_panel::HistoryPanel;

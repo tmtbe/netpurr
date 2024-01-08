@@ -2,7 +2,7 @@ use eframe::emath::Align;
 use egui::{FontSelection, Response, RichText, Style, Ui, WidgetText};
 
 use crate::data::environment::ENVIRONMENT_GLOBALS;
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::rest_panel::RestPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};

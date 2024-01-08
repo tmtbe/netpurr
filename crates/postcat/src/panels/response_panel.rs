@@ -8,7 +8,7 @@ use crate::data::central_request_data::CentralRequestItem;
 use crate::data::cookies_manager::Cookie;
 use crate::data::http::{Response, ResponseStatus};
 use crate::data::test::{TestResult, TestStatus};
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
@@ -156,9 +156,7 @@ impl DataView for ResponsePanel {
         crt_id: Self::CursorType,
     ) {
         let crt = workspace_data.must_get_crt(crt_id.clone());
-        let cookies = workspace_data
-            .cookies_manager
-            .get_url_cookies(crt.rest.request.base_url.clone());
+        let cookies = workspace_data.get_url_cookies(crt.rest.request.base_url.clone());
         match crt.rest.status {
             ResponseStatus::None => {
                 ui.strong("Response");

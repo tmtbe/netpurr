@@ -11,7 +11,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 use crate::data::collections::{Collection, CollectionFolder};
 use crate::data::environment::{EnvironmentItem, EnvironmentItemValue, EnvironmentValueType};
 use crate::data::http::Request;
-use crate::data::workspace::WorkspaceData;
+use crate::data::workspace_data::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
