@@ -275,13 +275,11 @@ impl SaveWindows {
                                                 cf.clone(),
                                                 self.http_record.clone(),
                                             );
-                                            workspace_data
-                                                .central_request_data_list
-                                                .update_old_name_to_new_name(
-                                                    collection_path.clone(),
-                                                    self.old_name.clone(),
-                                                    self.http_record.name.clone(),
-                                                );
+                                            workspace_data.update_crt_old_name_to_new_name(
+                                                collection_path.clone(),
+                                                self.old_name.clone(),
+                                                self.http_record.name.clone(),
+                                            );
                                         }
                                     }
                                     self.save_windows_open = false;

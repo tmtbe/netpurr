@@ -1,10 +1,9 @@
 use std::cmp::min;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
-use egui::ahash::HashSet;
 use egui::text::TextWrapping;
 use egui::{
     Area, FontSelection, Frame, Id, InnerResponse, Key, Layout, Order, Response, RichText, Style,

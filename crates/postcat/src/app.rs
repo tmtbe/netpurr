@@ -259,7 +259,7 @@ impl eframe::App for App {
                 .as_secs();
             if now - self.auto_save_time > 5 {
                 self.auto_save_time = now;
-                self.workspace_data.central_request_data_list.auto_save();
+                self.workspace_data.auto_save_crd();
                 info!("auto save");
             }
         }
@@ -279,7 +279,7 @@ impl eframe::App for App {
                         if ui.button("Yes").clicked() {
                             self.show_confirmation_dialog = false;
                             self.allowed_to_close = true;
-                            self.workspace_data.central_request_data_list.auto_save();
+                            self.workspace_data.auto_save_crd();
                             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
                         }
                     });

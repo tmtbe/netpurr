@@ -78,7 +78,6 @@ impl CentralRequestDataList {
             ..Default::default()
         };
         self.add_crt(crt);
-        self.select(id)
     }
     pub fn select(&mut self, id: String) {
         self.select_id = Some(id)

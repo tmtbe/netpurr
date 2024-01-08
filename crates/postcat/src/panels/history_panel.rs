@@ -27,14 +27,12 @@ impl DataView for HistoryPanel {
                             utils::build_rest_ui_header(history_rest_item.rest.clone(), None, ui);
                         let button = ui.button(lb);
                         if button.clicked() {
-                            workspace_data
-                                .central_request_data_list
-                                .add_crt(CentralRequestItem {
-                                    id: history_rest_item.id.clone(),
-                                    collection_path: None,
-                                    rest: history_rest_item.rest.clone(),
-                                    ..Default::default()
-                                })
+                            workspace_data.add_crt(CentralRequestItem {
+                                id: history_rest_item.id.clone(),
+                                collection_path: None,
+                                rest: history_rest_item.rest.clone(),
+                                ..Default::default()
+                            })
                         }
                     }
                 });

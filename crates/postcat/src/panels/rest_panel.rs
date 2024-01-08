@@ -110,27 +110,28 @@ impl RestPanel {
     ) {
         let envs = workspace_data.get_crt_envs(cursor.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(cursor.clone());
-        let crt = workspace_data.get_mut_crt(cursor.clone());
-        crt.rest.sync(envs.clone(), parent_auth.clone());
-        let tab_name = crt.get_tab_name();
-        match &crt.collection_path {
-            None => {
-                ui.horizontal(|ui| {
-                    ui.strong(tab_name);
-                });
+        workspace_data.get_mut_crt(cursor.clone(), |crt| {
+            crt.rest.sync(envs.clone(), parent_auth.clone());
+            let tab_name = crt.get_tab_name();
+            match &crt.collection_path {
+                None => {
+                    ui.horizontal(|ui| {
+                        ui.strong(tab_name);
+                    });
+                }
+                Some(collection_path) => {
+                    ui.horizontal(|ui| {
+                        Label::new(
+                            RichText::new(collection_path)
+                                .strong()
+                                .background_color(ui.visuals().extreme_bg_color),
+                        )
+                        .ui(ui);
+                        ui.strong(tab_name);
+                    });
+                }
             }
-            Some(collection_path) => {
-                ui.horizontal(|ui| {
-                    Label::new(
-                        RichText::new(collection_path)
-                            .strong()
-                            .background_color(ui.visuals().extreme_bg_color),
-                    )
-                    .ui(ui);
-                    ui.strong(tab_name);
-                });
-            }
-        }
+        });
     }
 
     fn render_editor_right_panel(
@@ -147,63 +148,66 @@ impl RestPanel {
             workspace_data.get_crt_parent_scripts(crt_id.clone());
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(crt_id.clone());
-        let crt = workspace_data.get_mut_crt(crt_id.clone());
-        egui::SidePanel::right("editor_right_panel")
-            .resizable(false)
-            .show_inside(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.add_space(HORIZONTAL_GAP);
-                    if self.send_promise.is_some() {
-                        ui.add_enabled(false, Button::new("Send"));
-                    } else {
-                        if ui.button("Send").clicked() {
-                            crt.rest.request.clear_lock_with();
-                            crt.rest.sync(envs.clone(), parent_auth.clone());
-                            let mut pre_request_script_scopes = Vec::new();
-                            if let Some(collect_script_scope) = pre_request_parent_script_scope {
-                                pre_request_script_scopes.push(collect_script_scope);
-                            }
-                            if crt.rest.pre_request_script.clone() != "" {
-                                pre_request_script_scopes.push(ScriptScope {
-                                    scope: "request".to_string(),
-                                    script: crt.rest.pre_request_script.clone(),
-                                });
-                            }
-                            let mut test_script_scopes = Vec::new();
-                            if let Some(collect_script_scope) = test_parent_script_scope {
-                                test_script_scopes.push(collect_script_scope);
-                            }
-                            if crt.rest.test_script.clone() != "" {
-                                test_script_scopes.push(ScriptScope {
-                                    scope: "request".to_string(),
-                                    script: crt.rest.test_script.clone(),
-                                });
-                            }
-                            let send_response = operation.send_with_script(
-                                crt.rest.request.clone(),
-                                envs.clone(),
-                                pre_request_script_scopes,
-                                test_script_scopes,
-                                client,
-                            );
-                            self.send_promise = Some(send_response);
-                            send_rest = Some(crt.rest.clone());
-                        }
-                    }
-                    if ui.button("Save").clicked() {
-                        match &crt.collection_path {
-                            None => {
-                                operation.open_windows().open_crt_save(crt.id.clone());
-                            }
-                            Some(collection_path) => {
-                                just_need_replace_save =
-                                    Some((collection_path.clone(), crt.id.clone()));
-                                crt.set_baseline();
+        workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+            egui::SidePanel::right("editor_right_panel")
+                .resizable(false)
+                .show_inside(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.add_space(HORIZONTAL_GAP);
+                        if self.send_promise.is_some() {
+                            ui.add_enabled(false, Button::new("Send"));
+                        } else {
+                            if ui.button("Send").clicked() {
+                                crt.rest.request.clear_lock_with();
+                                crt.rest.sync(envs.clone(), parent_auth.clone());
+                                let mut pre_request_script_scopes = Vec::new();
+                                if let Some(collect_script_scope) = pre_request_parent_script_scope
+                                {
+                                    pre_request_script_scopes.push(collect_script_scope);
+                                }
+                                if crt.rest.pre_request_script.clone() != "" {
+                                    pre_request_script_scopes.push(ScriptScope {
+                                        scope: "request".to_string(),
+                                        script: crt.rest.pre_request_script.clone(),
+                                    });
+                                }
+                                let mut test_script_scopes = Vec::new();
+                                if let Some(collect_script_scope) = test_parent_script_scope {
+                                    test_script_scopes.push(collect_script_scope);
+                                }
+                                if crt.rest.test_script.clone() != "" {
+                                    test_script_scopes.push(ScriptScope {
+                                        scope: "request".to_string(),
+                                        script: crt.rest.test_script.clone(),
+                                    });
+                                }
+                                let send_response = operation.send_with_script(
+                                    crt.rest.request.clone(),
+                                    envs.clone(),
+                                    pre_request_script_scopes,
+                                    test_script_scopes,
+                                    client,
+                                );
+                                self.send_promise = Some(send_response);
+                                send_rest = Some(crt.rest.clone());
                             }
                         }
-                    }
+                        if ui.button("Save").clicked() {
+                            match &crt.collection_path {
+                                None => {
+                                    operation.open_windows().open_crt_save(crt.id.clone());
+                                }
+                                Some(collection_path) => {
+                                    just_need_replace_save =
+                                        Some((collection_path.clone(), crt.id.clone()));
+                                    crt.set_baseline();
+                                }
+                            }
+                        }
+                    });
                 });
-            });
+        });
+
         send_rest.map(|r| {
             workspace_data.history_data_list.record(r);
         });
@@ -226,40 +230,41 @@ impl RestPanel {
         ui: &mut Ui,
     ) {
         let envs = workspace_data.get_crt_envs(cursor.clone());
-        let crt = workspace_data.get_mut_crt(cursor.clone());
-        egui::SidePanel::left("editor_left_panel")
-            .min_width(ui.available_width() - HORIZONTAL_GAP)
-            .show_separator_line(false)
-            .resizable(false)
-            .show_inside(ui, |ui| {
-                ui.horizontal(|ui| {
-                    egui::ComboBox::from_id_source("method")
-                        .selected_text(crt.rest.request.method.clone().to_string())
-                        .show_ui(ui, |ui| {
-                            ui.style_mut().wrap = Some(false);
-                            ui.set_min_width(60.0);
-                            for x in Method::iter() {
-                                ui.selectable_value(
-                                    &mut crt.rest.request.method,
-                                    x.clone(),
-                                    x.to_string(),
-                                );
-                            }
+        workspace_data.get_mut_crt(cursor.clone(), |crt| {
+            egui::SidePanel::left("editor_left_panel")
+                .min_width(ui.available_width() - HORIZONTAL_GAP)
+                .show_separator_line(false)
+                .resizable(false)
+                .show_inside(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        egui::ComboBox::from_id_source("method")
+                            .selected_text(crt.rest.request.method.clone().to_string())
+                            .show_ui(ui, |ui| {
+                                ui.style_mut().wrap = Some(false);
+                                ui.set_min_width(60.0);
+                                for x in Method::iter() {
+                                    ui.selectable_value(
+                                        &mut crt.rest.request.method,
+                                        x.clone(),
+                                        x.to_string(),
+                                    );
+                                }
+                            });
+                        let mut filter: HashSet<String> = HashSet::default();
+                        filter.insert("?".to_string());
+                        filter.insert(" ".to_string());
+                        filter.insert("&".to_string());
+                        ui.centered_and_justified(|ui| {
+                            HighlightTemplateSinglelineBuilder::default()
+                                .filter(filter)
+                                .envs(envs.clone())
+                                .all_space(false)
+                                .build(cursor.clone() + "url", &mut crt.rest.request.base_url)
+                                .ui(ui);
                         });
-                    let mut filter: HashSet<String> = HashSet::default();
-                    filter.insert("?".to_string());
-                    filter.insert(" ".to_string());
-                    filter.insert("&".to_string());
-                    ui.centered_and_justified(|ui| {
-                        HighlightTemplateSinglelineBuilder::default()
-                            .filter(filter)
-                            .envs(envs.clone())
-                            .all_space(false)
-                            .build(cursor.clone() + "url", &mut crt.rest.request.base_url)
-                            .ui(ui);
                     });
                 });
-            });
+        });
     }
 
     fn render_request_open_panel(
@@ -269,7 +274,7 @@ impl RestPanel {
         workspace_data: &mut WorkspaceData,
         crt_id: String,
     ) {
-        let crt = workspace_data.get_crt(crt_id.clone());
+        let crt = workspace_data.must_get_crt(crt_id.clone());
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         let (pre_request_parent_script_scope, _) =
             workspace_data.get_crt_parent_scripts(crt_id.clone());
@@ -291,9 +296,10 @@ impl RestPanel {
                 }
                 self.auth_panel.set_envs(envs.clone(), parent_auth);
                 {
-                    let crt = workspace_data.get_mut_crt(crt_id.clone());
-                    self.auth_panel
-                        .set_and_render(ui, &mut crt.rest.request.auth);
+                    workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+                        self.auth_panel
+                            .set_and_render(ui, &mut crt.rest.request.auth);
+                    });
                 }
             }
             RequestPanelEnum::Headers => self.request_headers_panel.set_and_render(
@@ -320,8 +326,9 @@ impl RestPanel {
                     "rest".to_string(),
                 );
                 {
-                    let crt = workspace_data.get_mut_crt(crt_id.clone());
-                    crt.rest.pre_request_script = script;
+                    workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+                        crt.rest.pre_request_script = script;
+                    });
                 }
             }
             RequestPanelEnum::Tests => {
@@ -331,8 +338,9 @@ impl RestPanel {
                     "rest".to_string(),
                 );
                 {
-                    let crt = workspace_data.get_mut_crt(crt_id.clone());
-                    crt.rest.test_script = script;
+                    workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+                        crt.rest.test_script = script;
+                    });
                 }
             }
         }
@@ -347,10 +355,10 @@ impl RestPanel {
     ) {
         if let Some(promise) = &self.send_promise {
             let cookies_manager = workspace_data.cookies_manager.clone();
-            let crt = workspace_data.get_mut_crt(crt_id.clone());
+
             if let Some(result) = promise.ready() {
                 cookies_manager.save();
-                match result {
+                workspace_data.get_mut_crt(crt_id.clone(), |crt| match result {
                     Ok((request, response, test_result)) => {
                         request
                             .headers
@@ -405,11 +413,11 @@ impl RestPanel {
                                 .show_progress(true),
                         });
                     }
-                }
+                });
                 self.send_promise = None;
             } else {
                 ui.ctx().request_repaint();
-                crt.rest.pending()
+                workspace_data.get_mut_crt(crt_id.clone(), |crt| crt.rest.pending());
             }
         }
     }
@@ -421,7 +429,7 @@ impl RestPanel {
         crt_id: String,
         ui: &mut Ui,
     ) {
-        let mut crt = workspace_data.get_crt(crt_id.clone());
+        let mut crt = workspace_data.must_get_crt(crt_id.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(crt_id.clone());
         utils::left_right_panel(
             ui,

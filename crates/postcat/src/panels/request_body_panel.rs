@@ -27,16 +27,18 @@ impl DataView for RequestBodyPanel {
         crt_id: Self::CursorType,
     ) {
         let envs = workspace_data.get_crt_envs(crt_id.clone());
-        let crt = workspace_data.get_mut_crt(crt_id.clone());
+        let crt = workspace_data.must_get_crt(crt_id.clone());
         ui.horizontal(|ui| {
             ui.add_space(HORIZONTAL_GAP);
             for x in BodyType::iter() {
-                utils::selectable_check(
-                    ui,
-                    &mut crt.rest.request.body.body_type,
-                    x.clone(),
-                    x.to_string(),
-                );
+                workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+                    utils::selectable_check(
+                        ui,
+                        &mut crt.rest.request.body.body_type,
+                        x.clone(),
+                        x.to_string(),
+                    );
+                });
             }
             if crt.rest.request.body.body_type == BodyType::RAW {
                 egui::ComboBox::from_id_source("body_raw_type")
@@ -45,11 +47,13 @@ impl DataView for RequestBodyPanel {
                         ui.style_mut().wrap = Some(false);
                         ui.set_min_width(60.0);
                         for x in BodyRawType::iter() {
-                            ui.selectable_value(
-                                &mut crt.rest.request.body.body_raw_type,
-                                x.clone(),
-                                x.to_string(),
-                            );
+                            workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+                                ui.selectable_value(
+                                    &mut crt.rest.request.body.body_raw_type,
+                                    x.clone(),
+                                    x.to_string(),
+                                );
+                            });
                         }
                     });
             }
@@ -76,15 +80,17 @@ impl DataView for RequestBodyPanel {
                     egui::ScrollArea::vertical()
                         .max_height(200.0)
                         .show(ui, |ui| {
-                            HighlightTemplateSinglelineBuilder::default()
-                                .multiline()
-                                .envs(envs)
-                                .all_space(true)
-                                .build(
-                                    "request_body".to_string(),
-                                    &mut crt.rest.request.body.body_str,
-                                )
-                                .ui(ui);
+                            workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+                                HighlightTemplateSinglelineBuilder::default()
+                                    .multiline()
+                                    .envs(envs)
+                                    .all_space(true)
+                                    .build(
+                                        "request_body".to_string(),
+                                        &mut crt.rest.request.body.body_str,
+                                    )
+                                    .ui(ui);
+                            });
                         });
                 });
             }
@@ -98,7 +104,9 @@ impl DataView for RequestBodyPanel {
                 ui.horizontal(|ui| {
                     if ui.button(button_name).clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_file() {
-                            crt.rest.request.body.body_file = path.display().to_string();
+                            workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+                                crt.rest.request.body.body_file = path.display().to_string();
+                            });
                         }
                     }
                     let mut path = crt.rest.request.body.body_file.clone();

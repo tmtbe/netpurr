@@ -42,7 +42,7 @@ impl RequestCloseWindows {
                 ui.add_space(VERTICAL_GAP * 2.0);
                 ui.horizontal(|ui| {
                     if ui.button("Don't Save").clicked() {
-                        self.close_tab(workspace_data);
+                        workspace_data.close_crt(self.crt_id.clone());
                         self.windows_open = false;
                     }
                     if ui.button("Cancel").clicked() {
@@ -59,35 +59,8 @@ impl RequestCloseWindows {
             self.windows_open = windows_open;
         }
     }
-    fn close_tab(&self, workspace_data: &mut WorkspaceData) {
-        let crt_option = workspace_data
-            .central_request_data_list
-            .data_map
-            .get(self.crt_id.as_str())
-            .cloned();
-        crt_option.map(|crt| {
-            workspace_data
-                .central_request_data_list
-                .remove(crt.id.clone());
-            if workspace_data.central_request_data_list.select_id.is_some() {
-                if workspace_data
-                    .central_request_data_list
-                    .select_id
-                    .clone()
-                    .unwrap()
-                    == crt.id
-                {
-                    workspace_data.central_request_data_list.select_id = None;
-                }
-            }
-        });
-    }
     fn save_tab(&self, workspace_data: &mut WorkspaceData, operation: &mut Operation) {
-        let crt_option = workspace_data
-            .central_request_data_list
-            .data_map
-            .get(self.crt_id.as_str())
-            .cloned();
+        let crt_option = workspace_data.get_crt_cloned(self.crt_id.clone());
         crt_option.map(|crt| match &crt.collection_path {
             None => {
                 operation.open_windows().open_save(crt.rest.clone(), None);

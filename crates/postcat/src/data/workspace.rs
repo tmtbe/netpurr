@@ -1,9 +1,11 @@
-use std::collections::BTreeMap;
+use std::cell::RefCell;
+use std::collections::{BTreeMap, HashSet};
 use std::path::PathBuf;
 use std::time::Duration;
 
 use reqwest::blocking::Client;
 use rustygit::Repository;
+use uuid::Uuid;
 
 use crate::data::auth::{Auth, AuthType};
 use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
@@ -58,7 +60,7 @@ impl Workspace {
 pub struct WorkspaceData {
     pub workspace_name: String,
     pub cookies_manager: CookiesManager,
-    pub central_request_data_list: CentralRequestDataList,
+    pub central_request_data_list: RefCell<CentralRequestDataList>,
     pub history_data_list: HistoryDataList,
     pub environment: Environment,
     pub collections: Collections,
@@ -82,12 +84,18 @@ impl WorkspaceData {
             Some(client) => client.clone(),
         }
     }
+}
 
+impl WorkspaceData {
     pub fn get_collection(&self, option_path: Option<String>) -> Option<Collection> {
         let path = option_path?;
         let collection_name = path.splitn(2, "/").next()?;
         self.collections.data.get(collection_name).cloned()
     }
+}
+
+// crt
+impl WorkspaceData {
     pub fn save_crt(
         &mut self,
         crt_id: String,
@@ -96,6 +104,7 @@ impl WorkspaceData {
     ) {
         let mut new_name_option = None;
         self.central_request_data_list
+            .borrow_mut()
             .data_map
             .get_mut(crt_id.as_str())
             .map(|crt| {
@@ -111,33 +120,29 @@ impl WorkspaceData {
                 });
             });
         new_name_option.map(|new_name| {
-            self.central_request_data_list.update_old_id_to_new(
-                crt_id,
-                collection_path.clone(),
-                new_name.clone(),
-            );
+            self.central_request_data_list
+                .borrow_mut()
+                .update_old_id_to_new(crt_id, collection_path.clone(), new_name.clone());
         });
     }
-    pub fn get_crt(&self, id: String) -> &CentralRequestItem {
-        self.central_request_data_list
-            .data_map
-            .get(id.as_str())
-            .unwrap()
-    }
-    pub fn get_mut_crt(&mut self, id: String) -> &mut CentralRequestItem {
-        self.central_request_data_list
-            .data_map
-            .get_mut(id.as_str())
-            .unwrap()
+
+    pub fn get_mut_crt(&self, id: String, call: impl FnOnce(&mut CentralRequestItem)) {
+        call(
+            self.central_request_data_list
+                .borrow_mut()
+                .data_map
+                .get_mut(id.as_str())
+                .unwrap(),
+        )
     }
     pub fn get_crt_envs(&self, id: String) -> BTreeMap<String, EnvironmentItemValue> {
-        let crt = self.get_crt(id);
+        let crt = self.must_get_crt(id);
         self.environment
             .get_variable_hash_map(self.get_collection(crt.collection_path.clone()))
     }
 
     pub fn get_crt_parent_auth(&self, id: String) -> Auth {
-        let crt = self.get_crt(id);
+        let crt = self.must_get_crt(id);
         match &crt.collection_path {
             None => Auth {
                 auth_type: AuthType::NoAuth,
@@ -150,7 +155,7 @@ impl WorkspaceData {
     }
 
     pub fn get_crt_parent_scripts(&self, id: String) -> (Option<ScriptScope>, Option<ScriptScope>) {
-        let crt = self.get_crt(id);
+        let crt = self.must_get_crt(id);
         let mut pre_request_script_scope = None;
         let mut test_script_scope = None;
         match &crt.collection_path {
@@ -166,11 +171,106 @@ impl WorkspaceData {
         }
         (pre_request_script_scope, test_script_scope)
     }
+
+    pub fn get_crt_select_id(&self) -> Option<String> {
+        self.central_request_data_list.borrow().select_id.clone()
+    }
+
+    pub fn set_crt_select_id(&self, select_id: Option<String>) {
+        self.central_request_data_list.borrow_mut().select_id = select_id;
+    }
+
+    pub fn get_crt_id_list(&self) -> Vec<String> {
+        self.central_request_data_list.borrow().data_list.clone()
+    }
+    pub fn get_crt_id_set(&self) -> HashSet<String> {
+        let mut hashset = HashSet::new();
+        for id in self.get_crt_id_list() {
+            hashset.insert(id);
+        }
+        hashset
+    }
+
+    pub fn get_crt_cloned(&self, id: String) -> Option<CentralRequestItem> {
+        self.central_request_data_list
+            .borrow()
+            .data_map
+            .get(id.as_str())
+            .cloned()
+    }
+    pub fn must_get_crt(&self, id: String) -> CentralRequestItem {
+        self.central_request_data_list
+            .borrow()
+            .data_map
+            .get(id.as_str())
+            .cloned()
+            .unwrap()
+    }
+    pub fn auto_save_crd(&self) {
+        self.central_request_data_list.borrow().auto_save();
+    }
+
+    pub fn add_crt(&self, crt: CentralRequestItem) {
+        self.central_request_data_list.borrow_mut().add_crt(crt);
+    }
+
+    pub fn close_all_crt(&self) {
+        self.central_request_data_list.borrow_mut().clear();
+        self.set_crt_select_id(None);
+    }
+    pub fn close_other_crt(&self, id: String) {
+        let retain = self.must_get_crt(id.clone()).clone();
+        self.central_request_data_list.borrow_mut().clear();
+        self.add_crt(retain);
+        self.set_crt_select_id(Some(id.clone()));
+    }
+
+    pub fn close_crt(&self, id: String) {
+        self.central_request_data_list
+            .borrow_mut()
+            .remove(id.clone());
+        if let Some(select_id) = self.get_crt_select_id() {
+            if select_id == id {
+                self.set_crt_select_id(None);
+            }
+        }
+    }
+
+    pub fn duplicate_crt(&self, id: String) {
+        let mut duplicate = self.must_get_crt(id).clone();
+        duplicate.id = Uuid::new_v4().to_string();
+        duplicate.collection_path = None;
+        self.add_crt(duplicate);
+    }
+
+    pub fn add_new_crt(&self) {
+        self.central_request_data_list.borrow_mut().add_new();
+    }
+
+    pub fn contains_crt_id(&self, crt_id: String) -> bool {
+        self.central_request_data_list
+            .borrow()
+            .data_map
+            .contains_key(crt_id.as_str())
+    }
+
+    pub fn update_crt_old_name_to_new_name(
+        &self,
+        path: String,
+        old_name: String,
+        new_name: String,
+    ) {
+        self.central_request_data_list
+            .borrow_mut()
+            .update_old_name_to_new_name(path, old_name, new_name);
+    }
 }
 
 impl WorkspaceData {
     pub fn load_all(&mut self, workspace: String) {
-        self.central_request_data_list.load_all(workspace.clone());
+        self.central_request_data_list
+            .borrow_mut()
+            .load_all(workspace.clone());
         self.history_data_list.load_all(workspace.clone());
         self.environment.load_all(workspace.clone());
         self.collections.load_all(workspace.clone());

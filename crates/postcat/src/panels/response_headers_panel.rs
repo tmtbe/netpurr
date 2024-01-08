@@ -16,13 +16,9 @@ impl DataView for ResponseHeadersPanel {
         ui: &mut egui::Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let data = workspace_data
-            .central_request_data_list
-            .data_map
-            .get_mut(cursor.as_str())
-            .unwrap();
+        let crt = workspace_data.must_get_crt(crt_id.clone());
         ui.label("Headers");
         ui.push_id("response_headers_table", |ui| {
             let table = TableBuilder::new(ui)
@@ -49,22 +45,24 @@ impl DataView for ResponseHeadersPanel {
                     });
                 })
                 .body(|mut body| {
-                    for (index, header) in data.rest.response.headers.iter_mut().enumerate() {
-                        body.row(18.0, |mut row| {
-                            row.col(|ui| {
-                                ui.add_enabled(false, Checkbox::new(&mut header.enable, ""));
+                    workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+                        for (_, header) in crt.rest.response.headers.iter_mut().enumerate() {
+                            body.row(18.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.add_enabled(false, Checkbox::new(&mut header.enable, ""));
+                                });
+                                row.col(|ui| {});
+                                row.col(|ui| {
+                                    ui.text_edit_singleline(&mut header.key.clone());
+                                });
+                                row.col(|ui| {
+                                    TextEdit::singleline(&mut header.value.clone())
+                                        .desired_width(f32::INFINITY)
+                                        .ui(ui);
+                                });
                             });
-                            row.col(|ui| {});
-                            row.col(|ui| {
-                                ui.text_edit_singleline(&mut header.key.clone());
-                            });
-                            row.col(|ui| {
-                                TextEdit::singleline(&mut header.value.clone())
-                                    .desired_width(f32::INFINITY)
-                                    .ui(ui);
-                            });
-                        });
-                    }
+                        }
+                    });
                 });
         });
     }

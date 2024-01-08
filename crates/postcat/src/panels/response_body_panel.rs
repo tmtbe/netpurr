@@ -35,35 +35,31 @@ impl DataView for ResponseBodyPanel {
         ui: &mut egui::Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let data = workspace_data
-            .central_request_data_list
-            .data_map
-            .get(cursor.as_str())
-            .unwrap();
+        let crt = workspace_data.must_get_crt(crt_id.clone());
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
             let mut layout_job = egui_extras::syntax_highlighting::highlight(
                 ui.ctx(),
                 &theme,
                 string,
-                ResponseBodyPanel::get_language(&data.rest.response).as_str(),
+                ResponseBodyPanel::get_language(&crt.rest.response).as_str(),
             );
             layout_job.wrap.max_width = wrap_width;
             ui.fonts(|f| f.layout_job(layout_job))
         };
-        match data.rest.get_response_content_type() {
+        match crt.rest.get_response_content_type() {
             None => {}
             Some(content_type) => {
                 if content_type.value.starts_with("image") {
                     let image = Image::from_bytes(
-                        data.rest.request.base_url.clone(),
-                        data.rest.response.body.to_vec(),
+                        crt.rest.request.base_url.clone(),
+                        crt.rest.response.body.to_vec(),
                     );
                     ui.add(image);
                 } else {
-                    match String::from_utf8(data.rest.response.body.to_vec()) {
+                    match String::from_utf8(crt.rest.response.body.to_vec()) {
                         Ok(s) => {
                             let tooltip = "Click to copy the response body";
                             if ui.button("📋").on_hover_text(tooltip).clicked() {

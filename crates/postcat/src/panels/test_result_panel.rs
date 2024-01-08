@@ -1,5 +1,3 @@
-use egui::TextBuffer;
-
 use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::{DataView, HORIZONTAL_GAP};
@@ -15,16 +13,12 @@ impl DataView for TestResultPanel {
         ui: &mut egui::Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let data = workspace_data
-            .central_request_data_list
-            .data_map
-            .get(cursor.as_str())
-            .unwrap();
+        let crt = workspace_data.must_get_crt(crt_id.clone());
         ui.push_id("test_info", |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for test_info in data.test_result.test_info_list.iter() {
+                for test_info in crt.test_result.test_info_list.iter() {
                     ui.horizontal(|ui| {
                         ui.add_space(HORIZONTAL_GAP * 2.0);
                         ui.strong(test_info.status.to_string());

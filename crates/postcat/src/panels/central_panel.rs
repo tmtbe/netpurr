@@ -1,8 +1,6 @@
 use eframe::emath::Align;
 use egui::{FontSelection, Response, RichText, Style, Ui, WidgetText};
-use uuid::Uuid;
 
-use crate::data::central_request_data::CentralRequestItem;
 use crate::data::environment::ENVIRONMENT_GLOBALS;
 use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
@@ -25,6 +23,7 @@ pub struct MyCentralPanel {
     cookies_windows: CookiesWindows,
     request_close_windows: RequestCloseWindows,
     save_crt_windows: SaveCRTWindows,
+    select_crt_id: Option<String>,
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -52,7 +51,7 @@ impl DataView for MyCentralPanel {
             self.central_request_table(workspace_data, ui);
         });
         ui.separator();
-        match &workspace_data.central_request_data_list.select_id {
+        match &workspace_data.get_crt_select_id() {
             Some(request_id) => {
                 self.editor_panel
                     .set_and_render(ui, operation, workspace_data, request_id.clone());
@@ -61,6 +60,7 @@ impl DataView for MyCentralPanel {
         }
         self.environment_windows
             .set_and_render(ui, operation, workspace_data, cursor);
+
         workspace_data.environment.select().clone().map(|s| {
             if !workspace_data
                 .environment
@@ -173,13 +173,10 @@ impl MyCentralPanel {
             .min_width(ui.available_width() - HORIZONTAL_GAP * 2.0)
             .show_inside(ui, |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    let data_list = workspace_data.central_request_data_list.data_list.clone();
+                    let data_list = workspace_data.get_crt_id_list();
                     for request_id in data_list.iter() {
-                        let request_data_option = workspace_data
-                            .central_request_data_list
-                            .data_map
-                            .get(request_id)
-                            .cloned();
+                        let request_data_option =
+                            workspace_data.get_crt_cloned(request_id.to_string());
                         match request_data_option {
                             None => {
                                 continue;
@@ -201,23 +198,24 @@ impl MyCentralPanel {
                                             Align::Center,
                                         );
                                 }
+                                self.select_crt_id = workspace_data.get_crt_select_id();
                                 let response = ui.selectable_value(
-                                    &mut workspace_data.central_request_data_list.select_id,
+                                    &mut self.select_crt_id,
                                     Some(request_data.id.clone()),
                                     lb,
                                 );
+                                if response.clicked() {
+                                    workspace_data.set_crt_select_id(self.select_crt_id.clone());
+                                }
                                 response.context_menu(|ui| {
                                     if ui.button("Duplicate Tab").clicked() {
-                                        let mut duplicate = request_data.clone();
-                                        duplicate.id = Uuid::new_v4().to_string();
-                                        duplicate.collection_path = None;
-                                        workspace_data.central_request_data_list.add_crt(duplicate);
+                                        workspace_data.duplicate_crt(request_data.id.clone());
                                         ui.close_menu();
                                     }
                                     ui.separator();
                                     if ui.button("Close").clicked() {
                                         if !request_data.is_modify() {
-                                            self.close_tab(workspace_data, &request_data);
+                                            workspace_data.close_crt(request_data.id.clone());
                                         } else {
                                             self.request_close_windows.open(
                                                 request_data.id.clone(),
@@ -227,19 +225,15 @@ impl MyCentralPanel {
                                         ui.close_menu();
                                     }
                                     if ui.button("Force Close").clicked() {
-                                        self.close_tab(workspace_data, &request_data);
+                                        workspace_data.close_crt(request_data.id.clone());
                                         ui.close_menu();
                                     }
                                     if ui.button("Force Close Other Tabs").clicked() {
-                                        workspace_data.central_request_data_list.clear();
-                                        workspace_data
-                                            .central_request_data_list
-                                            .add_crt(request_data.clone());
+                                        workspace_data.close_other_crt(request_data.id.clone());
                                         ui.close_menu();
                                     }
                                     if ui.button("Force Close All Tabs").clicked() {
-                                        workspace_data.central_request_data_list.clear();
-                                        workspace_data.central_request_data_list.select_id = None;
+                                        workspace_data.close_all_crt();
                                         ui.close_menu();
                                     }
                                 });
@@ -247,27 +241,18 @@ impl MyCentralPanel {
                         }
                     }
                     if ui.button("+").clicked() {
-                        workspace_data.central_request_data_list.add_new()
+                        workspace_data.add_new_crt();
                     }
                     if ui.button("...").clicked() {}
                 });
             });
-    }
-
-    fn close_tab(&self, workspace_data: &mut WorkspaceData, request_data: &CentralRequestItem) {
-        workspace_data
-            .central_request_data_list
-            .remove(request_data.id.clone());
-        if workspace_data.central_request_data_list.select_id.is_some() {
-            if workspace_data
-                .central_request_data_list
-                .select_id
-                .clone()
-                .unwrap()
-                == request_data.id
-            {
-                workspace_data.central_request_data_list.select_id = None;
-            }
+        let crt_list = workspace_data.get_crt_id_list();
+        if crt_list.len() == 0 {
+            workspace_data.add_new_crt();
+        }
+        let crt_list = workspace_data.get_crt_id_list();
+        if self.select_crt_id.is_none() {
+            workspace_data.set_crt_select_id(crt_list.get(0).cloned());
         }
     }
 }

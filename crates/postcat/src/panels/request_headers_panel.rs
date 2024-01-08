@@ -27,53 +27,57 @@ impl DataView for RequestHeadersPanel {
         crt_id: Self::CursorType,
     ) {
         let envs = workspace_data.get_crt_envs(crt_id.clone());
-        let crt = workspace_data.get_mut_crt(crt_id.clone());
-        ui.label("Headers");
-        let mut delete_index = None;
-        ui.push_id("request_headers_table", |ui| {
-            let table = TableBuilder::new(ui)
-                .resizable(false)
-                .cell_layout(Layout::left_to_right(Align::Center))
-                .column(Column::auto())
-                .column(Column::exact(20.0))
-                .column(Column::initial(200.0).range(40.0..=300.0))
-                .column(Column::initial(200.0).range(40.0..=300.0))
-                .column(Column::remainder())
-                .max_scroll_height(100.0);
-            table
-                .header(20.0, |mut header| {
-                    header.col(|ui| {
-                        ui.strong("");
+        workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+            ui.label("Headers");
+            let mut delete_index = None;
+            ui.push_id("request_headers_table", |ui| {
+                let table = TableBuilder::new(ui)
+                    .resizable(false)
+                    .cell_layout(Layout::left_to_right(Align::Center))
+                    .column(Column::auto())
+                    .column(Column::exact(20.0))
+                    .column(Column::initial(200.0).range(40.0..=300.0))
+                    .column(Column::initial(200.0).range(40.0..=300.0))
+                    .column(Column::remainder())
+                    .max_scroll_height(100.0);
+                table
+                    .header(20.0, |mut header| {
+                        header.col(|ui| {
+                            ui.strong("");
+                        });
+                        header.col(|ui| {
+                            ui.strong("");
+                        });
+                        header.col(|ui| {
+                            ui.strong("KEY");
+                        });
+                        header.col(|ui| {
+                            ui.strong("VALUE");
+                        });
+                        header.col(|ui| {
+                            ui.strong("DESCRIPTION");
+                        });
+                    })
+                    .body(|mut body| {
+                        delete_index = self.build_body(crt, &envs, &mut body);
+                        self.build_new_body(envs, body);
                     });
-                    header.col(|ui| {
-                        ui.strong("");
-                    });
-                    header.col(|ui| {
-                        ui.strong("KEY");
-                    });
-                    header.col(|ui| {
-                        ui.strong("VALUE");
-                    });
-                    header.col(|ui| {
-                        ui.strong("DESCRIPTION");
-                    });
-                })
-                .body(|mut body| {
-                    delete_index = self.build_body(crt, &envs, &mut body);
-                    self.build_new_body(envs, body);
-                });
+            });
+            if delete_index.is_some() {
+                crt.rest.request.headers.remove(delete_index.unwrap());
+            }
+            if self.new_header.key != ""
+                || self.new_header.value != ""
+                || self.new_header.desc != ""
+            {
+                self.new_header.enable = true;
+                crt.rest.request.headers.push(self.new_header.clone());
+                self.new_header.key = "".to_string();
+                self.new_header.value = "".to_string();
+                self.new_header.desc = "".to_string();
+                self.new_header.enable = false;
+            }
         });
-        if delete_index.is_some() {
-            crt.rest.request.headers.remove(delete_index.unwrap());
-        }
-        if self.new_header.key != "" || self.new_header.value != "" || self.new_header.desc != "" {
-            self.new_header.enable = true;
-            crt.rest.request.headers.push(self.new_header.clone());
-            self.new_header.key = "".to_string();
-            self.new_header.value = "".to_string();
-            self.new_header.desc = "".to_string();
-            self.new_header.enable = false;
-        }
     }
 }
 

@@ -29,41 +29,42 @@ impl DataView for RequestBodyFormDataPanel {
         crt_id: Self::CursorType,
     ) {
         let envs = workspace_data.get_crt_envs(crt_id.clone());
-        let crt = workspace_data.get_mut_crt(crt_id.clone());
-        let mut delete_index = None;
-        let table = TableBuilder::new(ui)
-            .resizable(false)
-            .cell_layout(Layout::left_to_right(Align::Center))
-            .column(Column::auto())
-            .column(Column::exact(20.0))
-            .column(Column::exact(100.0))
-            .column(Column::initial(200.0).range(40.0..=300.0))
-            .column(Column::initial(200.0).range(40.0..=300.0))
-            .column(Column::remainder())
-            .max_scroll_height(100.0);
-        table.header(20.0, self.build_header()).body(|mut body| {
-            delete_index = self.build_body(crt, &mut body, envs.clone());
-            self.build_new_body(body, envs.clone());
+        workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+            let mut delete_index = None;
+            let table = TableBuilder::new(ui)
+                .resizable(false)
+                .cell_layout(Layout::left_to_right(Align::Center))
+                .column(Column::auto())
+                .column(Column::exact(20.0))
+                .column(Column::exact(100.0))
+                .column(Column::initial(200.0).range(40.0..=300.0))
+                .column(Column::initial(200.0).range(40.0..=300.0))
+                .column(Column::remainder())
+                .max_scroll_height(100.0);
+            table.header(20.0, self.build_header()).body(|mut body| {
+                delete_index = self.build_body(crt, &mut body, envs.clone());
+                self.build_new_body(body, envs.clone());
+            });
+            if delete_index.is_some() {
+                crt.rest
+                    .request
+                    .body
+                    .body_form_data
+                    .remove(delete_index.unwrap());
+            }
+            if self.new_form.key != "" || self.new_form.value != "" || self.new_form.desc != "" {
+                self.new_form.enable = true;
+                crt.rest
+                    .request
+                    .body
+                    .body_form_data
+                    .push(self.new_form.clone());
+                self.new_form.key = "".to_string();
+                self.new_form.value = "".to_string();
+                self.new_form.desc = "".to_string();
+                self.new_form.enable = false;
+            }
         });
-        if delete_index.is_some() {
-            crt.rest
-                .request
-                .body
-                .body_form_data
-                .remove(delete_index.unwrap());
-        }
-        if self.new_form.key != "" || self.new_form.value != "" || self.new_form.desc != "" {
-            self.new_form.enable = true;
-            crt.rest
-                .request
-                .body
-                .body_form_data
-                .push(self.new_form.clone());
-            self.new_form.key = "".to_string();
-            self.new_form.value = "".to_string();
-            self.new_form.desc = "".to_string();
-            self.new_form.enable = false;
-        }
     }
 }
 

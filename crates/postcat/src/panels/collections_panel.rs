@@ -311,30 +311,17 @@ impl CollectionsPanel {
     ) {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Open in New Table").clicked() {
-                let mut id = path.clone() + "/" + request.name.as_str();
-                if workspace_data
-                    .central_request_data_list
-                    .data_map
-                    .contains_key(id.as_str())
-                {
-                    id = utils::build_copy_name(
-                        id.clone(),
-                        workspace_data
-                            .central_request_data_list
-                            .data_map
-                            .iter()
-                            .map(|(k, _)| k.clone())
-                            .collect(),
-                    );
+                let mut crt_id = path.clone() + "/" + request.name.as_str();
+                if workspace_data.contains_crt_id(crt_id.clone()) {
+                    crt_id =
+                        utils::build_copy_name(crt_id.clone(), workspace_data.get_crt_id_set());
                 }
-                workspace_data
-                    .central_request_data_list
-                    .add_crt(CentralRequestItem {
-                        id,
-                        collection_path: Some(path.clone()),
-                        rest: request.clone(),
-                        ..Default::default()
-                    });
+                workspace_data.add_crt(CentralRequestItem {
+                    id: crt_id,
+                    collection_path: Some(path.clone()),
+                    rest: request.clone(),
+                    ..Default::default()
+                });
                 ui.close_menu();
             }
             if utils::select_label(ui, "Save as").clicked() {
@@ -398,14 +385,12 @@ impl CollectionsPanel {
             let lb = utils::build_rest_ui_header(hr.clone(), None, ui);
             let button = ui.button(lb);
             if button.clicked() {
-                workspace_data
-                    .central_request_data_list
-                    .add_crt(CentralRequestItem {
-                        id: path.clone() + "/" + hr.name.as_str(),
-                        collection_path: Some(path.clone()),
-                        rest: hr.clone(),
-                        ..Default::default()
-                    })
+                workspace_data.add_crt(CentralRequestItem {
+                    id: path.clone() + "/" + hr.name.as_str(),
+                    collection_path: Some(path.clone()),
+                    rest: hr.clone(),
+                    ..Default::default()
+                })
             }
             self.popup_request_item(
                 operation,

@@ -153,18 +153,13 @@ impl DataView for ResponsePanel {
         ui: &mut Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let data = workspace_data
-            .central_request_data_list
-            .data_map
-            .get(cursor.as_str())
-            .cloned()
-            .unwrap();
+        let crt = workspace_data.must_get_crt(crt_id.clone());
         let cookies = workspace_data
             .cookies_manager
-            .get_url_cookies(data.rest.request.base_url.clone());
-        match data.rest.status {
+            .get_url_cookies(crt.rest.request.base_url.clone());
+        match crt.rest.status {
             ResponseStatus::None => {
                 ui.strong("Response");
                 ui.separator();
@@ -179,7 +174,7 @@ impl DataView for ResponsePanel {
             }
 
             ResponseStatus::Ready => {
-                self.build_ready_panel(operation, workspace_data, cursor, ui, &data, cookies);
+                self.build_ready_panel(operation, workspace_data, crt_id, ui, &crt, cookies);
             }
             ResponseStatus::Error => {
                 ui.centered_and_justified(|ui| {

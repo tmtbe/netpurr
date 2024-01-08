@@ -1,5 +1,3 @@
-use egui::TextBuffer;
-
 use crate::data::workspace::WorkspaceData;
 use crate::operation::Operation;
 use crate::panels::DataView;
@@ -15,13 +13,9 @@ impl DataView for ResponseLogPanel {
         ui: &mut egui::Ui,
         operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
+        crt_id: Self::CursorType,
     ) {
-        let data = workspace_data
-            .central_request_data_list
-            .data_map
-            .get(cursor.as_str())
-            .unwrap();
+        let crt = workspace_data.must_get_crt(crt_id.clone());
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
             let mut layout_job =
@@ -31,7 +25,7 @@ impl DataView for ResponseLogPanel {
         };
         ui.push_id("log_info", |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for log in data.rest.response.logger.logs.iter() {
+                for log in crt.rest.response.logger.logs.iter() {
                     let mut content = format!("> {}", log.show());
                     egui::TextEdit::multiline(&mut content)
                         .font(egui::TextStyle::Monospace)
