@@ -22,6 +22,7 @@ use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP};
 use crate::script::script::ScriptScope;
 use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
+use crate::windows::cookies_windows::CookiesWindows;
 
 #[derive(Default)]
 pub struct RestPanel {
@@ -450,7 +451,7 @@ impl RestPanel {
             |ui| {
                 ui.horizontal(|ui| {
                     if ui.link("Cookies").clicked() {
-                        operation.open_windows().open_cookies();
+                        operation.windows().add(Box::new(CookiesWindows::default()));
                     };
                     ui.link("Code");
                 });

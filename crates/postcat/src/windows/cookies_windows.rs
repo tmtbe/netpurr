@@ -6,11 +6,11 @@ use egui_toast::{Toast, ToastKind};
 
 use crate::data::cookies_manager::Cookie;
 use crate::data::workspace_data::WorkspaceData;
+use crate::operation::windows::{Window, WindowSetting};
 use crate::operation::Operation;
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;
 
-#[derive(Default)]
 pub struct CookiesWindows {
     cookies_windows_open: bool,
     new_cookie_name: String,
@@ -19,8 +19,39 @@ pub struct CookiesWindows {
     select_key_name: Option<String>,
     select_content: String,
     new_cookie_names: BTreeSet<String>,
+    windows_setting: WindowSetting,
 }
 
+impl Default for CookiesWindows {
+    fn default() -> Self {
+        CookiesWindows {
+            cookies_windows_open: false,
+            new_cookie_name: "".to_string(),
+            new_key_name: "".to_string(),
+            select_domain_name: None,
+            select_key_name: None,
+            select_content: "".to_string(),
+            new_cookie_names: Default::default(),
+            windows_setting: WindowSetting::new("MANAGE COOKIES".to_string()),
+        }
+    }
+}
+
+impl Window for CookiesWindows {
+    fn window_setting(&self) -> &WindowSetting {
+        &self.windows_setting
+    }
+
+    fn set_open(&mut self, open: bool) {
+        self.cookies_windows_open = open;
+    }
+
+    fn get_open(&self) -> bool {
+        self.cookies_windows_open
+    }
+
+    fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData) {}
+}
 impl CookiesWindows {
     pub(crate) fn open(&mut self) {
         self.cookies_windows_open = true;

@@ -285,6 +285,7 @@ impl eframe::App for App {
                     });
                 });
         }
+        self.operation.windows().show(ctx, &mut self.workspace_data);
         self.operation.toasts().show(ctx);
     }
 }

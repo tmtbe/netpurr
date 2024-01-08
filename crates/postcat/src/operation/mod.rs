@@ -12,6 +12,7 @@ use windows::OpenWindows;
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::logger::Logger;
 use crate::data::{http, test};
+use crate::operation::windows::Windows;
 use crate::script::script::{Context, JsResponse, ScriptRuntime, ScriptScope};
 
 pub mod rest_sender;
@@ -23,6 +24,7 @@ pub struct Operation {
     lock_ui: HashMap<String, bool>,
     script_runtime: ScriptRuntime,
     toasts: Toasts,
+    windows: Windows,
 }
 
 impl Default for Operation {
@@ -35,6 +37,7 @@ impl Default for Operation {
             toasts: Toasts::default()
                 .anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0))
                 .direction(egui::Direction::BottomUp),
+            windows: Windows::default(),
         }
     }
 }
@@ -137,5 +140,9 @@ impl Operation {
     }
     pub fn toasts(&mut self) -> &mut Toasts {
         &mut self.toasts
+    }
+
+    pub fn windows(&mut self) -> &mut Windows {
+        &mut self.windows
     }
 }
