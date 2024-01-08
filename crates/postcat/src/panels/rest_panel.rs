@@ -209,7 +209,7 @@ impl RestPanel {
         });
 
         send_rest.map(|r| {
-            workspace_data.history_data_list.record(r);
+            workspace_data.history_record(r);
         });
         just_need_replace_save.map(|(collection_path, id)| {
             workspace_data.save_crt(id, collection_path, |_| {});

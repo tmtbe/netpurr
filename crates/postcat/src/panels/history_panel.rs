@@ -18,7 +18,7 @@ impl DataView for HistoryPanel {
         workspace_data: &mut WorkspaceData,
         cursor: Self::CursorType,
     ) {
-        for (date, date_history_data) in workspace_data.history_data_list.get_group().iter().rev() {
+        for (date, date_history_data) in workspace_data.get_history_group().iter().rev() {
             CollapsingHeader::new(date.to_string())
                 .default_open(false)
                 .show(ui, |ui| {

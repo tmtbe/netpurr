@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashSet};
 use std::time::Duration;
 
+use chrono::NaiveDate;
 use reqwest::blocking::Client;
 use uuid::Uuid;
 
@@ -10,16 +11,16 @@ use crate::data::central_request_data::{CentralRequestDataList, CentralRequestIt
 use crate::data::collections::{Collection, Collections};
 use crate::data::cookies_manager::{Cookie, CookiesManager};
 use crate::data::environment::{Environment, EnvironmentItemValue};
-use crate::data::history::HistoryDataList;
+use crate::data::history::{DateGroupHistoryList, HistoryDataList};
 use crate::data::http::HttpRecord;
 use crate::script::script::ScriptScope;
 
 #[derive(Default, Clone, Debug)]
 pub struct WorkspaceData {
     pub workspace_name: String,
-    pub cookies_manager: RefCell<CookiesManager>,
-    pub central_request_data_list: RefCell<CentralRequestDataList>,
-    pub history_data_list: HistoryDataList,
+    cookies_manager: RefCell<CookiesManager>,
+    central_request_data_list: RefCell<CentralRequestDataList>,
+    pub history_data_list: RefCell<HistoryDataList>,
     pub environment: Environment,
     pub collections: Collections,
     client: Option<Client>,
@@ -52,6 +53,15 @@ impl WorkspaceData {
     }
 }
 
+// history
+impl WorkspaceData {
+    pub fn get_history_group(&self) -> BTreeMap<NaiveDate, DateGroupHistoryList> {
+        self.history_data_list.borrow().get_group().clone()
+    }
+    pub fn history_record(&self, rest: HttpRecord) {
+        self.history_data_list.borrow_mut().record(rest);
+    }
+}
 // cookie
 impl WorkspaceData {
     pub fn get_url_cookies(&self, url: String) -> BTreeMap<String, Cookie> {
@@ -276,7 +286,9 @@ impl WorkspaceData {
         self.central_request_data_list
             .borrow_mut()
             .load_all(workspace.clone());
-        self.history_data_list.load_all(workspace.clone());
+        self.history_data_list
+            .borrow_mut()
+            .load_all(workspace.clone());
         self.environment.load_all(workspace.clone());
         self.collections.load_all(workspace.clone());
         self.cookies_manager
@@ -284,7 +296,9 @@ impl WorkspaceData {
             .load_all(workspace.clone())
     }
     pub fn reload_data(&mut self, workspace: String) {
-        self.history_data_list.load_all(workspace.clone());
+        self.history_data_list
+            .borrow_mut()
+            .load_all(workspace.clone());
         self.environment.load_all(workspace.clone());
         self.collections.load_all(workspace.clone());
         self.cookies_manager
