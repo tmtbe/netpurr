@@ -3,7 +3,7 @@ use egui::{Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::Operation;
+use crate::operation::operation::Operation;
 use crate::panels::DataView;
 
 #[derive(Default)]

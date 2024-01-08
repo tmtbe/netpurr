@@ -3,7 +3,7 @@ use strum::IntoEnumIterator;
 
 use crate::data::http::{BodyRawType, BodyType};
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::Operation;
+use crate::operation::operation::Operation;
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};

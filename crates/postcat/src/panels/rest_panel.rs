@@ -10,7 +10,7 @@ use crate::data::http::{BodyType, HttpRecord, LockWith, Method};
 use crate::data::test::TestStatus;
 use crate::data::workspace_data::WorkspaceData;
 use crate::data::{http, test};
-use crate::operation::Operation;
+use crate::operation::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;

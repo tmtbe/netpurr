@@ -9,7 +9,7 @@ use crate::data::cookies_manager::Cookie;
 use crate::data::http::{Response, ResponseStatus};
 use crate::data::test::{TestResult, TestStatus};
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::Operation;
+use crate::operation::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
 use crate::panels::response_headers_panel::ResponseHeadersPanel;

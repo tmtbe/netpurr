@@ -8,8 +8,8 @@ use crate::data::collections::{Collection, CollectionFolder};
 use crate::data::config_data::ConfigData;
 use crate::data::http::HttpRecord;
 use crate::data::workspace_data::WorkspaceData;
+use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
-use crate::operation::Operation;
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
 

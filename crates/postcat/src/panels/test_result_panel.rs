@@ -1,5 +1,5 @@
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::Operation;
+use crate::operation::operation::Operation;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 
 #[derive(Default)]

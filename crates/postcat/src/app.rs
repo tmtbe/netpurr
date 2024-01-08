@@ -8,7 +8,7 @@ use poll_promise::Promise;
 
 use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::Operation;
+use crate::operation::operation::Operation;
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
@@ -24,7 +24,6 @@ pub struct App {
     show_confirmation_dialog: bool,
     allowed_to_close: bool,
     current_workspace: String,
-    workspace_windows: WorkspaceWindows,
     sync_promise: Option<Promise<rustygit::types::Result<()>>>,
     auto_save_time: u64,
 }
@@ -144,7 +143,12 @@ impl eframe::App for App {
                                 ui.style_mut().wrap = Some(false);
                                 ui.set_min_width(60.0);
                                 if ui.button("⚙ Manage Workspace").clicked() {
-                                    self.workspace_windows.open(&mut self.config_data);
+                                    self.config_data.refresh_workspaces();
+                                    let current_workspace =
+                                        self.config_data.select_workspace().to_string();
+                                    self.operation.add_window(Box::new(
+                                        WorkspaceWindows::default().with_open(current_workspace),
+                                    ));
                                 }
                                 for (name, _) in self.config_data.workspaces().iter() {
                                     ui.selectable_value(
@@ -166,7 +170,8 @@ impl eframe::App for App {
                                 } else {
                                     if ui.button("🔄").clicked() {
                                         self.sync_promise = Some(
-                                            self.workspace_windows
+                                            self.operation
+                                                .git()
                                                 .git_sync_promise(workspace.path.clone()),
                                         );
                                     }
@@ -213,8 +218,6 @@ impl eframe::App for App {
                 });
                 ui.add_space(HORIZONTAL_GAP);
             });
-            self.workspace_windows
-                .set_and_render(ui, &mut self.operation, &mut self.config_data);
         });
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
             ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {

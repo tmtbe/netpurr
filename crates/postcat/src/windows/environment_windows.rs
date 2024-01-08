@@ -4,8 +4,8 @@ use egui_extras::{Column, TableBuilder};
 use crate::data::config_data::ConfigData;
 use crate::data::environment::{EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
 use crate::data::workspace_data::WorkspaceData;
+use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
-use crate::operation::Operation;
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 

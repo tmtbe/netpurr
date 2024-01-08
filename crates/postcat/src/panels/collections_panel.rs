@@ -12,7 +12,7 @@ use crate::data::collections::{Collection, CollectionFolder};
 use crate::data::export::{Export, ExportType};
 use crate::data::http::HttpRecord;
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::Operation;
+use crate::operation::operation::Operation;
 use crate::panels::DataView;
 use crate::utils;
 use crate::windows::new_collection_windows::NewCollectionWindows;

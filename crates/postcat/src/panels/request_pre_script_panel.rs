@@ -6,7 +6,7 @@ use egui::Ui;
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::Request;
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::Operation;
+use crate::operation::operation::Operation;
 use crate::panels::HORIZONTAL_GAP;
 use crate::script::script::{Context, ScriptScope};
 use crate::windows::test_script_windows::TestScriptWindows;
