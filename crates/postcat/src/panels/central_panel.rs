@@ -93,12 +93,6 @@ impl DataView for MyCentralPanel {
         }
         self.new_collection_windows
             .set_and_render(ui, operation, workspace_data, 0);
-        if operation.open_windows().cookies_opened {
-            self.cookies_windows.open();
-            operation.open_windows().cookies_opened = false;
-        }
-        self.cookies_windows
-            .set_and_render(ui, operation, workspace_data, 0);
         if operation.open_windows().save_crt_opened {
             self.save_crt_windows
                 .open(operation.open_windows().crt_id.clone());

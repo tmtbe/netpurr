@@ -1,8 +1,10 @@
+use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
+use std::rc::Rc;
 use std::str::FromStr;
 
 use eframe::emath::Align2;
-use egui_toast::Toasts;
+use egui_toast::{Toast, Toasts};
 use poll_promise::Promise;
 use reqwest::blocking::Client;
 
@@ -11,22 +13,42 @@ use windows::OpenWindows;
 
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::logger::Logger;
+use crate::data::workspace_data::WorkspaceData;
 use crate::data::{http, test};
-use crate::operation::windows::Windows;
+use crate::operation::windows::{Window, Windows};
 use crate::script::script::{Context, JsResponse, ScriptRuntime, ScriptScope};
 
 pub mod rest_sender;
 pub mod windows;
 
+#[derive(Clone)]
 pub struct Operation {
     rest_sender: RestSender,
     open_windows: OpenWindows,
     lock_ui: HashMap<String, bool>,
     script_runtime: ScriptRuntime,
-    toasts: Toasts,
-    windows: Windows,
+    modal_flag: Rc<RefCell<ModalFlag>>,
+    toasts: Rc<RefCell<Toasts>>,
+    windows: Rc<RefCell<Windows>>,
 }
 
+#[derive(Default)]
+pub struct ModalFlag {
+    lock_ui: HashMap<String, bool>,
+}
+
+impl ModalFlag {
+    pub fn lock_ui(&mut self, key: String, bool: bool) {
+        self.lock_ui.insert(key, bool);
+    }
+    pub fn get_ui_lock(&self) -> bool {
+        let mut result = false;
+        for (_, lock) in self.lock_ui.iter() {
+            result = result || (lock.clone());
+        }
+        result
+    }
+}
 impl Default for Operation {
     fn default() -> Self {
         Operation {
@@ -34,10 +56,13 @@ impl Default for Operation {
             open_windows: Default::default(),
             lock_ui: Default::default(),
             script_runtime: Default::default(),
-            toasts: Toasts::default()
-                .anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0))
-                .direction(egui::Direction::BottomUp),
-            windows: Windows::default(),
+            modal_flag: Rc::new(RefCell::new(ModalFlag::default())),
+            toasts: Rc::new(RefCell::new(
+                Toasts::default()
+                    .anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0))
+                    .direction(egui::Direction::BottomUp),
+            )),
+            windows: Rc::new(RefCell::new(Windows::default())),
         }
     }
 }
@@ -119,16 +144,7 @@ impl Operation {
             }
         })
     }
-    pub fn lock_ui(&mut self, key: String, bool: bool) {
-        self.lock_ui.insert(key, bool);
-    }
-    pub fn get_ui_lock(&self) -> bool {
-        let mut result = false;
-        for (_, lock) in self.lock_ui.iter() {
-            result = result || (lock.clone());
-        }
-        result
-    }
+
     pub fn rest_sender(&self) -> &RestSender {
         &self.rest_sender
     }
@@ -138,11 +154,25 @@ impl Operation {
     pub fn script_runtime(&self) -> &ScriptRuntime {
         &self.script_runtime
     }
-    pub fn toasts(&mut self) -> &mut Toasts {
-        &mut self.toasts
+
+    pub fn lock_ui(&self, key: String, bool: bool) {
+        self.modal_flag.borrow_mut().lock_ui(key, bool);
+    }
+    pub fn get_ui_lock(&self) -> bool {
+        self.modal_flag.borrow_mut().get_ui_lock()
     }
 
-    pub fn windows(&mut self) -> &mut Windows {
-        &mut self.windows
+    pub fn add_toast(&self, toast: Toast) {
+        self.toasts.borrow_mut().add(toast);
+    }
+    pub fn add_window(&self, window: Box<dyn Window>) {
+        self.windows.borrow_mut().add(window);
+    }
+
+    pub fn show(&self, ctx: &egui::Context, workspace_data: &mut WorkspaceData) {
+        self.toasts.borrow_mut().show(ctx);
+        self.windows
+            .borrow_mut()
+            .show(ctx, workspace_data, self.clone());
     }
 }

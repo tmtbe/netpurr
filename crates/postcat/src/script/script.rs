@@ -20,7 +20,7 @@ use crate::data::logger::Logger;
 use crate::data::test::TestResult;
 use crate::script::loader::SimpleModuleLoader;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ScriptRuntime {}
 
 #[derive(Clone, Default)]

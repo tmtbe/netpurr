@@ -67,7 +67,7 @@ impl RequestCloseWindows {
             }
             Some(collection_path) => {
                 workspace_data.save_crt(self.crt_id.clone(), collection_path.clone(), |_| {});
-                operation.toasts().add(Toast {
+                operation.add_toast(Toast {
                     kind: ToastKind::Success,
                     text: "Save success.".into(),
                     options: Default::default(),

@@ -6,12 +6,13 @@ use egui::{Context, Ui};
 use crate::data::collections::{Collection, CollectionFolder};
 use crate::data::http::HttpRecord;
 use crate::data::workspace_data::WorkspaceData;
+use crate::operation::Operation;
 
 pub trait Window {
     fn window_setting(&self) -> &WindowSetting;
     fn set_open(&mut self, open: bool);
     fn get_open(&self) -> bool;
-    fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData);
+    fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData, operation: Operation);
 }
 
 #[derive(Default, Clone)]
@@ -23,6 +24,7 @@ pub struct WindowSetting {
     max_height: f32,
     min_width: f32,
     min_height: f32,
+    modal: bool,
 }
 
 impl WindowSetting {
@@ -32,27 +34,31 @@ impl WindowSetting {
             ..Default::default()
         }
     }
-    pub fn collapsible(&mut self, collapsible: bool) -> &Self {
+    pub fn collapsible(&mut self, collapsible: bool) -> &mut Self {
         self.collapsible = collapsible;
         self
     }
-    pub fn resizable(&mut self, resizable: bool) -> &Self {
+    pub fn resizable(&mut self, resizable: bool) -> &mut Self {
         self.resizable = resizable;
         self
     }
-    pub fn max_width(&mut self, max_width: f32) -> &Self {
+    pub fn modal(&mut self, modal: bool) -> &mut Self {
+        self.modal = modal;
+        self
+    }
+    pub fn max_width(&mut self, max_width: f32) -> &mut Self {
         self.max_width = max_width;
         self
     }
-    pub fn max_height(&mut self, max_height: f32) -> &Self {
+    pub fn max_height(&mut self, max_height: f32) -> &mut Self {
         self.max_height = max_height;
         self
     }
-    pub fn min_height(&mut self, min_height: f32) -> &Self {
+    pub fn min_height(&mut self, min_height: f32) -> &mut Self {
         self.min_height = min_height;
         self
     }
-    pub fn min_width(&mut self, min_width: f32) -> &Self {
+    pub fn min_width(&mut self, min_width: f32) -> &mut Self {
         self.min_width = min_width;
         self
     }
@@ -69,9 +75,17 @@ impl Windows {
         self.show_windows.push(window);
     }
 
-    pub fn show(&mut self, ctx: &Context, workspace_data: &mut WorkspaceData) {
+    pub fn show(
+        &mut self,
+        ctx: &Context,
+        workspace_data: &mut WorkspaceData,
+        operation: Operation,
+    ) {
         for window in self.show_windows.iter_mut() {
             let mut open = window.get_open();
+            if window.window_setting().modal {
+                operation.lock_ui(window.window_setting().name.clone(), true);
+            }
             egui::Window::new(window.window_setting().name.clone())
                 .default_open(true)
                 .max_width(window.window_setting().max_width)
@@ -80,8 +94,13 @@ impl Windows {
                 .collapsible(window.window_setting().collapsible)
                 .resizable(window.window_setting().resizable)
                 .open(&mut open)
-                .show(ctx, |ui| window.render(ui, workspace_data));
+                .show(ctx, |ui| {
+                    window.render(ui, workspace_data, operation.clone())
+                });
             window.set_open(open);
+            if !open {
+                operation.lock_ui(window.window_setting().name.clone(), false);
+            }
         }
         self.show_windows.retain(|w| w.get_open())
     }

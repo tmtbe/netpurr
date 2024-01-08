@@ -214,7 +214,7 @@ impl RestPanel {
         });
         just_need_replace_save.map(|(collection_path, id)| {
             workspace_data.save_crt(id, collection_path, |_| {});
-            operation.toasts().add(Toast {
+            operation.add_toast(Toast {
                 kind: ToastKind::Success,
                 text: "Save success.".into(),
                 options: ToastOptions::default()
@@ -368,7 +368,7 @@ impl RestPanel {
                             });
                         crt.rest.response = response.clone();
                         crt.rest.ready();
-                        operation.toasts().add(Toast {
+                        operation.add_toast(Toast {
                             text: format!("Send request success").into(),
                             kind: ToastKind::Success,
                             options: ToastOptions::default()
@@ -380,7 +380,7 @@ impl RestPanel {
                         match test_result.status {
                             TestStatus::None => {}
                             TestStatus::PASS => {
-                                operation.toasts().add(Toast {
+                                operation.add_toast(Toast {
                                     text: format!("Test success.").into(),
                                     kind: ToastKind::Success,
                                     options: ToastOptions::default()
@@ -390,7 +390,7 @@ impl RestPanel {
                                 });
                             }
                             TestStatus::FAIL => {
-                                operation.toasts().add(Toast {
+                                operation.add_toast(Toast {
                                     text: format!("Test failed.").into(),
                                     kind: ToastKind::Error,
                                     options: ToastOptions::default()
@@ -403,7 +403,7 @@ impl RestPanel {
                     }
                     Err(e) => {
                         crt.rest.error();
-                        operation.toasts().add(Toast {
+                        operation.add_toast(Toast {
                             text: format!("Send request failed: {}", e.to_string()).into(),
                             kind: ToastKind::Error,
                             options: ToastOptions::default()
@@ -451,7 +451,7 @@ impl RestPanel {
             |ui| {
                 ui.horizontal(|ui| {
                     if ui.link("Cookies").clicked() {
-                        operation.windows().add(Box::new(CookiesWindows::default()));
+                        operation.add_window(Box::new(CookiesWindows::default()));
                     };
                     ui.link("Code");
                 });

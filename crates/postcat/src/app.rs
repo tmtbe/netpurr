@@ -179,7 +179,7 @@ impl eframe::App for App {
                                 }
                                 Some(result) => {
                                     if result.is_ok() {
-                                        self.operation.toasts().add(Toast {
+                                        self.operation.add_toast(Toast {
                                             text: "Sync Success!".into(),
                                             kind: ToastKind::Success,
                                             options: ToastOptions::default()
@@ -187,7 +187,7 @@ impl eframe::App for App {
                                                 .show_progress(true),
                                         });
                                     } else {
-                                        self.operation.toasts().add(Toast {
+                                        self.operation.add_toast(Toast {
                                             text: "Sync Failed!".into(),
                                             kind: ToastKind::Error,
                                             options: ToastOptions::default()
@@ -285,7 +285,6 @@ impl eframe::App for App {
                     });
                 });
         }
-        self.operation.windows().show(ctx, &mut self.workspace_data);
-        self.operation.toasts().show(ctx);
+        self.operation.show(ctx, &mut self.workspace_data);
     }
 }

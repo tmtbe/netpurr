@@ -194,7 +194,7 @@ impl CollectionsPanel {
                         match File::create(path) {
                             Ok(mut file) => match file.write_all(json.as_bytes()) {
                                 Ok(_) => {
-                                    operation.toasts().add(Toast {
+                                    operation.add_toast(Toast {
                                         text: format!("Export collection success.").into(),
                                         kind: ToastKind::Success,
                                         options: ToastOptions::default()
@@ -204,7 +204,7 @@ impl CollectionsPanel {
                                     });
                                 }
                                 Err(e) => {
-                                    operation.toasts().add(Toast {
+                                    operation.add_toast(Toast {
                                         text: format!(
                                             "Export collection file failed: {}",
                                             e.to_string()
@@ -219,7 +219,7 @@ impl CollectionsPanel {
                                 }
                             },
                             Err(e) => {
-                                operation.toasts().add(Toast {
+                                operation.add_toast(Toast {
                                     text: format!(
                                         "Export collection file failed: {}",
                                         e.to_string()

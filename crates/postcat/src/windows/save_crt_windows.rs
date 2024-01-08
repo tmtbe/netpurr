@@ -235,7 +235,7 @@ impl SaveCRTWindows {
                                             hr.desc = self.save_desc.clone();
                                         },
                                     );
-                                    operation.toasts().add(Toast {
+                                    operation.add_toast(Toast {
                                         kind: ToastKind::Success,
                                         text: "Save success.".into(),
                                         options: Default::default(),

@@ -8,7 +8,7 @@ use crate::data::cookies_manager::Cookie;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::operation::Operation;
-use crate::panels::{DataView, VERTICAL_GAP};
+use crate::panels::VERTICAL_GAP;
 use crate::utils;
 
 pub struct CookiesWindows {
@@ -32,7 +32,14 @@ impl Default for CookiesWindows {
             select_key_name: None,
             select_content: "".to_string(),
             new_cookie_names: Default::default(),
-            windows_setting: WindowSetting::new("MANAGE COOKIES".to_string()),
+            windows_setting: WindowSetting::new("MANAGE COOKIES".to_string())
+                .max_width(500.0)
+                .min_height(400.0)
+                .max_height(400.0)
+                .collapsible(false)
+                .resizable(true)
+                .modal(true)
+                .clone(),
         }
     }
 }
@@ -50,13 +57,23 @@ impl Window for CookiesWindows {
         self.cookies_windows_open
     }
 
-    fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData) {}
+    fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData, operation: Operation) {
+        ui.vertical(|ui| {
+            ui.add_space(VERTICAL_GAP);
+            self.render_add(workspace_data, ui);
+            ui.add_space(VERTICAL_GAP);
+            ui.separator();
+            self.render_domain_list(workspace_data, ui);
+            ui.add_space(VERTICAL_GAP);
+            ui.separator();
+            self.render_key_list(workspace_data, &operation, ui);
+            ui.add_space(VERTICAL_GAP);
+            ui.separator();
+            self.render_content(workspace_data, &operation, ui);
+        });
+    }
 }
 impl CookiesWindows {
-    pub(crate) fn open(&mut self) {
-        self.cookies_windows_open = true;
-    }
-
     fn render_add(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.label("Add a cookie domain.");
         ui.horizontal(|ui| {
@@ -103,7 +120,7 @@ impl CookiesWindows {
     fn render_key_list(
         &mut self,
         workspace_data: &mut WorkspaceData,
-        operation: &mut Operation,
+        operation: &Operation,
         ui: &mut Ui,
     ) {
         ScrollArea::vertical()
@@ -139,7 +156,7 @@ impl CookiesWindows {
                                         self.new_cookie_names.remove(domain.as_str());
                                     }
                                     Err(err) => {
-                                        operation.toasts().add(Toast {
+                                        operation.add_toast(Toast {
                                             kind: ToastKind::Error,
                                             text: err.into(),
                                             options: Default::default(),
@@ -189,7 +206,7 @@ impl CookiesWindows {
     fn render_content(
         &mut self,
         workspace_data: &mut WorkspaceData,
-        operation: &mut Operation,
+        operation: &Operation,
         ui: &mut Ui,
     ) {
         match &self.select_domain_name {
@@ -219,14 +236,14 @@ impl CookiesWindows {
                                         c.name.clone(),
                                     ) {
                                         Ok(_) => {
-                                            operation.toasts().add(Toast {
+                                            operation.add_toast(Toast {
                                                 kind: ToastKind::Success,
                                                 text: "Update cookie success.".into(),
                                                 options: Default::default(),
                                             });
                                         }
                                         Err(err) => {
-                                            operation.toasts().add(Toast {
+                                            operation.add_toast(Toast {
                                                 kind: ToastKind::Error,
                                                 text: err.into(),
                                                 options: Default::default(),
@@ -241,44 +258,5 @@ impl CookiesWindows {
                 });
             }
         }
-    }
-}
-
-impl DataView for CookiesWindows {
-    type CursorType = i32;
-
-    fn set_and_render(
-        &mut self,
-        ui: &mut Ui,
-        operation: &mut Operation,
-        workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
-    ) {
-        operation.lock_ui("env".to_string(), self.cookies_windows_open);
-        let mut cookies_windows_open = self.cookies_windows_open;
-        egui::Window::new("MANAGE COOKIES")
-            .default_open(true)
-            .max_width(500.0)
-            .min_height(400.0)
-            .max_height(400.0)
-            .collapsible(false)
-            .resizable(true)
-            .open(&mut cookies_windows_open)
-            .show(ui.ctx(), |ui| {
-                ui.vertical(|ui| {
-                    ui.add_space(VERTICAL_GAP);
-                    self.render_add(workspace_data, ui);
-                    ui.add_space(VERTICAL_GAP);
-                    ui.separator();
-                    self.render_domain_list(workspace_data, ui);
-                    ui.add_space(VERTICAL_GAP);
-                    ui.separator();
-                    self.render_key_list(workspace_data, operation, ui);
-                    ui.add_space(VERTICAL_GAP);
-                    ui.separator();
-                    self.render_content(workspace_data, operation, ui);
-                });
-            });
-        self.cookies_windows_open = cookies_windows_open;
     }
 }
