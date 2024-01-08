@@ -61,13 +61,9 @@ impl DataView for MyCentralPanel {
         self.environment_windows
             .set_and_render(ui, operation, workspace_data, cursor);
 
-        workspace_data.environment.select().clone().map(|s| {
-            if !workspace_data
-                .environment
-                .get_data()
-                .contains_key(s.as_str())
-            {
-                workspace_data.environment.set_select(None)
+        workspace_data.get_env_select().map(|s| {
+            if !workspace_data.get_env_configs().contains_key(s.as_str()) {
+                workspace_data.set_env_select(None)
             }
         });
         if operation.open_windows().save_opened {
@@ -122,9 +118,9 @@ impl MyCentralPanel {
         text: impl Into<WidgetText>,
     ) -> Response {
         let mut response =
-            ui.selectable_label(workspace_data.environment.select() == selected_value, text);
-        if response.clicked() && workspace_data.environment.select() != selected_value {
-            workspace_data.environment.set_select(selected_value);
+            ui.selectable_label(workspace_data.get_env_select() == selected_value, text);
+        if response.clicked() && workspace_data.get_env_select() != selected_value {
+            workspace_data.set_env_select(selected_value);
             response.mark_changed();
         }
         response
@@ -140,15 +136,14 @@ impl MyCentralPanel {
                     egui::ComboBox::from_id_source("env")
                         .selected_text(
                             workspace_data
-                                .environment
-                                .select()
+                                .get_env_select()
                                 .unwrap_or("No Environment".to_string()),
                         )
                         .show_ui(ui, |ui| {
                             ui.style_mut().wrap = Some(false);
                             ui.set_min_width(60.0);
                             self.selectable_value(ui, workspace_data, None, "No Environment");
-                            for (name, _) in &workspace_data.environment.get_data() {
+                            for (name, _) in &workspace_data.get_env_configs() {
                                 if name == ENVIRONMENT_GLOBALS {
                                     continue;
                                 }

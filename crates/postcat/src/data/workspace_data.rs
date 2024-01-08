@@ -10,7 +10,7 @@ use crate::data::auth::{Auth, AuthType};
 use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
 use crate::data::collections::{Collection, Collections};
 use crate::data::cookies_manager::{Cookie, CookiesManager};
-use crate::data::environment::{Environment, EnvironmentItemValue};
+use crate::data::environment::{Environment, EnvironmentConfig, EnvironmentItemValue};
 use crate::data::history::{DateGroupHistoryList, HistoryDataList};
 use crate::data::http::HttpRecord;
 use crate::script::script::ScriptScope;
@@ -20,8 +20,8 @@ pub struct WorkspaceData {
     pub workspace_name: String,
     cookies_manager: RefCell<CookiesManager>,
     central_request_data_list: RefCell<CentralRequestDataList>,
-    pub history_data_list: RefCell<HistoryDataList>,
-    pub environment: Environment,
+    history_data_list: RefCell<HistoryDataList>,
+    environment: RefCell<Environment>,
     pub collections: Collections,
     client: Option<Client>,
 }
@@ -50,6 +50,38 @@ impl WorkspaceData {
         let path = option_path?;
         let collection_name = path.splitn(2, "/").next()?;
         self.collections.data.get(collection_name).cloned()
+    }
+}
+
+//env
+impl WorkspaceData {
+    pub fn get_build_envs(
+        &self,
+        collection: Option<Collection>,
+    ) -> BTreeMap<String, EnvironmentItemValue> {
+        self.environment.borrow().get_variable_hash_map(collection)
+    }
+    pub fn get_env_select(&self) -> Option<String> {
+        self.environment.borrow().select()
+    }
+    pub fn set_env_select(&self, select: Option<String>) {
+        self.environment.borrow_mut().set_select(select)
+    }
+
+    pub fn get_env_configs(&self) -> BTreeMap<String, EnvironmentConfig> {
+        self.environment.borrow().get_data()
+    }
+
+    pub fn get_env(&self, key: String) -> Option<EnvironmentConfig> {
+        self.environment.borrow().get(key)
+    }
+
+    pub fn add_env(&self, key: String, value: EnvironmentConfig) {
+        self.environment.borrow_mut().insert(key, value)
+    }
+
+    pub fn remove_env(&self, key: String) {
+        self.environment.borrow_mut().remove(key)
     }
 }
 
@@ -152,8 +184,7 @@ impl WorkspaceData {
     }
     pub fn get_crt_envs(&self, id: String) -> BTreeMap<String, EnvironmentItemValue> {
         let crt = self.must_get_crt(id);
-        self.environment
-            .get_variable_hash_map(self.get_collection(crt.collection_path.clone()))
+        self.get_build_envs(self.get_collection(crt.collection_path.clone()))
     }
 
     pub fn get_crt_parent_auth(&self, id: String) -> Auth {
@@ -289,7 +320,7 @@ impl WorkspaceData {
         self.history_data_list
             .borrow_mut()
             .load_all(workspace.clone());
-        self.environment.load_all(workspace.clone());
+        self.environment.borrow_mut().load_all(workspace.clone());
         self.collections.load_all(workspace.clone());
         self.cookies_manager
             .borrow_mut()
@@ -299,7 +330,7 @@ impl WorkspaceData {
         self.history_data_list
             .borrow_mut()
             .load_all(workspace.clone());
-        self.environment.load_all(workspace.clone());
+        self.environment.borrow_mut().load_all(workspace.clone());
         self.collections.load_all(workspace.clone());
         self.cookies_manager
             .borrow_mut()

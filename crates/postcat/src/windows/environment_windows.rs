@@ -25,7 +25,7 @@ impl EnvironmentWindows {
         ui.label("An environment is a set of variables that allow you to switch the context of your requests. Environments can be shared between multiple workspaces.");
         ui.add_space(VERTICAL_GAP * 2.0);
         ScrollArea::vertical().show(ui, |ui| {
-            for (name, e) in workspace_data.environment.get_data().iter() {
+            for (name, e) in workspace_data.get_env_configs().iter() {
                 if name == ENVIRONMENT_GLOBALS {
                     continue;
                 }
@@ -44,13 +44,11 @@ impl EnvironmentWindows {
                         |ui| {
                             ui.horizontal(|ui| {
                                 if ui.button("📋").clicked() {
-                                    workspace_data
-                                        .environment
-                                        .insert(name.to_string() + " Copy", e.clone());
+                                    workspace_data.add_env(name.to_string() + " Copy", e.clone());
                                 };
                                 ui.button("⬇");
                                 if ui.button("🗑").clicked() {
-                                    workspace_data.environment.remove(name.to_string());
+                                    workspace_data.remove_env(name.to_string());
                                 }
                             });
                         },
@@ -166,9 +164,7 @@ impl EnvironmentWindows {
                         }
                         ui.button("Import");
                         if ui.button("Globals").clicked() {
-                            let data = workspace_data
-                                .environment
-                                .get(ENVIRONMENT_GLOBALS.to_string());
+                            let data = workspace_data.get_env(ENVIRONMENT_GLOBALS.to_string());
                             self.select_env = Some(ENVIRONMENT_GLOBALS.to_string());
                             self.select_env_config = data.unwrap_or(EnvironmentConfig::default());
                             self.select_env_name = ENVIRONMENT_GLOBALS.to_string();
@@ -176,10 +172,8 @@ impl EnvironmentWindows {
                     } else {
                         if ui.button("Update").clicked() {
                             if self.select_env_name != "" {
-                                workspace_data
-                                    .environment
-                                    .remove(self.select_env.clone().unwrap());
-                                workspace_data.environment.insert(
+                                workspace_data.remove_env(self.select_env.clone().unwrap());
+                                workspace_data.add_env(
                                     self.select_env_name.clone(),
                                     self.select_env_config.clone(),
                                 );
