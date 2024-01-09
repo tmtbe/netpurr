@@ -20,7 +20,7 @@ pub struct EnvironmentWindows {
 
 impl Window for EnvironmentWindows {
     fn window_setting(&self) -> WindowSetting {
-        WindowSetting::new("MANAGE ENVIRONMENTS".to_string())
+        WindowSetting::new("MANAGE ENVIRONMENTS")
             .modal(true)
             .default_width(500.0)
             .default_height(300.0)

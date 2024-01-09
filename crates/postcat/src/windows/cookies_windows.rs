@@ -37,7 +37,7 @@ impl Default for CookiesWindows {
 
 impl Window for CookiesWindows {
     fn window_setting(&self) -> WindowSetting {
-        WindowSetting::new("MANAGE COOKIES".to_string())
+        WindowSetting::new("MANAGE COOKIES")
             .max_width(500.0)
             .min_height(400.0)
             .max_height(400.0)

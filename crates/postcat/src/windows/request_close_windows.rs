@@ -16,7 +16,7 @@ pub struct RequestCloseWindows {
 
 impl Window for RequestCloseWindows {
     fn window_setting(&self) -> WindowSetting {
-        WindowSetting::new("DO YOU WANT TO SAVE?".to_string())
+        WindowSetting::new("DO YOU WANT TO SAVE?")
             .modal(true)
             .max_width(400.0)
             .min_height(400.0)

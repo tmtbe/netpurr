@@ -19,7 +19,7 @@ pub struct TestScriptWindows {
 
 impl Window for TestScriptWindows {
     fn window_setting(&self) -> WindowSetting {
-        WindowSetting::new("TEST SCRIPT".to_string())
+        WindowSetting::new("TEST SCRIPT")
             .modal(true)
             .max_width(500.0)
             .min_height(400.0)

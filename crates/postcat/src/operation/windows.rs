@@ -37,9 +37,9 @@ pub struct WindowSetting {
 }
 
 impl WindowSetting {
-    pub fn new(name: String) -> Self {
+    pub fn new(name: impl Into<String>) -> Self {
         WindowSetting {
-            name,
+            name: name.into(),
             ..Default::default()
         }
     }
