@@ -129,7 +129,8 @@ impl Windows {
                 .show(ctx, |ui| {
                     window.render(ui, config_data, workspace_data, operation.clone())
                 });
-            open = window.get_open();
+            open = window.get_open() && open;
+            window.set_open(open);
             if !open {
                 operation.lock_ui(window.window_setting().name.clone(), false);
             }

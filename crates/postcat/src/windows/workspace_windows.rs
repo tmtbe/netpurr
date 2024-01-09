@@ -34,6 +34,7 @@ pub struct WorkspaceWindows {
 impl Window for WorkspaceWindows {
     fn window_setting(&self) -> WindowSetting {
         WindowSetting::new("MANAGE WORKSPACE".to_string())
+            .modal(true)
             .default_width(500.0)
             .default_height(300.0)
             .collapsible(false)

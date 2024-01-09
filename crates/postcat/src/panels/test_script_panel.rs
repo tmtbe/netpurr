@@ -27,6 +27,15 @@ impl TestScriptPanel {
                     ui.strong("SNIPPETS");
                     egui::ScrollArea::vertical()
                         .show(ui, |ui| {
+                            if ui.link("Test Example").clicked() {
+                                script = script.clone().add(r#"let response = postcat.resp();                                
+console.log(response);
+postcat.test("This is a test example",function(){
+    // assert("expect", "actual");
+	assert("test",response.json.cookies.freeform);
+});
+                                "#)
+                            }
                             if ui.link("Log info message").clicked() {
                                 script = script.clone().add("\nconsole.log(\"info1\",\"info2\");");
                             }
