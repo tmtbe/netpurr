@@ -119,17 +119,7 @@ impl CollectionsPanel {
                         .map(|(k, _)| k.clone())
                         .collect(),
                 );
-                let new_folder = Rc::new(RefCell::new(CollectionFolder {
-                    name: new_name.clone(),
-                    parent_path: folder.borrow().parent_path.clone(),
-                    desc: folder.borrow().desc.clone(),
-                    auth: folder.borrow().auth.clone(),
-                    is_root: folder.borrow().is_root,
-                    requests: folder.borrow().requests.clone(),
-                    folders: folder.borrow().folders.clone(),
-                    pre_request_script: folder.borrow().pre_request_script.clone(),
-                    test_script: folder.borrow().test_script.clone(),
-                }));
+                let new_folder = Rc::new(RefCell::new(folder.borrow().duplicate(new_name)));
                 workspace_data.collection_insert_folder(parent_folder.clone(), new_folder.clone());
                 ui.close_menu();
             }
@@ -164,12 +154,11 @@ impl CollectionsPanel {
                 ui.close_menu();
             }
             if utils::select_label(ui, "Duplicate").clicked() {
-                let new_collections = collection.clone();
                 let new_name = utils::build_copy_name(
                     collection_name.to_string(),
                     workspace_data.get_collection_names(),
                 );
-                new_collections.folder.borrow_mut().name = new_name;
+                let new_collections = collection.duplicate(new_name);
                 workspace_data.add_collection(new_collections);
                 ui.close_menu();
             }

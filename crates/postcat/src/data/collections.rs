@@ -228,6 +228,12 @@ impl Default for Collection {
 }
 
 impl Collection {
+    pub(crate) fn duplicate(&self, name: String) -> Self {
+        let json = serde_json::to_string(self).unwrap();
+        let dup: Self = serde_json::from_str(json.as_str()).unwrap();
+        dup.folder.borrow_mut().name = name;
+        dup
+    }
     fn to_save_data(&self) -> SaveCollection {
         SaveCollection {
             envs: self.envs.clone(),
@@ -290,10 +296,14 @@ pub struct CollectionFolder {
 }
 
 impl CollectionFolder {
+    pub fn duplicate(&self, new_name: String) -> Self {
+        let json = serde_json::to_string(self).unwrap();
+        let mut dup: Self = serde_json::from_str(json.as_str()).unwrap();
+        dup.name = new_name;
+        dup
+    }
     pub fn to_save_data(&self) -> SaveCollectionFolder {
         SaveCollectionFolder {
-            name: self.name.clone(),
-            parent_path: self.parent_path.clone(),
             desc: self.desc.clone(),
             auth: self.auth.clone(),
             is_root: self.is_root.clone(),
@@ -304,9 +314,15 @@ impl CollectionFolder {
     pub fn load(&mut self, persistence: Persistence, path: PathBuf) {
         let collection_folder: Option<CollectionFolder> =
             persistence.load(path.join("folder@info.json").to_path_buf());
+        let path_split: Vec<&str> = path.to_str().unwrap_or_default().split("/").collect();
+        let name = path_split[path_split.len() - 1].to_string();
+        let mut parent_path = path_split[1..path_split.len() - 1].join("/");
+        if parent_path.is_empty() {
+            parent_path = ".".to_string();
+        }
         collection_folder.map(|cf| {
-            self.name = cf.name;
-            self.parent_path = cf.parent_path;
+            self.name = name;
+            self.parent_path = parent_path;
             self.desc = cf.desc;
             self.auth = cf.auth;
             self.is_root = cf.is_root;
@@ -367,8 +383,6 @@ pub struct SaveCollection {
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SaveCollectionFolder {
-    pub name: String,
-    pub parent_path: String,
     pub desc: String,
     pub auth: Auth,
     pub is_root: bool,
