@@ -32,13 +32,13 @@ impl RestSender {
                 .iter()
                 .find(|h| {
                     h.key.to_lowercase() == hn.to_string().to_lowercase()
-                        && h.value == hv.to_str().unwrap()
+                        && h.value == hv.to_str().unwrap_or("")
                 })
                 .is_none()
             {
                 new_request.headers.push(Header {
                     key: hn.to_string(),
-                    value: hv.to_str().unwrap().to_string(),
+                    value: hv.to_str().unwrap_or("").to_string(),
                     desc: "auto gen".to_string(),
                     enable: true,
                     lock_with: LockWith::LockWithAuto,
@@ -65,7 +65,8 @@ impl RestSender {
         request: http::Request,
     ) -> reqwest::Result<reqwest::blocking::Request> {
         let client = Client::new();
-        let method = Method::from_str(request.method.to_string().to_uppercase().as_str()).unwrap();
+        let method = Method::from_str(request.method.to_string().to_uppercase().as_str())
+            .unwrap_or_default();
         let mut builder = client.request(method, request.base_url);
         for header in request.headers.iter().filter(|h| h.enable) {
             builder = builder.header(header.key.clone(), header.value.clone());
@@ -86,7 +87,7 @@ impl RestSender {
                         MultipartDataType::File => {
                             form = form
                                 .file(md.key.clone(), Path::new(md.value.as_str()).to_path_buf())
-                                .unwrap();
+                                .unwrap()
                         }
                         MultipartDataType::Text => {
                             form = form.text(md.key.clone(), md.value.clone());

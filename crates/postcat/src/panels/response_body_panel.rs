@@ -67,19 +67,22 @@ impl ResponseBodyPanel {
         }
     }
     fn get_language(response: &Response) -> String {
-        let content_type_header = response.headers.iter().find(|h| h.key == "content-type");
-        if content_type_header.is_some() {
-            let content_type = content_type_header.unwrap().value.clone();
-            if content_type.contains("json") {
-                return "json".to_string();
-            } else if content_type.contains("html") {
-                return "html".to_string();
-            } else if content_type.contains("js") {
-                return "js".to_string();
-            } else if content_type.contains("xml") {
-                return "xml".to_string();
+        match response.headers.iter().find(|h| h.key == "content-type") {
+            None => "json".to_string(),
+            Some(content_type_header) => {
+                let content_type = content_type_header.value.clone();
+                if content_type.contains("json") {
+                    return "json".to_string();
+                } else if content_type.contains("html") {
+                    return "html".to_string();
+                } else if content_type.contains("js") {
+                    return "js".to_string();
+                } else if content_type.contains("xml") {
+                    return "xml".to_string();
+                } else {
+                    "json".to_string()
+                }
             }
         }
-        "json".to_string()
     }
 }

@@ -30,7 +30,7 @@ pub struct Persistence {
 impl Default for Persistence {
     fn default() -> Self {
         Persistence {
-            root: dirs::home_dir().unwrap(),
+            root: dirs::home_dir().expect("find home dir error"),
             workspace: "default".to_string(),
         }
     }
@@ -60,21 +60,26 @@ impl PersistenceItem for Persistence {
             error!("create_dir_all {:?} failed", rel_path);
             return;
         };
-        let json = serde_json::to_string(data);
-        if json.is_err() {
-            error!("serde_json::to_string failed");
-            return;
+        match serde_json::to_string(data) {
+            Ok(json) => {
+                let mut json_path = rel_path.join(save_key);
+                json_path.set_extension("json");
+                let mut file_result = File::create(json_path.clone());
+                match file_result {
+                    Ok(mut file) => {
+                        if file.write_all(json.as_bytes()).is_err() {
+                            error!("write_all failed");
+                        }
+                    }
+                    Err(_) => {
+                        error!("create_file {:?} failed", json_path);
+                    }
+                }
+            }
+            Err(_) => {
+                error!("serde_json::to_string failed");
+            }
         }
-        let mut json_path = rel_path.join(save_key);
-        json_path.set_extension("json");
-        let mut file = File::create(json_path.clone());
-        if file.is_err() {
-            error!("create_file {:?} failed", json_path);
-            return;
-        }
-        if file.unwrap().write_all(json.unwrap().as_bytes()).is_err() {
-            error!("write_all failed");
-        };
     }
     fn load<T: DeserializeOwned + std::fmt::Debug>(&self, path: PathBuf) -> Option<T> {
         let workspace_dir = self.get_workspace_dir();
@@ -82,22 +87,30 @@ impl PersistenceItem for Persistence {
         if !rel_path.starts_with(workspace_dir.clone()) {
             rel_path = workspace_dir.join(rel_path.clone());
         }
-        let mut file = File::open(rel_path.clone());
-        if file.is_err() {
-            error!("open {:?} failed", rel_path);
-            return None;
-        }
-        let mut content = String::new();
-        if file.unwrap().read_to_string(&mut content).is_err() {
-            error!("read_to_string {:?} failed", rel_path);
-            return None;
-        }
-        let result: serde_json::Result<T> = serde_json::from_str(content.as_str());
-        if result.is_ok() {
-            Some(result.unwrap())
-        } else {
-            error!("load {:?} failed: {:?}", path, result.unwrap_err());
-            None
+        match File::open(rel_path.clone()) {
+            Ok(mut file) => {
+                let mut content = String::new();
+                match file.read_to_string(&mut content) {
+                    Ok(_) => {
+                        let result: serde_json::Result<T> = serde_json::from_str(content.as_str());
+                        match result {
+                            Ok(t) => Some(t),
+                            Err(_) => {
+                                error!("load {:?} failed: {:?}", path, result.unwrap_err());
+                                None
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        error!("read_to_string {:?} failed", rel_path);
+                        None
+                    }
+                }
+            }
+            Err(_) => {
+                error!("open {:?} failed", rel_path);
+                None
+            }
         }
     }
     fn load_list(&self, path: PathBuf) -> Vec<PathBuf> {

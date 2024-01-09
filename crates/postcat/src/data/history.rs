@@ -67,9 +67,7 @@ impl HistoryDataList {
         };
         self.date_group
             .get_mut(&today)
-            .unwrap()
-            .history_list
-            .push(hrt.clone());
+            .map(|g| g.history_list.push(hrt.clone()));
         self.persistence.save(
             Path::new("history").join(today.to_string()),
             hrt.id.clone(),

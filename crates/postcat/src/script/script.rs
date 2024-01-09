@@ -6,7 +6,7 @@ use std::str::FromStr;
 use deno_core::anyhow::Error;
 use deno_core::error::AnyError;
 use deno_core::url::Url;
-use deno_core::{op2, ExtensionBuilder, Op, OpState};
+use deno_core::{op2, ExtensionBuilder, FsModuleLoader, Op, OpState};
 use deno_core::{ModuleCode, PollEventLoopOptions};
 use poll_promise::Promise;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -18,7 +18,6 @@ use crate::data::http;
 use crate::data::http::{Header, LockWith, QueryParam, Request};
 use crate::data::logger::Logger;
 use crate::data::test::TestResult;
-use crate::script::loader::SimpleModuleLoader;
 
 #[derive(Default, Clone)]
 pub struct ScriptRuntime {}
@@ -93,7 +92,7 @@ impl ScriptRuntime {
             ])
             .build();
         let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
-            module_loader: Some(Rc::new(SimpleModuleLoader)),
+            module_loader: Some(Rc::new(FsModuleLoader)),
             extensions: vec![runjs_extension],
             ..Default::default()
         });

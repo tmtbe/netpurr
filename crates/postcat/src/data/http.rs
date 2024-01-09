@@ -281,7 +281,7 @@ impl Header {
         for (key, value) in headers.iter() {
             result.push(Header {
                 key: key.to_string(),
-                value: value.to_str().unwrap().to_string(),
+                value: value.to_str().unwrap_or("").to_string(),
                 desc: "".to_string(),
                 enable: true,
                 lock_with: LockWith::NoLock,
@@ -347,7 +347,9 @@ impl HttpBody {
         )
     }
     pub fn to_vec(&self) -> Vec<u8> {
-        general_purpose::STANDARD.decode(&self.base64).unwrap()
+        general_purpose::STANDARD
+            .decode(&self.base64)
+            .unwrap_or_default()
     }
     pub fn get_byte_size(&self) -> String {
         if self.size > 1000000 {

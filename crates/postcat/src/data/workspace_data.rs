@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use chrono::NaiveDate;
+use log::error;
 use reqwest::blocking::Client;
 use uuid::Uuid;
 
@@ -37,7 +38,7 @@ impl WorkspaceData {
                     .tcp_nodelay(true)
                     .timeout(Duration::from_secs(60))
                     .build()
-                    .unwrap();
+                    .unwrap_or_default();
                 self.client = Some(client.clone());
                 client
             }
@@ -245,14 +246,18 @@ impl WorkspaceData {
         });
     }
 
-    pub fn get_mut_crt(&self, id: String, call: impl FnOnce(&mut CentralRequestItem)) {
-        call(
-            self.central_request_data_list
-                .borrow_mut()
-                .data_map
-                .get_mut(id.as_str())
-                .unwrap(),
-        )
+    pub fn must_get_mut_crt(&self, id: String, call: impl FnOnce(&mut CentralRequestItem)) {
+        match self
+            .central_request_data_list
+            .borrow_mut()
+            .data_map
+            .get_mut(id.as_str())
+        {
+            None => {
+                error!("get crt:{} error", id)
+            }
+            Some(crt) => call(crt),
+        }
     }
     pub fn get_crt_envs(&self, id: String) -> BTreeMap<String, EnvironmentItemValue> {
         let crt = self.must_get_crt(id);
@@ -319,7 +324,10 @@ impl WorkspaceData {
             .data_map
             .get(id.as_str())
             .cloned()
-            .unwrap()
+            .unwrap_or_else(|| {
+                error!("get crt {} error", id);
+                CentralRequestItem::default()
+            })
     }
     pub fn auto_save_crd(&self) {
         self.central_request_data_list.borrow().auto_save();

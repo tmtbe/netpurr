@@ -23,7 +23,7 @@ impl RequestHeadersPanel {
         crt_id: String,
     ) {
         let envs = workspace_data.get_crt_envs(crt_id.clone());
-        workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+        workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
             ui.label("Headers");
             let mut delete_index = None;
             ui.push_id("request_headers_table", |ui| {

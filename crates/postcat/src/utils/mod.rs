@@ -160,8 +160,7 @@ pub fn replace_variable(content: String, envs: BTreeMap<String, EnvironmentItemV
         match find {
             None => break,
             Some(find_match) => {
-                let key = find
-                    .unwrap()
+                let key = find_match
                     .as_str()
                     .trim_start_matches("{{")
                     .trim_end_matches("}}");
@@ -266,7 +265,12 @@ pub fn text_edit_multiline_justify<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> 
 }
 
 pub fn build_copy_name(mut name: String, names: HashSet<String>) -> String {
-    name = name.splitn(2, "Copy").next().unwrap().trim().to_string();
+    name = name
+        .splitn(2, "Copy")
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .to_string();
     let mut index = 2;
     let mut new_name = name.clone();
     while (names.contains(new_name.as_str())) {

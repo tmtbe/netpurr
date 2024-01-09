@@ -175,11 +175,14 @@ impl Collections {
                 let mut folder = collection.folder.clone();
                 let folder_paths = &collection_paths[1..];
                 for folder_name in folder_paths.iter() {
-                    let get = folder.borrow().folders.get(folder_name.to_owned()).cloned();
-                    if get.is_none() {
-                        return (collection_name.to_string(), None);
-                    } else {
-                        folder = get.unwrap().clone();
+                    let binding = folder.borrow().folders.get(folder_name.to_owned()).cloned();
+                    match binding {
+                        None => {
+                            return (collection_name.to_string(), None);
+                        }
+                        Some(get_folder) => {
+                            folder = get_folder.clone();
+                        }
                     }
                 }
                 (collection_name.to_string(), Some(folder))

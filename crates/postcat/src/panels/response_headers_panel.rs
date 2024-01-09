@@ -41,7 +41,7 @@ impl ResponseHeadersPanel {
                     });
                 })
                 .body(|mut body| {
-                    workspace_data.get_mut_crt(crt_id.clone(), |crt| {
+                    workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                         for (_, header) in crt.rest.response.headers.iter_mut().enumerate() {
                             body.row(18.0, |mut row| {
                                 row.col(|ui| {

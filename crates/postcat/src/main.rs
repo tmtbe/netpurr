@@ -21,7 +21,7 @@ fn main() -> eframe::Result<()> {
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_icon(Arc::new(
-                from_png_bytes(&include_bytes!("../icon/icon128.png")[..]).unwrap(),
+                from_png_bytes(&include_bytes!("../icon/icon128.png")[..]).expect("png get error"),
             ))
             .with_inner_size([1000.0, 500.0])
             .with_min_inner_size([800.0, 400.0]),
@@ -50,7 +50,7 @@ fn set_log_config() {
         local_time.second()
     );
     let log_path = dirs::home_dir()
-        .unwrap()
+        .expect("find home dir error")
         .join(APP_NAME)
         .join("logs")
         .join(file_name);
@@ -58,7 +58,7 @@ fn set_log_config() {
     let file = FileAppender::builder()
         .encoder(Box::new(PatternEncoder::new("{d} - {m}{n}")))
         .build(log_path)
-        .unwrap();
+        .expect("create log file appender error");
     let config = Config::builder()
         .appender(Appender::builder().build("stdout", Box::new(stdout)))
         .appender(Appender::builder().build("file", Box::new(file)))
@@ -68,7 +68,7 @@ fn set_log_config() {
                 .appender("file")
                 .build(LevelFilter::Info),
         )
-        .unwrap();
+        .expect("create log config error");
     log4rs::init_config(config).expect("init log error");
 }
 

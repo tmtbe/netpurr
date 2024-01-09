@@ -63,7 +63,7 @@ impl HighlightTemplate<'_> {
                     .collect();
                 let prompt_option = self.find_prompt(before_cursor_text.to_string());
                 if prompt_option.is_some() && self.envs.clone().len() > 0 {
-                    let prompt = prompt_option.unwrap();
+                    let prompt = prompt_option.unwrap_or_default();
                     let mut hovered_label_key = None;
                     ui.memory_mut(|mem| mem.open_popup(popup_id));
                     popup_widget(
