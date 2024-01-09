@@ -16,6 +16,7 @@ use crate::data::environment::{Environment, EnvironmentConfig, EnvironmentItemVa
 use crate::data::history::{DateGroupHistoryList, HistoryDataList};
 use crate::data::http::HttpRecord;
 use crate::script::script::ScriptScope;
+use crate::utils;
 
 #[derive(Default, Clone, Debug)]
 pub struct WorkspaceData {
@@ -112,6 +113,15 @@ impl WorkspaceData {
     }
     pub fn add_collection(&self, collection: Collection) {
         self.collections.borrow_mut().insert_collection(collection)
+    }
+    pub fn import_collection(&self, mut collection: Collection) -> String {
+        let new_name = utils::build_copy_name(
+            collection.folder.borrow().name.clone(),
+            self.get_collection_names(),
+        );
+        collection.folder.borrow_mut().name = new_name.clone();
+        self.add_collection(collection.clone());
+        new_name
     }
     pub fn remove_collection(&self, collection_name: String) {
         self.collections

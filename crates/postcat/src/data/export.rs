@@ -11,6 +11,7 @@ pub struct Export {
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum ExportType {
+    None,
     Collection,
     Request,
     Environment,
@@ -18,6 +19,6 @@ pub enum ExportType {
 
 impl Default for ExportType {
     fn default() -> Self {
-        ExportType::Collection
+        ExportType::None
     }
 }

@@ -11,6 +11,7 @@ use crate::operation::operation::Operation;
 use crate::panels::central_panel::MyCentralPanel;
 use crate::panels::left_panel::MyLeftPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
+use crate::windows::import_windows::ImportWindows;
 use crate::windows::workspace_windows::WorkspaceWindows;
 
 #[derive(Default)]
@@ -163,7 +164,10 @@ impl App {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if ui.button("New...").clicked() {}
-                    if ui.button("Import...").clicked() {}
+                    if ui.button("Import...").clicked() {
+                        self.operation
+                            .add_window(Box::new(ImportWindows::default()))
+                    }
                     if ui.button("Exit").clicked() {
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
@@ -179,7 +183,10 @@ impl App {
                 ui.horizontal(|ui| {
                     if ui.button("New").clicked() {}
                     ui.add_space(HORIZONTAL_GAP);
-                    if ui.button("Import").clicked() {}
+                    if ui.button("Import").clicked() {
+                        self.operation
+                            .add_window(Box::new(ImportWindows::default()))
+                    }
                     ui.add_space(HORIZONTAL_GAP);
                     self.current_workspace = self.config_data.select_workspace().to_string();
                     egui::ComboBox::from_id_source("workspace")
