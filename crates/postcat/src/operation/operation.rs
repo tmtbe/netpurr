@@ -25,7 +25,8 @@ pub struct Operation {
     script_runtime: ScriptRuntime,
     modal_flag: Rc<RefCell<ModalFlag>>,
     toasts: Rc<RefCell<Toasts>>,
-    windows: Rc<RefCell<Windows>>,
+    current_windows: Rc<RefCell<Windows>>,
+    add_windows: Rc<RefCell<Windows>>,
     git: Git,
 }
 
@@ -59,7 +60,8 @@ impl Default for Operation {
                     .anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0))
                     .direction(egui::Direction::BottomUp),
             )),
-            windows: Rc::new(RefCell::new(Windows::default())),
+            current_windows: Rc::new(RefCell::new(Windows::default())),
+            add_windows: Rc::new(RefCell::new(Default::default())),
             git: Default::default(),
         }
     }
@@ -182,7 +184,9 @@ impl Operation {
         });
     }
     pub fn add_window(&self, window: Box<dyn Window>) {
-        self.windows.borrow_mut().add(window);
+        self.add_windows
+            .borrow_mut()
+            .add(Rc::new(RefCell::new(window)));
     }
 
     pub fn show(
@@ -192,9 +196,14 @@ impl Operation {
         workspace_data: &mut WorkspaceData,
     ) {
         self.toasts.borrow_mut().show(ctx);
-        self.windows
-            .borrow_mut()
+        for w in &self.add_windows.borrow().show_windows {
+            self.current_windows.borrow_mut().add(w.clone())
+        }
+        self.add_windows.borrow_mut().show_windows.clear();
+        self.current_windows
+            .borrow()
             .show(ctx, config_data, workspace_data, self.clone());
+        self.current_windows.borrow_mut().retain()
     }
     pub fn git(&self) -> &Git {
         &self.git

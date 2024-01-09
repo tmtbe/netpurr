@@ -83,59 +83,64 @@ impl WindowSetting {
 
 #[derive(Default)]
 pub struct Windows {
-    show_windows: Vec<Box<dyn Window>>,
+    pub show_windows: Vec<Rc<RefCell<Box<dyn Window>>>>,
 }
 
 impl Windows {
-    pub fn add(&mut self, mut window: Box<dyn Window>) {
-        window.set_open(true);
+    pub fn add(&mut self, mut window: Rc<RefCell<Box<dyn Window>>>) {
+        window.borrow_mut().set_open(true);
         self.show_windows.push(window);
     }
-
+    pub fn retain(&mut self) {
+        self.show_windows.retain(|w| w.borrow().get_open());
+    }
     pub fn show(
-        &mut self,
+        &self,
         ctx: &Context,
         config_data: &mut ConfigData,
         workspace_data: &mut WorkspaceData,
         operation: Operation,
     ) {
-        for window in self.show_windows.iter_mut() {
-            let mut open = window.get_open();
-            if window.window_setting().modal {
-                operation.lock_ui(window.window_setting().name.clone(), true);
+        for window in self.show_windows.iter() {
+            let mut open = window.borrow().get_open();
+            if window.borrow().window_setting().modal {
+                operation.lock_ui(window.borrow().window_setting().name.clone(), true);
             }
-            let mut w = egui::Window::new(window.window_setting().name.clone());
-            if let Some(v) = window.window_setting().max_width {
+            let mut w = egui::Window::new(window.borrow().window_setting().name.clone());
+            if let Some(v) = window.borrow().window_setting().max_width {
                 w = w.max_width(v)
             }
-            if let Some(v) = window.window_setting().min_width {
+            if let Some(v) = window.borrow().window_setting().min_width {
                 w = w.min_width(v)
             }
-            if let Some(v) = window.window_setting().max_height {
+            if let Some(v) = window.borrow().window_setting().max_height {
                 w = w.max_height(v)
             }
-            if let Some(v) = window.window_setting().min_height {
+            if let Some(v) = window.borrow().window_setting().min_height {
                 w = w.min_height(v)
             }
-            if let Some(v) = window.window_setting().default_width {
+            if let Some(v) = window.borrow().window_setting().default_width {
                 w = w.default_width(v)
             }
-            if let Some(v) = window.window_setting().default_height {
+            if let Some(v) = window.borrow().window_setting().default_height {
                 w = w.default_height(v)
             }
-            w.collapsible(window.window_setting().collapsible)
-                .resizable(window.window_setting().resizable)
+            let collapsible = window.borrow().window_setting().collapsible;
+            let resizable = window.borrow().window_setting().resizable;
+            w.collapsible(collapsible)
+                .resizable(resizable)
                 .open(&mut open)
                 .show(ctx, |ui| {
-                    window.render(ui, config_data, workspace_data, operation.clone())
+                    window
+                        .borrow_mut()
+                        .render(ui, config_data, workspace_data, operation.clone())
                 });
-            open = window.get_open() && open;
-            window.set_open(open);
+            open = window.borrow().get_open() && open;
+            window.borrow_mut().set_open(open);
             if !open {
-                operation.lock_ui(window.window_setting().name.clone(), false);
+                operation.lock_ui(window.borrow().window_setting().name.clone(), false);
             }
         }
-        self.show_windows.retain(|w| w.get_open())
     }
 }
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
