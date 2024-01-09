@@ -111,35 +111,40 @@ impl Collections {
         );
     }
 
+    pub fn remove_folder(&self, parent_folder: Rc<RefCell<CollectionFolder>>, name: String) {
+        parent_folder.borrow_mut().folders.remove(name.as_str());
+        self.persistence.remove_dir(
+            Path::new("collections")
+                .join(parent_folder.borrow().parent_path.as_str())
+                .join(parent_folder.borrow().name.as_str())
+                .join(name.as_str()),
+        );
+    }
+
     pub fn get_data(&self) -> BTreeMap<String, Collection> {
         self.data.clone()
     }
 
-    pub fn get_pre_request_script_scope(&self, path: String) -> Option<ScriptScope> {
-        let name = path.split("/").next()?;
-        let collection = self.data.get(name)?;
-        let scope = format!("collection:{}", collection.folder.borrow().name.clone());
-        if collection.pre_request_script != "" {
-            Some(ScriptScope {
-                script: collection.pre_request_script.clone(),
-                scope,
-            })
-        } else {
-            None
+    pub fn get_path_scripts(&self, path: String) -> (Vec<ScriptScope>, Vec<ScriptScope>) {
+        let mut name_builder = Vec::new();
+        let mut pre_scripts = Vec::new();
+        let mut test_scripts = Vec::new();
+        for path_part in path.split("/") {
+            name_builder.push(path_part);
+            self.get_folder_with_path(name_builder.join("/"))
+                .1
+                .map(|f| {
+                    test_scripts.push(ScriptScope {
+                        script: f.borrow().test_script.clone(),
+                        scope: name_builder.join("/"),
+                    });
+                    pre_scripts.push(ScriptScope {
+                        script: f.borrow().pre_request_script.clone(),
+                        scope: name_builder.join("/"),
+                    });
+                });
         }
-    }
-    pub fn get_test_script_scope(&self, path: String) -> Option<ScriptScope> {
-        let name = path.split("/").next()?;
-        let collection = self.data.get(name)?;
-        let scope = format!("collection:{}", collection.folder.borrow().name.clone());
-        if collection.test_script != "" {
-            Some(ScriptScope {
-                script: collection.test_script.clone(),
-                scope,
-            })
-        } else {
-            None
-        }
+        (pre_scripts, test_scripts)
     }
     pub fn get_auth(&self, path: String) -> Auth {
         let (_, of) = self.get_folder_with_path(path.clone());
@@ -196,8 +201,6 @@ impl Collections {
 pub struct Collection {
     pub envs: EnvironmentConfig,
     pub folder: Rc<RefCell<CollectionFolder>>,
-    pub pre_request_script: String,
-    pub test_script: String,
 }
 
 impl Default for Collection {
@@ -217,9 +220,9 @@ impl Default for Collection {
                 is_root: true,
                 requests: Default::default(),
                 folders: Default::default(),
+                pre_request_script: "".to_string(),
+                test_script: "".to_string(),
             })),
-            pre_request_script: "".to_string(),
-            test_script: "".to_string(),
         }
     }
 }
@@ -228,8 +231,6 @@ impl Collection {
     fn to_save_data(&self) -> SaveCollection {
         SaveCollection {
             envs: self.envs.clone(),
-            pre_request_script: self.pre_request_script.clone(),
-            test_script: self.test_script.clone(),
         }
     }
     pub fn build_envs(&self) -> BTreeMap<String, EnvironmentItemValue> {
@@ -266,8 +267,6 @@ impl Collection {
                             let mut folder = CollectionFolder::default();
                             folder.load(persistence, dir_path.join(folder_name));
                             self.folder = Rc::new(RefCell::new(folder));
-                            self.pre_request_script = c.pre_request_script;
-                            self.test_script = c.test_script;
                         });
                     });
                 }
@@ -286,6 +285,8 @@ pub struct CollectionFolder {
     pub is_root: bool,
     pub requests: BTreeMap<String, HttpRecord>,
     pub folders: BTreeMap<String, Rc<RefCell<CollectionFolder>>>,
+    pub pre_request_script: String,
+    pub test_script: String,
 }
 
 impl CollectionFolder {
@@ -296,6 +297,8 @@ impl CollectionFolder {
             desc: self.desc.clone(),
             auth: self.auth.clone(),
             is_root: self.is_root.clone(),
+            pre_request_script: self.pre_request_script.clone(),
+            test_script: self.test_script.clone(),
         }
     }
     pub fn load(&mut self, persistence: Persistence, path: PathBuf) {
@@ -307,6 +310,8 @@ impl CollectionFolder {
             self.desc = cf.desc;
             self.auth = cf.auth;
             self.is_root = cf.is_root;
+            self.pre_request_script = cf.pre_request_script;
+            self.test_script = cf.test_script;
         });
         for item in persistence.load_list(path.clone()).iter() {
             if item.is_file() {
@@ -357,8 +362,6 @@ impl CollectionFolder {
 #[serde(default)]
 pub struct SaveCollection {
     pub envs: EnvironmentConfig,
-    pub pre_request_script: String,
-    pub test_script: String,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -369,4 +372,6 @@ pub struct SaveCollectionFolder {
     pub desc: String,
     pub auth: Auth,
     pub is_root: bool,
+    pub pre_request_script: String,
+    pub test_script: String,
 }

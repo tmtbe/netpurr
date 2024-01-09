@@ -127,15 +127,14 @@ impl CollectionsPanel {
                     is_root: folder.borrow().is_root,
                     requests: folder.borrow().requests.clone(),
                     folders: folder.borrow().folders.clone(),
+                    pre_request_script: folder.borrow().pre_request_script.clone(),
+                    test_script: folder.borrow().test_script.clone(),
                 }));
                 workspace_data.collection_insert_folder(parent_folder.clone(), new_folder.clone());
                 ui.close_menu();
             }
             if utils::select_label(ui, "Remove").clicked() {
-                parent_folder
-                    .borrow_mut()
-                    .folders
-                    .remove(folder_name.as_str());
+                workspace_data.remove_folder(parent_folder, folder_name.clone());
                 ui.close_menu();
             }
         });

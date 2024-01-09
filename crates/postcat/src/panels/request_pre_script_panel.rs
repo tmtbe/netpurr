@@ -19,7 +19,7 @@ impl RequestPreScriptPanel {
         ui: &mut Ui,
         operation: &Operation,
         mut script: String,
-        parent_script: Option<ScriptScope>,
+        mut parent_scripts: Vec<ScriptScope>,
         request: Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
         id: String,
@@ -43,18 +43,14 @@ impl RequestPreScriptPanel {
                             script: script.clone(),
                             scope: "request".to_string(),
                         };
-                        let mut script_scopes = Vec::new();
-                        if let Some(parent_script_scope) = parent_script {
-                            script_scopes.push(parent_script_scope);
-                        }
-                        script_scopes.push(script_scope);
+                        parent_scripts.push(script_scope);
                         let context = Context {
                             scope_name: "request".to_string(),
                             request: request.clone(),
                             envs,
                             ..Default::default()
                         };
-                        operation.add_window(Box::new(TestScriptWindows::default().with(script_scopes, context)));
+                        operation.add_window(Box::new(TestScriptWindows::default().with(parent_scripts, context)));
                     }
                     ui.separator();
                     ui.strong("SNIPPETS");

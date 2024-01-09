@@ -22,13 +22,12 @@ pub struct SaveCRTWindows {
     add_collection: bool,
     add_folder: bool,
     add_name: String,
-    title: String,
     id: String,
 }
 
 impl Window for SaveCRTWindows {
     fn window_setting(&self) -> WindowSetting {
-        WindowSetting::new(self.title.clone())
+        WindowSetting::new("SAVE REQUEST")
             .max_width(500.0)
             .default_height(400.0)
             .collapsible(false)
@@ -73,7 +72,6 @@ impl SaveCRTWindows {
         self.add_folder = false;
         self.add_collection = false;
         self.add_name = "".to_string();
-        self.title = "SAVE REQUEST".to_string();
         self
     }
 
@@ -193,6 +191,8 @@ impl SaveCRTWindows {
                                         is_root: false,
                                         requests: Default::default(),
                                         folders: Default::default(),
+                                        pre_request_script: "".to_string(),
+                                        test_script: "".to_string(),
                                     })),
                                 );
                             }
@@ -224,6 +224,8 @@ impl SaveCRTWindows {
                             is_root: true,
                             requests: Default::default(),
                             folders: BTreeMap::default(),
+                            pre_request_script: "".to_string(),
+                            test_script: "".to_string(),
                         })),
                         ..Default::default()
                     });
@@ -255,6 +257,9 @@ impl SaveCRTWindows {
                         }
                         Some(collection_path) => {
                             let mut ui_enable = true;
+                            if self.save_name.is_empty() {
+                                ui_enable = false;
+                            }
                             let button_name = "Save to ".to_string()
                                 + collection_path.split("/").last().unwrap_or_default();
                             let (_, option) =

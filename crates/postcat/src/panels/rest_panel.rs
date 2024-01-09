@@ -171,7 +171,7 @@ impl RestPanel {
     ) {
         let mut send_rest = None;
         let client = workspace_data.build_http_client();
-        let (pre_request_parent_script_scope, test_parent_script_scope) =
+        let (mut pre_request_parent_script_scopes, mut test_parent_script_scopes) =
             workspace_data.get_crt_parent_scripts(crt_id.clone());
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(crt_id.clone());
@@ -189,22 +189,15 @@ impl RestPanel {
                                 crt.rest.request.clear_lock_with();
                                 crt.rest.sync(envs.clone(), parent_auth.clone());
                             });
-                            let mut pre_request_script_scopes = Vec::new();
-                            if let Some(collect_script_scope) = pre_request_parent_script_scope {
-                                pre_request_script_scopes.push(collect_script_scope);
-                            }
                             if crt.rest.pre_request_script.clone() != "" {
-                                pre_request_script_scopes.push(ScriptScope {
+                                pre_request_parent_script_scopes.push(ScriptScope {
                                     scope: "request".to_string(),
                                     script: crt.rest.pre_request_script.clone(),
                                 });
                             }
-                            let mut test_script_scopes = Vec::new();
-                            if let Some(collect_script_scope) = test_parent_script_scope {
-                                test_script_scopes.push(collect_script_scope);
-                            }
+
                             if crt.rest.test_script.clone() != "" {
-                                test_script_scopes.push(ScriptScope {
+                                test_parent_script_scopes.push(ScriptScope {
                                     scope: "request".to_string(),
                                     script: crt.rest.test_script.clone(),
                                 });
@@ -212,8 +205,8 @@ impl RestPanel {
                             let send_response = operation.send_with_script(
                                 crt.rest.request.clone(),
                                 envs.clone(),
-                                pre_request_script_scopes,
-                                test_script_scopes,
+                                pre_request_parent_script_scopes,
+                                test_parent_script_scopes,
                                 client,
                             );
                             self.send_promise = Some(send_response);
@@ -300,7 +293,7 @@ impl RestPanel {
     ) {
         let crt = workspace_data.must_get_crt(crt_id.clone());
         let envs = workspace_data.get_crt_envs(crt_id.clone());
-        let (pre_request_parent_script_scope, _) =
+        let (pre_request_parent_script_scopes, _) =
             workspace_data.get_crt_parent_scripts(crt_id.clone());
         match self.open_request_panel_enum {
             RequestPanelEnum::Params => {
@@ -334,12 +327,13 @@ impl RestPanel {
                 workspace_data,
                 crt_id.clone(),
             ),
+
             RequestPanelEnum::PreRequestScript => {
                 let script = self.request_pre_script_panel.set_and_render(
                     ui,
                     operation,
                     crt.rest.pre_request_script.clone(),
-                    pre_request_parent_script_scope,
+                    pre_request_parent_script_scopes,
                     crt.rest.request.clone(),
                     envs.clone(),
                     "rest".to_string(),

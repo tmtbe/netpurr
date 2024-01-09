@@ -104,32 +104,32 @@ impl Window for NewCollectionWindows {
                 self.build_variables(ui);
             }
             NewCollectionContentType::PreRequestScript => {
-                let script = self.new_collection.pre_request_script.clone();
+                let script = self.folder.borrow().pre_request_script.clone();
                 let mut env = BTreeMap::default();
                 for et in self.new_collection.envs.items.iter() {
                     env.insert(
                         et.key.clone(),
                         EnvironmentItemValue {
                             value: et.value.clone(),
-                            scope: self.new_collection.folder.borrow().name.clone(),
+                            scope: self.folder.borrow().name.clone(),
                             value_type: EnvironmentValueType::String,
                         },
                     );
                 }
-                self.new_collection.pre_request_script =
+                self.folder.borrow_mut().pre_request_script =
                     self.request_pre_script_panel.set_and_render(
                         ui,
                         &operation,
                         script,
-                        None,
+                        Vec::new(),
                         Request::default(),
                         env,
                         "collection".to_string(),
                     );
             }
             NewCollectionContentType::Tests => {
-                let script = self.new_collection.test_script.clone();
-                self.new_collection.test_script =
+                let script = self.folder.borrow().test_script.clone();
+                self.folder.borrow_mut().test_script =
                     self.test_script_panel
                         .set_and_render(ui, script, "collection".to_string())
             }
@@ -170,15 +170,7 @@ impl NewCollectionWindows {
             None => {
                 self.new_collection = collection;
                 self.title_name = "CREATE A NEW FOLDER".to_string();
-                self.folder = Rc::new(RefCell::new(CollectionFolder {
-                    name: "".to_string(),
-                    parent_path: "".to_string(),
-                    desc: "".to_string(),
-                    auth: Default::default(),
-                    is_root: false,
-                    requests: Default::default(),
-                    folders: Default::default(),
-                }));
+                self.folder = Rc::new(RefCell::new(CollectionFolder::default()));
             }
             Some(cf) => {
                 self.new_collection = collection;
@@ -186,12 +178,14 @@ impl NewCollectionWindows {
                 self.title_name = "EDIT FOLDER".to_string();
                 self.folder = Rc::new(RefCell::new(CollectionFolder {
                     name: cf.borrow().name.clone(),
-                    parent_path: "".to_string(),
+                    parent_path: cf.borrow().parent_path.to_string(),
                     desc: cf.borrow().desc.clone(),
                     auth: cf.borrow().auth.clone(),
                     is_root: cf.borrow().is_root,
                     requests: cf.borrow().requests.clone(),
                     folders: cf.borrow().folders.clone(),
+                    pre_request_script: cf.borrow().pre_request_script.clone(),
+                    test_script: cf.borrow().test_script.clone(),
                 }));
             }
         }
@@ -378,7 +372,10 @@ impl NewCollectionWindows {
                                     match &self.old_folder_name {
                                         None => {}
                                         Some(old_name) => {
-                                            parent_folder.borrow_mut().folders.remove(old_name);
+                                            workspace_data.remove_folder(
+                                                parent_folder.clone(),
+                                                old_name.clone(),
+                                            );
                                         }
                                     }
                                     parent_folder.borrow_mut().folders.insert(

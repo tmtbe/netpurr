@@ -96,13 +96,6 @@ impl WorkspaceData {
         self.collections.borrow().get_auth(path)
     }
 
-    pub fn get_collection_pre_request_script_scope(&self, path: String) -> Option<ScriptScope> {
-        self.collections.borrow().get_pre_request_script_scope(path)
-    }
-    pub fn get_collection_test_script_scope(&self, path: String) -> Option<ScriptScope> {
-        self.collections.borrow().get_test_script_scope(path)
-    }
-
     pub fn get_collection_names(&self) -> HashSet<String> {
         self.collections
             .borrow()
@@ -127,6 +120,12 @@ impl WorkspaceData {
         self.collections
             .borrow_mut()
             .remove_collection(collection_name)
+    }
+
+    pub fn remove_folder(&self, parent_folder: Rc<RefCell<CollectionFolder>>, name: String) {
+        self.collections
+            .borrow_mut()
+            .remove_folder(parent_folder, name)
     }
 
     pub fn get_collections(&self) -> BTreeMap<String, Collection> {
@@ -287,19 +286,20 @@ impl WorkspaceData {
         }
     }
 
-    pub fn get_crt_parent_scripts(&self, id: String) -> (Option<ScriptScope>, Option<ScriptScope>) {
+    pub fn get_crt_parent_scripts(&self, id: String) -> (Vec<ScriptScope>, Vec<ScriptScope>) {
         let crt = self.must_get_crt(id);
-        let mut pre_request_script_scope = None;
-        let mut test_script_scope = None;
+        let mut pre_request_script_scopes = Vec::new();
+        let mut test_script_scopes = Vec::new();
         match &crt.collection_path {
             None => {}
             Some(collection_path) => {
-                pre_request_script_scope =
-                    self.get_collection_pre_request_script_scope(collection_path.clone());
-                test_script_scope = self.get_collection_test_script_scope(collection_path.clone());
+                (pre_request_script_scopes, test_script_scopes) = self
+                    .collections
+                    .borrow()
+                    .get_path_scripts(collection_path.clone())
             }
         }
-        (pre_request_script_scope, test_script_scope)
+        (pre_request_script_scopes, test_script_scopes)
     }
 
     pub fn get_crt_select_id(&self) -> Option<String> {

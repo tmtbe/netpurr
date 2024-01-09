@@ -222,6 +222,8 @@ impl SaveWindows {
                                         is_root: false,
                                         requests: Default::default(),
                                         folders: Default::default(),
+                                        pre_request_script: "".to_string(),
+                                        test_script: "".to_string(),
                                     })),
                                 );
                             }
@@ -253,6 +255,8 @@ impl SaveWindows {
                             is_root: true,
                             requests: Default::default(),
                             folders: BTreeMap::default(),
+                            pre_request_script: "".to_string(),
+                            test_script: "".to_string(),
                         })),
                         ..Default::default()
                     });
@@ -279,6 +283,9 @@ impl SaveWindows {
                         }
                         Some(collection_path) => {
                             let mut ui_enable = true;
+                            if self.http_record.name.is_empty() {
+                                ui_enable = false;
+                            }
                             let button_name = "Save to ".to_string()
                                 + collection_path.split("/").last().unwrap_or_default();
                             let (_, option) =
