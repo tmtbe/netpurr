@@ -2,22 +2,13 @@ use egui::CollapsingHeader;
 
 use crate::data::central_request_data::CentralRequestItem;
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::operation::Operation;
-use crate::panels::DataView;
 use crate::utils;
 
 #[derive(Default)]
 pub struct HistoryPanel {}
 
-impl DataView for HistoryPanel {
-    type CursorType = i32;
-    fn set_and_render(
-        &mut self,
-        ui: &mut egui::Ui,
-        operation: &mut Operation,
-        workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
-    ) {
+impl HistoryPanel {
+    pub fn set_and_render(&mut self, ui: &mut egui::Ui, workspace_data: &mut WorkspaceData) {
         for (date, date_history_data) in workspace_data.get_history_group().iter().rev() {
             CollapsingHeader::new(date.to_string())
                 .default_open(false)

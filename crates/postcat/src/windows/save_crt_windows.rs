@@ -3,7 +3,6 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use egui::{Align, Button, Layout, ScrollArea, Ui};
-use egui_toast::{Toast, ToastKind};
 
 use crate::data::collections::{Collection, CollectionFolder};
 use crate::data::config_data::ConfigData;
@@ -278,11 +277,7 @@ impl SaveCRTWindows {
                                             hr.desc = self.save_desc.clone();
                                         },
                                     );
-                                    operation.add_toast(Toast {
-                                        kind: ToastKind::Success,
-                                        text: "Save success.".into(),
-                                        options: Default::default(),
-                                    });
+                                    operation.add_success_toast("Save success.");
                                     self.save_windows_open = false;
                                 }
                             });

@@ -1,19 +1,15 @@
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::operation::Operation;
-use crate::panels::{DataView, HORIZONTAL_GAP};
+use crate::panels::HORIZONTAL_GAP;
 
 #[derive(Default)]
 pub struct TestResultPanel {}
 
-impl DataView for TestResultPanel {
-    type CursorType = String;
-
-    fn set_and_render(
+impl TestResultPanel {
+    pub fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
-        operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        crt_id: Self::CursorType,
+        crt_id: String,
     ) {
         let crt = workspace_data.must_get_crt(crt_id.clone());
         ui.push_id("test_info", |ui| {

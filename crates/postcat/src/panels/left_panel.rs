@@ -26,14 +26,12 @@ pub struct MyLeftPanel {
     filter: String,
 }
 
-impl DataView for MyLeftPanel {
-    type CursorType = i32;
-    fn set_and_render(
+impl MyLeftPanel {
+    pub fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
     ) {
         ui.horizontal(|ui| {
             ui.label("Filter:");
@@ -48,12 +46,11 @@ impl DataView for MyLeftPanel {
         });
         ScrollArea::vertical().show(ui, |ui| match self.open_panel {
             Panel::History => {
-                self.history_panel
-                    .set_and_render(ui, operation, workspace_data, 0);
+                self.history_panel.set_and_render(ui, workspace_data);
             }
             Panel::Collections => {
                 self.collections_panel
-                    .set_and_render(ui, operation, workspace_data, 0);
+                    .set_and_render(ui, operation, workspace_data);
             }
         });
     }

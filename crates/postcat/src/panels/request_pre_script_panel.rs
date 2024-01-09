@@ -5,7 +5,6 @@ use egui::Ui;
 
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::Request;
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::HORIZONTAL_GAP;
 use crate::script::script::{Context, ScriptScope};
@@ -19,7 +18,6 @@ impl RequestPreScriptPanel {
         &mut self,
         ui: &mut Ui,
         operation: &Operation,
-        workspace_data: &mut WorkspaceData,
         mut script: String,
         parent_script: Option<ScriptScope>,
         request: Request,

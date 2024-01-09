@@ -44,6 +44,39 @@ impl Default for ResponsePanelEnum {
 }
 
 impl ResponsePanel {
+    pub fn set_and_render(
+        &mut self,
+        ui: &mut Ui,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        crt_id: String,
+    ) {
+        let crt = workspace_data.must_get_crt(crt_id.clone());
+        let cookies = workspace_data.get_url_cookies(crt.rest.request.base_url.clone());
+        match crt.rest.status {
+            ResponseStatus::None => {
+                ui.strong("Response");
+                ui.separator();
+                ui.centered_and_justified(|ui| {
+                    ui.label("Hit the Send button to get a response");
+                });
+            }
+            ResponseStatus::Pending => {
+                ui.centered_and_justified(|ui| {
+                    ui.label("Loading...");
+                });
+            }
+
+            ResponseStatus::Ready => {
+                self.build_ready_panel(operation, workspace_data, crt_id, ui, &crt, cookies);
+            }
+            ResponseStatus::Error => {
+                ui.centered_and_justified(|ui| {
+                    ui.label("Could not get any response");
+                });
+            }
+        }
+    }
     fn get_count(
         response: &Response,
         cookies: &BTreeMap<String, Cookie>,
@@ -65,7 +98,7 @@ impl ResponsePanel {
 
     fn build_ready_panel(
         &mut self,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         cursor: String,
         ui: &mut Ui,
@@ -124,60 +157,22 @@ impl ResponsePanel {
         match self.open_panel_enum {
             ResponsePanelEnum::Body => {
                 self.response_body_panel
-                    .set_and_render(ui, operation, workspace_data, cursor);
+                    .set_and_render(ui, workspace_data, cursor);
             }
             ResponsePanelEnum::Cookies => {
                 self.response_cookies_panel.set_and_render(ui, &cookies);
             }
             ResponsePanelEnum::Headers => {
                 self.response_headers_panel
-                    .set_and_render(ui, operation, workspace_data, cursor);
+                    .set_and_render(ui, workspace_data, cursor);
             }
             ResponsePanelEnum::Logs => {
                 self.response_log_panel
-                    .set_and_render(ui, operation, workspace_data, cursor);
+                    .set_and_render(ui, workspace_data, cursor);
             }
             ResponsePanelEnum::TestResult => {
                 self.test_result_panel
-                    .set_and_render(ui, operation, workspace_data, cursor);
-            }
-        }
-    }
-}
-
-impl DataView for ResponsePanel {
-    type CursorType = String;
-
-    fn set_and_render(
-        &mut self,
-        ui: &mut Ui,
-        operation: &mut Operation,
-        workspace_data: &mut WorkspaceData,
-        crt_id: Self::CursorType,
-    ) {
-        let crt = workspace_data.must_get_crt(crt_id.clone());
-        let cookies = workspace_data.get_url_cookies(crt.rest.request.base_url.clone());
-        match crt.rest.status {
-            ResponseStatus::None => {
-                ui.strong("Response");
-                ui.separator();
-                ui.centered_and_justified(|ui| {
-                    ui.label("Hit the Send button to get a response");
-                });
-            }
-            ResponseStatus::Pending => {
-                ui.centered_and_justified(|ui| {
-                    ui.label("Loading...");
-                });
-            }
-
-            ResponseStatus::Ready => {
-                self.build_ready_panel(operation, workspace_data, crt_id, ui, &crt, cookies);
-            }
-            ResponseStatus::Error => {
-                ui.centered_and_justified(|ui| {
-                    ui.label("Could not get any response");
-                });
+                    .set_and_render(ui, workspace_data, cursor);
             }
         }
     }

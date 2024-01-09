@@ -18,7 +18,7 @@ use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
-use crate::panels::{AlongDataView, DataView, VERTICAL_GAP};
+use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;
 
 #[derive(Default)]
@@ -120,7 +120,6 @@ impl Window for NewCollectionWindows {
                     self.request_pre_script_panel.set_and_render(
                         ui,
                         &operation,
-                        workspace_data,
                         script,
                         None,
                         Request::default(),

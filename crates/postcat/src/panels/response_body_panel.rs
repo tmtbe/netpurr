@@ -2,40 +2,16 @@ use egui::{Image, TextBuffer};
 
 use crate::data::http::Response;
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::operation::Operation;
-use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct ResponseBodyPanel {}
 
 impl ResponseBodyPanel {
-    fn get_language(response: &Response) -> String {
-        let content_type_header = response.headers.iter().find(|h| h.key == "content-type");
-        if content_type_header.is_some() {
-            let content_type = content_type_header.unwrap().value.clone();
-            if content_type.contains("json") {
-                return "json".to_string();
-            } else if content_type.contains("html") {
-                return "html".to_string();
-            } else if content_type.contains("js") {
-                return "js".to_string();
-            } else if content_type.contains("xml") {
-                return "xml".to_string();
-            }
-        }
-        "json".to_string()
-    }
-}
-
-impl DataView for ResponseBodyPanel {
-    type CursorType = String;
-
-    fn set_and_render(
+    pub fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
-        operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        crt_id: Self::CursorType,
+        crt_id: String,
     ) {
         let crt = workspace_data.must_get_crt(crt_id.clone());
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
@@ -89,5 +65,21 @@ impl DataView for ResponseBodyPanel {
                 }
             }
         }
+    }
+    fn get_language(response: &Response) -> String {
+        let content_type_header = response.headers.iter().find(|h| h.key == "content-type");
+        if content_type_header.is_some() {
+            let content_type = content_type_header.unwrap().value.clone();
+            if content_type.contains("json") {
+                return "json".to_string();
+            } else if content_type.contains("html") {
+                return "html".to_string();
+            } else if content_type.contains("js") {
+                return "js".to_string();
+            } else if content_type.contains("xml") {
+                return "xml".to_string();
+            }
+        }
+        "json".to_string()
     }
 }

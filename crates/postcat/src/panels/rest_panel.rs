@@ -1,6 +1,5 @@
 use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
-use egui_toast::{Toast, ToastKind, ToastOptions};
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
@@ -18,7 +17,7 @@ use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::test_script_panel::TestScriptPanel;
-use crate::panels::{AlongDataView, DataView, HORIZONTAL_GAP};
+use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::script::script::ScriptScope;
 use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
@@ -56,6 +55,33 @@ impl Default for RequestPanelEnum {
 }
 
 impl RestPanel {
+    pub fn set_and_render(
+        &mut self,
+        ui: &mut Ui,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        crt_id: String,
+    ) {
+        ui.vertical(|ui| {
+            ui.horizontal(|ui| {
+                ui.add_space(HORIZONTAL_GAP);
+                self.render_name_label(workspace_data, crt_id.clone(), ui);
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                self.render_editor_right_panel(operation, workspace_data, crt_id.clone(), ui);
+                self.render_editor_left_panel(workspace_data, crt_id.clone(), ui);
+            });
+            ui.separator();
+            self.render_middle_select(operation, workspace_data, crt_id.clone(), ui);
+            ui.separator();
+        });
+        self.send_promise(ui, workspace_data, operation, crt_id.clone());
+        self.render_request_open_panel(ui, operation, workspace_data, crt_id.clone());
+        ui.separator();
+        self.response_panel
+            .set_and_render(ui, operation, workspace_data, crt_id.clone());
+    }
     fn get_count(hr: &HttpRecord, panel_enum: RequestPanelEnum, parnet_auth: &Auth) -> usize {
         match panel_enum {
             RequestPanelEnum::Params => hr.request.params.iter().filter(|i| i.enable).count(),
@@ -138,7 +164,7 @@ impl RestPanel {
 
     fn render_editor_right_panel(
         &mut self,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         crt_id: String,
         ui: &mut Ui,
@@ -207,14 +233,7 @@ impl RestPanel {
                                     collection_path.clone(),
                                     |_| {},
                                 );
-                                operation.add_toast(Toast {
-                                    kind: ToastKind::Success,
-                                    text: "Save success.".into(),
-                                    options: ToastOptions::default()
-                                        .duration_in_seconds(2.0)
-                                        .show_icon(true)
-                                        .show_progress(true),
-                                });
+                                operation.add_success_toast("Save success.");
                                 workspace_data.get_mut_crt(crt_id.clone(), |crt| {
                                     crt.set_baseline();
                                 });
@@ -275,7 +294,7 @@ impl RestPanel {
     fn render_request_open_panel(
         &mut self,
         ui: &mut Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         crt_id: String,
     ) {
@@ -284,12 +303,10 @@ impl RestPanel {
         let (pre_request_parent_script_scope, _) =
             workspace_data.get_crt_parent_scripts(crt_id.clone());
         match self.open_request_panel_enum {
-            RequestPanelEnum::Params => self.request_params_panel.set_and_render(
-                ui,
-                operation,
-                workspace_data,
-                crt_id.clone(),
-            ),
+            RequestPanelEnum::Params => {
+                self.request_params_panel
+                    .set_and_render(ui, workspace_data, crt_id.clone())
+            }
             RequestPanelEnum::Authorization => {
                 let mut parent_auth = None;
                 match &crt.collection_path {
@@ -307,12 +324,10 @@ impl RestPanel {
                     });
                 }
             }
-            RequestPanelEnum::Headers => self.request_headers_panel.set_and_render(
-                ui,
-                operation,
-                workspace_data,
-                crt_id.clone(),
-            ),
+            RequestPanelEnum::Headers => {
+                self.request_headers_panel
+                    .set_and_render(ui, workspace_data, crt_id.clone())
+            }
             RequestPanelEnum::Body => self.request_body_panel.set_and_render(
                 ui,
                 operation,
@@ -323,7 +338,6 @@ impl RestPanel {
                 let script = self.request_pre_script_panel.set_and_render(
                     ui,
                     operation,
-                    workspace_data,
                     crt.rest.pre_request_script.clone(),
                     pre_request_parent_script_scope,
                     crt.rest.request.clone(),
@@ -355,7 +369,7 @@ impl RestPanel {
         &mut self,
         ui: &mut Ui,
         workspace_data: &mut WorkspaceData,
-        operation: &mut Operation,
+        operation: &Operation,
         crt_id: String,
     ) {
         if let Some(promise) = &self.send_promise {
@@ -372,49 +386,22 @@ impl RestPanel {
                             });
                         crt.rest.response = response.clone();
                         crt.rest.ready();
-                        operation.add_toast(Toast {
-                            text: format!("Send request success").into(),
-                            kind: ToastKind::Success,
-                            options: ToastOptions::default()
-                                .duration_in_seconds(2.0)
-                                .show_icon(true)
-                                .show_progress(true),
-                        });
+                        operation.add_success_toast("Send request success");
                         crt.test_result = test_result.clone();
                         match test_result.status {
                             TestStatus::None => {}
                             TestStatus::PASS => {
-                                operation.add_toast(Toast {
-                                    text: format!("Test success.").into(),
-                                    kind: ToastKind::Success,
-                                    options: ToastOptions::default()
-                                        .duration_in_seconds(2.0)
-                                        .show_icon(true)
-                                        .show_progress(true),
-                                });
+                                operation.add_success_toast("Test success.");
                             }
                             TestStatus::FAIL => {
-                                operation.add_toast(Toast {
-                                    text: format!("Test failed.").into(),
-                                    kind: ToastKind::Error,
-                                    options: ToastOptions::default()
-                                        .duration_in_seconds(2.0)
-                                        .show_icon(true)
-                                        .show_progress(true),
-                                });
+                                operation.add_error_toast("Test failed.");
                             }
                         }
                     }
                     Err(e) => {
                         crt.rest.error();
-                        operation.add_toast(Toast {
-                            text: format!("Send request failed: {}", e.to_string()).into(),
-                            kind: ToastKind::Error,
-                            options: ToastOptions::default()
-                                .duration_in_seconds(5.0)
-                                .show_icon(true)
-                                .show_progress(true),
-                        });
+                        operation
+                            .add_error_toast(format!("Send request failed: {}", e.to_string()));
                     }
                 });
                 self.send_promise = None;
@@ -427,7 +414,7 @@ impl RestPanel {
 
     fn render_middle_select(
         &mut self,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         crt_id: String,
         ui: &mut Ui,
@@ -461,36 +448,5 @@ impl RestPanel {
                 });
             },
         );
-    }
-}
-
-impl DataView for RestPanel {
-    type CursorType = String;
-    fn set_and_render(
-        &mut self,
-        ui: &mut Ui,
-        operation: &mut Operation,
-        workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
-    ) {
-        ui.vertical(|ui| {
-            ui.horizontal(|ui| {
-                ui.add_space(HORIZONTAL_GAP);
-                self.render_name_label(workspace_data, cursor.clone(), ui);
-            });
-            ui.separator();
-            ui.horizontal(|ui| {
-                self.render_editor_right_panel(operation, workspace_data, cursor.clone(), ui);
-                self.render_editor_left_panel(workspace_data, cursor.clone(), ui);
-            });
-            ui.separator();
-            self.render_middle_select(operation, workspace_data, cursor.clone(), ui);
-            ui.separator();
-        });
-        self.send_promise(ui, workspace_data, operation, cursor.clone());
-        self.render_request_open_panel(ui, operation, workspace_data, cursor.clone());
-        ui.separator();
-        self.response_panel
-            .set_and_render(ui, operation, workspace_data, cursor.clone());
     }
 }

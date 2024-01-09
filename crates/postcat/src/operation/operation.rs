@@ -3,7 +3,8 @@ use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 
 use eframe::emath::Align2;
-use egui_toast::{Toast, Toasts};
+use egui::WidgetText;
+use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
 use poll_promise::Promise;
 use reqwest::blocking::Client;
 
@@ -158,6 +159,27 @@ impl Operation {
 
     pub fn add_toast(&self, toast: Toast) {
         self.toasts.borrow_mut().add(toast);
+    }
+
+    pub fn add_success_toast(&self, text: impl Into<WidgetText>) {
+        self.add_toast(Toast {
+            text: text.into(),
+            kind: ToastKind::Success,
+            options: ToastOptions::default()
+                .show_icon(true)
+                .duration_in_seconds(2.0)
+                .show_progress(true),
+        });
+    }
+    pub fn add_error_toast(&self, text: impl Into<WidgetText>) {
+        self.add_toast(Toast {
+            text: text.into(),
+            kind: ToastKind::Error,
+            options: ToastOptions::default()
+                .show_icon(true)
+                .duration_in_seconds(5.0)
+                .show_progress(true),
+        });
     }
     pub fn add_window(&self, window: Box<dyn Window>) {
         self.windows.borrow_mut().add(window);

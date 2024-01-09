@@ -27,14 +27,12 @@ impl Default for PanelEnum {
     }
 }
 
-impl DataView for MyCentralPanel {
-    type CursorType = i32;
-    fn set_and_render(
+impl MyCentralPanel {
+    pub fn set_and_render(
         &mut self,
         ui: &mut Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
     ) {
         ui.horizontal(|ui| {
             self.central_environment(workspace_data, operation, ui);
@@ -55,9 +53,6 @@ impl DataView for MyCentralPanel {
             }
         });
     }
-}
-
-impl MyCentralPanel {
     pub fn selectable_value(
         &mut self,
         ui: &mut Ui,

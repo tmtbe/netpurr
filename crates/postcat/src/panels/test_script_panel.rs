@@ -8,7 +8,7 @@ use crate::panels::HORIZONTAL_GAP;
 pub struct TestScriptPanel {}
 
 impl TestScriptPanel {
-    pub(crate) fn set_and_render(&mut self, ui: &mut Ui, mut script: String, id: String) -> String {
+    pub fn set_and_render(&mut self, ui: &mut Ui, mut script: String, id: String) -> String {
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
             let mut layout_job =

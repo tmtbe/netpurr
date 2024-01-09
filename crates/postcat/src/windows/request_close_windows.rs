@@ -1,5 +1,4 @@
 use egui::Ui;
-use egui_toast::{Toast, ToastKind};
 
 use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
@@ -72,7 +71,7 @@ impl RequestCloseWindows {
     pub fn set_and_render(
         &mut self,
         ui: &mut Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
     ) {
         operation.lock_ui("request_close".to_string(), self.windows_open);
@@ -119,11 +118,7 @@ impl RequestCloseWindows {
             }
             Some(collection_path) => {
                 workspace_data.save_crt(self.crt_id.clone(), collection_path.clone(), |_| {});
-                operation.add_toast(Toast {
-                    kind: ToastKind::Success,
-                    text: "Save success.".into(),
-                    options: Default::default(),
-                });
+                operation.add_success_toast("Save success.");
             }
         });
     }

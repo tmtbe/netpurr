@@ -3,20 +3,16 @@ use egui::{Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBuilder};
 
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::operation::Operation;
-use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct ResponseHeadersPanel {}
 
-impl DataView for ResponseHeadersPanel {
-    type CursorType = String;
-    fn set_and_render(
+impl ResponseHeadersPanel {
+    pub fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
-        operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        crt_id: Self::CursorType,
+        crt_id: String,
     ) {
         let crt = workspace_data.must_get_crt(crt_id.clone());
         ui.label("Headers");

@@ -5,7 +5,6 @@ use std::io::Write;
 use std::rc::Rc;
 
 use egui::{CollapsingHeader, Response, RichText, Ui};
-use egui_toast::{Toast, ToastKind, ToastOptions};
 
 use crate::data::central_request_data::CentralRequestItem;
 use crate::data::collections::{Collection, CollectionFolder};
@@ -13,7 +12,6 @@ use crate::data::export::{Export, ExportType};
 use crate::data::http::HttpRecord;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
-use crate::panels::DataView;
 use crate::utils;
 use crate::windows::new_collection_windows::NewCollectionWindows;
 use crate::windows::save_windows::SaveWindows;
@@ -21,15 +19,12 @@ use crate::windows::save_windows::SaveWindows;
 #[derive(Default)]
 pub struct CollectionsPanel {}
 
-impl DataView for CollectionsPanel {
-    type CursorType = i32;
-
-    fn set_and_render(
+impl CollectionsPanel {
+    pub fn set_and_render(
         &mut self,
         ui: &mut Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: Self::CursorType,
     ) {
         if ui.link("+ New Collection").clicked() {
             operation.add_window(Box::new(
@@ -38,13 +33,10 @@ impl DataView for CollectionsPanel {
         };
         self.render_collection_item(ui, operation, workspace_data);
     }
-}
-
-impl CollectionsPanel {
     fn set_folder(
         &mut self,
         ui: &mut Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         collection: Collection,
         parent_folder: Rc<RefCell<CollectionFolder>>,
@@ -92,7 +84,7 @@ impl CollectionsPanel {
 
     fn popup_folder_item(
         &mut self,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         collection: Collection,
         parent_folder: Rc<RefCell<CollectionFolder>>,
@@ -151,7 +143,7 @@ impl CollectionsPanel {
 
     fn popup_collection_item(
         &mut self,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         response: Response,
         collection_name: &String,
@@ -200,43 +192,20 @@ impl CollectionsPanel {
                         match File::create(path) {
                             Ok(mut file) => match file.write_all(json.as_bytes()) {
                                 Ok(_) => {
-                                    operation.add_toast(Toast {
-                                        text: format!("Export collection success.").into(),
-                                        kind: ToastKind::Success,
-                                        options: ToastOptions::default()
-                                            .show_icon(true)
-                                            .duration_in_seconds(2.0)
-                                            .show_progress(true),
-                                    });
+                                    operation.add_success_toast("Export collection success.");
                                 }
                                 Err(e) => {
-                                    operation.add_toast(Toast {
-                                        text: format!(
-                                            "Export collection file failed: {}",
-                                            e.to_string()
-                                        )
-                                        .into(),
-                                        kind: ToastKind::Error,
-                                        options: ToastOptions::default()
-                                            .show_icon(true)
-                                            .duration_in_seconds(5.0)
-                                            .show_progress(true),
-                                    });
+                                    operation.add_error_toast(format!(
+                                        "Export collection file failed: {}",
+                                        e.to_string()
+                                    ));
                                 }
                             },
                             Err(e) => {
-                                operation.add_toast(Toast {
-                                    text: format!(
-                                        "Export collection file failed: {}",
-                                        e.to_string()
-                                    )
-                                    .into(),
-                                    kind: ToastKind::Error,
-                                    options: ToastOptions::default()
-                                        .show_icon(true)
-                                        .duration_in_seconds(5.0)
-                                        .show_progress(true),
-                                });
+                                operation.add_error_toast(format!(
+                                    "Export collection file failed: {}",
+                                    e.to_string()
+                                ));
                             }
                         }
                     }
@@ -248,7 +217,7 @@ impl CollectionsPanel {
     fn render_collection_item(
         &mut self,
         ui: &mut Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
     ) {
         fn circle_icon(ui: &mut Ui, openness: f32, response: &Response) {
@@ -297,7 +266,7 @@ impl CollectionsPanel {
 
     fn popup_request_item(
         &mut self,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         collection_name: String,
         response: Response,
@@ -366,7 +335,7 @@ impl CollectionsPanel {
     fn render_request(
         &mut self,
         ui: &mut Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
         collection_name: String,
         path: &String,

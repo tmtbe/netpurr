@@ -8,8 +8,6 @@ use crate::data::central_request_data::CentralRequestItem;
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::MultipartData;
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::operation::Operation;
-use crate::panels::DataView;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
@@ -17,14 +15,12 @@ pub struct RequestBodyXXXFormPanel {
     new_form: MultipartData,
 }
 
-impl DataView for RequestBodyXXXFormPanel {
-    type CursorType = String;
-    fn set_and_render(
+impl RequestBodyXXXFormPanel {
+    pub fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
-        operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        crt_id: Self::CursorType,
+        crt_id: String,
     ) {
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         workspace_data.get_mut_crt(crt_id.clone(), |crt| {

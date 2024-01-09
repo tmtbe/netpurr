@@ -8,7 +8,7 @@ use strum::IntoEnumIterator;
 use crate::data::auth::{Auth, AuthType};
 use crate::data::collections::{Collection, CollectionFolder};
 use crate::data::environment::EnvironmentItemValue;
-use crate::panels::{AlongDataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
@@ -160,12 +160,7 @@ impl AuthPanel {
                 }
             });
     }
-}
-
-impl AlongDataView for AuthPanel {
-    type DataType = Auth;
-
-    fn set_and_render(&mut self, ui: &mut Ui, data: &mut Self::DataType) {
+    pub(crate) fn set_and_render(&mut self, ui: &mut Ui, data: &mut Auth) {
         ui.horizontal(|ui| {
             self.auth_left(data, ui);
             self.auth_right(data, ui);

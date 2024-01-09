@@ -1,8 +1,7 @@
 use std::io::Read;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use egui::Event;
-use egui_toast::{Toast, ToastKind, ToastOptions};
+use egui::{Context, Event, Ui};
 use log::info;
 use poll_promise::Promise;
 
@@ -103,151 +102,8 @@ impl App {
             Some(font_file)
         }
     }
-}
 
-impl eframe::App for App {
-    /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.operation
-            .show(ctx, &mut self.config_data, &mut self.workspace_data);
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
-                // The top panel is often a good place for a menu bar:
-                egui::menu::bar(ui, |ui| {
-                    ui.menu_button("File", |ui| {
-                        if ui.button("New...").clicked() {}
-                        if ui.button("Import...").clicked() {}
-                        if ui.button("Exit").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                    });
-                    ui.menu_button("View", |ui| {
-                        if ui.button("Zoom In").clicked() {}
-                        if ui.button("Zoom Out").clicked() {}
-                    });
-                    egui::widgets::global_dark_light_mode_buttons(ui);
-                });
-                ui.add_space(HORIZONTAL_GAP);
-                egui::ScrollArea::vertical().show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        if ui.button("New").clicked() {}
-                        ui.add_space(HORIZONTAL_GAP);
-                        if ui.button("Import").clicked() {}
-                        ui.add_space(HORIZONTAL_GAP);
-                        self.current_workspace = self.config_data.select_workspace().to_string();
-                        egui::ComboBox::from_id_source("workspace")
-                            .selected_text(
-                                "Select workspace: ".to_string() + self.current_workspace.as_str(),
-                            )
-                            .show_ui(ui, |ui| {
-                                ui.style_mut().wrap = Some(false);
-                                ui.set_min_width(60.0);
-                                if ui.button("⚙ Manage Workspace").clicked() {
-                                    self.config_data.refresh_workspaces();
-                                    let current_workspace =
-                                        self.config_data.select_workspace().to_string();
-                                    self.operation.add_window(Box::new(
-                                        WorkspaceWindows::default().with_open(current_workspace),
-                                    ));
-                                }
-                                for (name, _) in self.config_data.workspaces().iter() {
-                                    ui.selectable_value(
-                                        &mut self.current_workspace,
-                                        name.to_string(),
-                                        name.to_string(),
-                                    );
-                                }
-                            });
-                        let select_workspace = self.config_data.select_workspace().to_string();
-                        if let Some(workspace) = self
-                            .config_data
-                            .mut_workspaces()
-                            .get_mut(select_workspace.as_str())
-                        {
-                            if workspace.if_enable_git() && workspace.if_enable_git() {
-                                if self.sync_promise.is_some() {
-                                    ui.add_enabled_ui(false, |ui| ui.button("🔄"));
-                                } else {
-                                    if ui.button("🔄").clicked() {
-                                        self.sync_promise = Some(
-                                            self.operation
-                                                .git()
-                                                .git_sync_promise(workspace.path.clone()),
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                        match &self.sync_promise {
-                            None => {}
-                            Some(result) => match result.ready() {
-                                None => {
-                                    ui.ctx().request_repaint();
-                                }
-                                Some(result) => {
-                                    if result.is_ok() {
-                                        self.operation.add_toast(Toast {
-                                            text: "Sync Success!".into(),
-                                            kind: ToastKind::Success,
-                                            options: ToastOptions::default()
-                                                .duration_in_seconds(5.0)
-                                                .show_progress(true),
-                                        });
-                                    } else {
-                                        self.operation.add_toast(Toast {
-                                            text: "Sync Failed!".into(),
-                                            kind: ToastKind::Error,
-                                            options: ToastOptions::default()
-                                                .duration_in_seconds(5.0)
-                                                .show_progress(true),
-                                        });
-                                    }
-                                    self.sync_promise = None;
-                                    self.workspace_data
-                                        .reload_data(self.current_workspace.clone());
-                                }
-                            },
-                        }
-                        if self.current_workspace != self.config_data.select_workspace() {
-                            self.config_data
-                                .set_select_workspace(self.current_workspace.clone());
-                            self.workspace_data = WorkspaceData::default();
-                            self.workspace_data.load_all(self.current_workspace.clone());
-                        }
-                    });
-                });
-                ui.add_space(HORIZONTAL_GAP);
-            });
-        });
-        egui::SidePanel::left("left_panel").show(ctx, |ui| {
-            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
-                self.left_panel.set_and_render(
-                    ui,
-                    &mut self.operation,
-                    &mut self.workspace_data,
-                    0,
-                );
-            });
-        });
-
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
-                self.central_panel.set_and_render(
-                    ui,
-                    &mut self.operation,
-                    &mut self.workspace_data,
-                    0,
-                );
-            });
-        });
-
-        if ctx.input(|i| i.viewport().close_requested()) {
-            if !self.allowed_to_close {
-                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
-                self.show_confirmation_dialog = true;
-            }
-        }
-        // auto save
+    fn auto_save(&mut self, ctx: &Context) {
         if ctx.input(|i| {
             i.events
                 .iter()
@@ -266,6 +122,15 @@ impl eframe::App for App {
                 self.auto_save_time = now;
                 self.workspace_data.auto_save_crd();
                 info!("auto save");
+            }
+        }
+    }
+
+    fn quit_dialog(&mut self, ctx: &Context) {
+        if ctx.input(|i| i.viewport().close_requested()) {
+            if !self.allowed_to_close {
+                ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+                self.show_confirmation_dialog = true;
             }
         }
         if self.show_confirmation_dialog {
@@ -290,5 +155,128 @@ impl eframe::App for App {
                     });
                 });
         }
+    }
+
+    fn top_panel(&mut self, ctx: &Context, ui: &mut Ui) {
+        ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
+            // The top panel is often a good place for a menu bar:
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("New...").clicked() {}
+                    if ui.button("Import...").clicked() {}
+                    if ui.button("Exit").clicked() {
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                });
+                ui.menu_button("View", |ui| {
+                    if ui.button("Zoom In").clicked() {}
+                    if ui.button("Zoom Out").clicked() {}
+                });
+                egui::widgets::global_dark_light_mode_buttons(ui);
+            });
+            ui.add_space(HORIZONTAL_GAP);
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    if ui.button("New").clicked() {}
+                    ui.add_space(HORIZONTAL_GAP);
+                    if ui.button("Import").clicked() {}
+                    ui.add_space(HORIZONTAL_GAP);
+                    self.current_workspace = self.config_data.select_workspace().to_string();
+                    egui::ComboBox::from_id_source("workspace")
+                        .selected_text(
+                            "Select workspace: ".to_string() + self.current_workspace.as_str(),
+                        )
+                        .show_ui(ui, |ui| {
+                            ui.style_mut().wrap = Some(false);
+                            ui.set_min_width(60.0);
+                            if ui.button("⚙ Manage Workspace").clicked() {
+                                self.config_data.refresh_workspaces();
+                                let current_workspace =
+                                    self.config_data.select_workspace().to_string();
+                                self.operation.add_window(Box::new(
+                                    WorkspaceWindows::default().with_open(current_workspace),
+                                ));
+                            }
+                            for (name, _) in self.config_data.workspaces().iter() {
+                                ui.selectable_value(
+                                    &mut self.current_workspace,
+                                    name.to_string(),
+                                    name.to_string(),
+                                );
+                            }
+                        });
+                    let select_workspace = self.config_data.select_workspace().to_string();
+                    if let Some(workspace) = self
+                        .config_data
+                        .mut_workspaces()
+                        .get_mut(select_workspace.as_str())
+                    {
+                        if workspace.if_enable_git() && workspace.if_enable_git() {
+                            if self.sync_promise.is_some() {
+                                ui.add_enabled_ui(false, |ui| ui.button("🔄"));
+                            } else {
+                                if ui.button("🔄").clicked() {
+                                    self.sync_promise = Some(
+                                        self.operation
+                                            .git()
+                                            .git_sync_promise(workspace.path.clone()),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                    match &self.sync_promise {
+                        None => {}
+                        Some(result) => match result.ready() {
+                            None => {
+                                ui.ctx().request_repaint();
+                            }
+                            Some(result) => {
+                                if result.is_ok() {
+                                    self.operation.add_success_toast("Sync Success!")
+                                } else {
+                                    self.operation.add_error_toast("Sync Failed!")
+                                }
+                                self.sync_promise = None;
+                                self.workspace_data
+                                    .reload_data(self.current_workspace.clone());
+                            }
+                        },
+                    }
+                    if self.current_workspace != self.config_data.select_workspace() {
+                        self.config_data
+                            .set_select_workspace(self.current_workspace.clone());
+                        self.workspace_data = WorkspaceData::default();
+                        self.workspace_data.load_all(self.current_workspace.clone());
+                    }
+                });
+            });
+            ui.add_space(HORIZONTAL_GAP);
+        });
+    }
+}
+
+impl eframe::App for App {
+    /// Called each time the UI needs repainting, which may be many times per second.
+    fn update(&mut self, ctx: &Context, _frame: &mut eframe::Frame) {
+        self.operation
+            .show(ctx, &mut self.config_data, &mut self.workspace_data);
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            self.top_panel(ctx, ui);
+        });
+        egui::SidePanel::left("left_panel").show(ctx, |ui| {
+            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
+                self.left_panel
+                    .set_and_render(ui, &self.operation, &mut self.workspace_data);
+            });
+        });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
+                self.central_panel
+                    .set_and_render(ui, &self.operation, &mut self.workspace_data);
+            });
+        });
+        self.auto_save(ctx);
+        self.quit_dialog(ctx);
     }
 }

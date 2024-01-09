@@ -16,15 +16,13 @@ pub struct RequestBodyPanel {
     request_body_xxx_form_panel: RequestBodyXXXFormPanel,
 }
 
-impl DataView for RequestBodyPanel {
-    type CursorType = String;
-
-    fn set_and_render(
+impl RequestBodyPanel {
+    pub fn set_and_render(
         &mut self,
         ui: &mut Ui,
-        operation: &mut Operation,
+        operation: &Operation,
         workspace_data: &mut WorkspaceData,
-        crt_id: Self::CursorType,
+        crt_id: String,
     ) {
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         let crt = workspace_data.must_get_crt(crt_id.clone());
@@ -63,18 +61,14 @@ impl DataView for RequestBodyPanel {
             BodyType::NONE => {
                 ui.label("This request does not have a body");
             }
-            BodyType::FROM_DATA => self.request_body_form_data_panel.set_and_render(
-                ui,
-                operation,
-                workspace_data,
-                crt_id,
-            ),
-            BodyType::X_WWW_FROM_URLENCODED => self.request_body_xxx_form_panel.set_and_render(
-                ui,
-                operation,
-                workspace_data,
-                crt_id,
-            ),
+            BodyType::FROM_DATA => {
+                self.request_body_form_data_panel
+                    .set_and_render(ui, workspace_data, crt_id)
+            }
+            BodyType::X_WWW_FROM_URLENCODED => {
+                self.request_body_xxx_form_panel
+                    .set_and_render(ui, workspace_data, crt_id)
+            }
             BodyType::RAW => {
                 ui.push_id("request_body", |ui| {
                     egui::ScrollArea::vertical()

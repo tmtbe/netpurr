@@ -1,19 +1,14 @@
 use crate::data::workspace_data::WorkspaceData;
-use crate::operation::operation::Operation;
-use crate::panels::DataView;
 
 #[derive(Default)]
 pub struct ResponseLogPanel {}
 
-impl DataView for ResponseLogPanel {
-    type CursorType = String;
-
-    fn set_and_render(
+impl ResponseLogPanel {
+    pub fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
-        operation: &mut Operation,
         workspace_data: &mut WorkspaceData,
-        crt_id: Self::CursorType,
+        crt_id: String,
     ) {
         let crt = workspace_data.must_get_crt(crt_id.clone());
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());

@@ -2,7 +2,6 @@ use std::collections::BTreeSet;
 
 use eframe::emath::Align;
 use egui::{Button, Layout, ScrollArea, Ui};
-use egui_toast::{Toast, ToastKind};
 
 use crate::data::config_data::ConfigData;
 use crate::data::cookies_manager::Cookie;
@@ -160,11 +159,7 @@ impl CookiesWindows {
                                         self.new_cookie_names.remove(domain.as_str());
                                     }
                                     Err(err) => {
-                                        operation.add_toast(Toast {
-                                            kind: ToastKind::Error,
-                                            text: err.into(),
-                                            options: Default::default(),
-                                        });
+                                        operation.add_error_toast(err);
                                     }
                                 }
                                 self.new_key_name = "".to_string();
@@ -240,18 +235,10 @@ impl CookiesWindows {
                                         c.name.clone(),
                                     ) {
                                         Ok(_) => {
-                                            operation.add_toast(Toast {
-                                                kind: ToastKind::Success,
-                                                text: "Update cookie success.".into(),
-                                                options: Default::default(),
-                                            });
+                                            operation.add_success_toast("Update cookie success.");
                                         }
                                         Err(err) => {
-                                            operation.add_toast(Toast {
-                                                kind: ToastKind::Error,
-                                                text: err.into(),
-                                                options: Default::default(),
-                                            });
+                                            operation.add_error_toast(err);
                                         }
                                     }
                                 }
