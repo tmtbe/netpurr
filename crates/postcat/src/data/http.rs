@@ -79,6 +79,12 @@ impl Default for RequestSchema {
     }
 }
 impl Request {
+    pub fn fix_base_url(&mut self) {
+        let base_list: Vec<&str> = self.base_url.split("://").collect();
+        if base_list.len() >= 2 {
+            self.base_url = base_list[1].to_string();
+        }
+    }
     pub fn sync_header(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, parent_auth: Auth) {
         // build auto header
         self.auth
@@ -108,7 +114,11 @@ impl Request {
         }
     }
     pub fn get_url_with_schema(&self) -> String {
-        format!("{}://{}", self.schema, self.base_url)
+        format!(
+            "{}://{}",
+            self.schema.to_string().to_lowercase(),
+            self.base_url
+        )
     }
 
     pub fn build_raw_url(&mut self) {
@@ -224,7 +234,12 @@ impl Request {
 }
 
 impl HttpRecord {
-    pub fn sync_header(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, parent_auth: Auth) {
+    pub fn sync_everytime(
+        &mut self,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        parent_auth: Auth,
+    ) {
+        self.request.fix_base_url();
         self.request.sync_header(envs, parent_auth);
     }
     pub fn build_raw_url(&mut self) {
@@ -240,7 +255,7 @@ impl HttpRecord {
         parent_auth: Auth,
     ) {
         self.request.clear_lock_with();
-        self.sync_header(envs, parent_auth);
+        self.sync_everytime(envs, parent_auth);
         self.sync_raw_url();
     }
 

@@ -139,7 +139,7 @@ impl RestPanel {
         let envs = workspace_data.get_crt_envs(cursor.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(cursor.clone());
         workspace_data.must_get_mut_crt(cursor.clone(), |crt| {
-            crt.rest.sync_header(envs.clone(), parent_auth.clone());
+            crt.rest.sync_everytime(envs.clone(), parent_auth.clone());
             let tab_name = crt.get_tab_name();
             match &crt.collection_path {
                 None => {

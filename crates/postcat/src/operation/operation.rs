@@ -78,22 +78,19 @@ impl Operation {
     ) -> Promise<Result<(http::Request, http::Response, test::TestResult), String>> {
         let mut logger = Logger::default();
         Promise::spawn_thread("send_with_script", move || {
-            let mut pre_request_context_result = Ok(Context {
+            let mut default_context = Context {
                 scope_name: "".to_string(),
                 request: request.clone(),
                 envs: envs.clone(),
                 ..Default::default()
-            });
+            };
+            let mut pre_request_context_result = Ok(default_context.clone());
             if pre_request_scripts.len() > 0 {
-                pre_request_context_result = ScriptRuntime::run_block_many(
-                    pre_request_scripts,
-                    Context {
-                        scope_name: "".to_string(),
-                        request: request.clone(),
-                        envs: envs.clone(),
-                        ..Default::default()
-                    },
-                );
+                default_context
+                    .logger
+                    .add_info("System".to_string(), "Run pre-request-scripts".to_string());
+                pre_request_context_result =
+                    ScriptRuntime::run_block_many(pre_request_scripts, default_context);
             }
             match pre_request_context_result {
                 Ok(pre_request_context) => {
@@ -120,7 +117,11 @@ impl Operation {
                             let mut test_context = pre_request_context.clone();
                             test_context.response =
                                 JsResponse::from_data_response(after_response.clone());
+                            test_context.logger = Logger::default();
                             if test_scripts.len() > 0 {
+                                after_response
+                                    .logger
+                                    .add_info("System".to_string(), "Run Test-script".to_string());
                                 pre_request_context_result =
                                     ScriptRuntime::run_block_many(test_scripts, test_context);
                                 match pre_request_context_result {

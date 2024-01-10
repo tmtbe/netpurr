@@ -57,9 +57,6 @@ impl ScriptRuntime {
             .unwrap();
         for script_scope in scripts.iter() {
             context.scope_name = script_scope.scope.clone();
-            context
-                .logger
-                .add_info(script_scope.scope.clone(), "execute script.".to_string());
             let step_context = runtime.block_on(async {
                 ScriptRuntime::run_js(script_scope.script.clone(), context.clone()).await
             })?;
