@@ -304,6 +304,9 @@ impl WorkspaceData {
         self.get_build_envs(self.get_collection(crt.collection_path.clone()))
     }
 
+    pub fn get_path_parent_auth(&self, path: String) -> Auth {
+        self.get_collection_auth(path)
+    }
     pub fn get_crt_parent_auth(&self, id: String) -> Auth {
         let crt = self.must_get_crt(id);
         match &crt.collection_path {

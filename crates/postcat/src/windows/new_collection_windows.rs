@@ -8,6 +8,7 @@ use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
+use crate::data::auth::{Auth, AuthType};
 use crate::data::collections::{Collection, CollectionFolder};
 use crate::data::config_data::ConfigData;
 use crate::data::environment::{EnvironmentItem, EnvironmentItemValue, EnvironmentValueType};
@@ -80,6 +81,8 @@ impl Window for NewCollectionWindows {
     ) {
         ui.label("Name");
         utils::text_edit_singleline_filter_justify(ui, &mut self.folder.borrow_mut().name);
+        let parent_auth =
+            workspace_data.get_path_parent_auth(self.folder.borrow().parent_path.clone());
         ui.horizontal(|ui| {
             for x in NewCollectionContentType::iter() {
                 if x == NewCollectionContentType::Variables && self.parent_folder.is_some() {
@@ -88,7 +91,16 @@ impl Window for NewCollectionWindows {
                 ui.selectable_value(
                     &mut self.new_collection_content_type,
                     x.clone(),
-                    x.to_string(),
+                    utils::build_with_count_ui_header(
+                        x.to_string(),
+                        NewCollectionWindows::get_count(
+                            self.folder.clone(),
+                            x,
+                            &parent_auth,
+                            self.new_collection.envs.items.len(),
+                        ),
+                        ui,
+                    ),
                 );
             }
         });
@@ -141,6 +153,45 @@ impl Window for NewCollectionWindows {
     }
 }
 impl NewCollectionWindows {
+    fn get_count(
+        cf: Rc<RefCell<CollectionFolder>>,
+        panel_enum: NewCollectionContentType,
+        parent_auth: &Auth,
+        vars: usize,
+    ) -> usize {
+        match panel_enum {
+            NewCollectionContentType::Description => {
+                if cf.borrow().desc.is_empty() {
+                    0
+                } else {
+                    usize::MAX
+                }
+            }
+            NewCollectionContentType::Authorization => {
+                match cf.borrow().auth.get_final_type(parent_auth.clone()) {
+                    AuthType::InheritAuthFromParent => 0,
+                    AuthType::NoAuth => 0,
+                    AuthType::BearerToken => usize::MAX,
+                    AuthType::BasicAuth => usize::MAX,
+                }
+            }
+            NewCollectionContentType::Variables => vars,
+            NewCollectionContentType::PreRequestScript => {
+                if !cf.borrow().pre_request_script.is_empty() {
+                    usize::MAX
+                } else {
+                    0
+                }
+            }
+            NewCollectionContentType::Tests => {
+                if !cf.borrow().test_script.is_empty() {
+                    usize::MAX
+                } else {
+                    0
+                }
+            }
+        }
+    }
     pub fn with_open_collection(mut self, collection: Option<Collection>) -> Self {
         self.new_collection_windows_open = true;
         match collection {

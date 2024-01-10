@@ -82,11 +82,11 @@ impl RestPanel {
         self.response_panel
             .set_and_render(ui, operation, workspace_data, crt_id.clone());
     }
-    fn get_count(hr: &HttpRecord, panel_enum: RequestPanelEnum, parnet_auth: &Auth) -> usize {
+    fn get_count(hr: &HttpRecord, panel_enum: RequestPanelEnum, parent_auth: &Auth) -> usize {
         match panel_enum {
             RequestPanelEnum::Params => hr.request.params.iter().filter(|i| i.enable).count(),
             RequestPanelEnum::Authorization => {
-                match hr.request.auth.get_final_type(parnet_auth.clone()) {
+                match hr.request.auth.get_final_type(parent_auth.clone()) {
                     AuthType::InheritAuthFromParent => 0,
                     AuthType::NoAuth => 0,
                     AuthType::BearerToken => usize::MAX,
@@ -188,24 +188,21 @@ impl RestPanel {
                             crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                                 crt.rest.prepare_send(envs.clone(), parent_auth.clone());
                             });
+                            let scope = format!(
+                                "{}/{}",
+                                crt.collection_path.clone().unwrap_or_default(),
+                                crt.get_tab_name()
+                            );
                             if crt.rest.pre_request_script.clone() != "" {
                                 pre_request_parent_script_scopes.push(ScriptScope {
-                                    scope: format!(
-                                        "{}/{}",
-                                        crt.collection_path.unwrap_or_default(),
-                                        crt.get_tab_name()
-                                    ),
+                                    scope: scope.clone(),
                                     script: crt.rest.pre_request_script.clone(),
                                 });
                             }
 
                             if crt.rest.test_script.clone() != "" {
                                 test_parent_script_scopes.push(ScriptScope {
-                                    scope: format!(
-                                        "{}/{}",
-                                        crt.collection_path.unwrap_or_default(),
-                                        crt.get_tab_name()
-                                    ),
+                                    scope: scope.clone(),
                                     script: crt.rest.test_script.clone(),
                                 });
                             }
