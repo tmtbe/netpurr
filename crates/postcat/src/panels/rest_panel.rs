@@ -175,7 +175,7 @@ impl RestPanel {
             workspace_data.get_crt_parent_scripts(crt_id.clone());
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(crt_id.clone());
-        let crt = workspace_data.must_get_crt(crt_id.clone());
+        let mut crt = workspace_data.must_get_crt(crt_id.clone());
         egui::SidePanel::right("editor_right_panel")
             .resizable(false)
             .show_inside(ui, |ui| {
@@ -185,7 +185,7 @@ impl RestPanel {
                         ui.add_enabled(false, Button::new("Send"));
                     } else {
                         if ui.button("Send").clicked() {
-                            workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                            crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                                 crt.rest.prepare_send(envs.clone(), parent_auth.clone());
                             });
                             if crt.rest.pre_request_script.clone() != "" {
@@ -226,7 +226,7 @@ impl RestPanel {
                                     |_| {},
                                 );
                                 operation.add_success_toast("Save success.");
-                                workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                                crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                                     crt.set_baseline();
                                 });
                             }
@@ -293,7 +293,7 @@ impl RestPanel {
         workspace_data: &mut WorkspaceData,
         crt_id: String,
     ) {
-        let crt = workspace_data.must_get_crt(crt_id.clone());
+        let mut crt = workspace_data.must_get_crt(crt_id.clone());
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         let (pre_request_parent_script_scopes, _) =
             workspace_data.get_crt_parent_scripts(crt_id.clone());
@@ -313,7 +313,7 @@ impl RestPanel {
                 }
                 self.auth_panel.set_envs(envs.clone(), parent_auth);
                 {
-                    workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                    crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                         self.auth_panel
                             .set_and_render(ui, &mut crt.rest.request.auth);
                     });
@@ -341,7 +341,7 @@ impl RestPanel {
                     "rest".to_string(),
                 );
                 {
-                    workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                    crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                         crt.rest.pre_request_script = script;
                     });
                 }
@@ -353,7 +353,7 @@ impl RestPanel {
                     "rest".to_string(),
                 );
                 {
-                    workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                    crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                         crt.rest.test_script = script;
                     });
                 }

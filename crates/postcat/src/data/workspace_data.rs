@@ -281,7 +281,11 @@ impl WorkspaceData {
         });
     }
 
-    pub fn must_get_mut_crt(&self, id: String, call: impl FnOnce(&mut CentralRequestItem)) {
+    pub fn must_get_mut_crt(
+        &self,
+        id: String,
+        call: impl FnOnce(&mut CentralRequestItem),
+    ) -> CentralRequestItem {
         match self
             .central_request_data_list
             .borrow_mut()
@@ -293,6 +297,7 @@ impl WorkspaceData {
             }
             Some(crt) => call(crt),
         }
+        self.must_get_crt(id)
     }
     pub fn get_crt_envs(&self, id: String) -> BTreeMap<String, EnvironmentItemValue> {
         let crt = self.must_get_crt(id);

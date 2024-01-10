@@ -14,7 +14,7 @@ impl ResponseHeadersPanel {
         workspace_data: &mut WorkspaceData,
         crt_id: String,
     ) {
-        let crt = workspace_data.must_get_crt(crt_id.clone());
+        let mut crt = workspace_data.must_get_crt(crt_id.clone());
         ui.label("Headers");
         ui.push_id("response_headers_table", |ui| {
             let table = TableBuilder::new(ui)
@@ -41,7 +41,7 @@ impl ResponseHeadersPanel {
                     });
                 })
                 .body(|mut body| {
-                    workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                    crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                         for (_, header) in crt.rest.response.headers.iter_mut().enumerate() {
                             body.row(18.0, |mut row| {
                                 row.col(|ui| {

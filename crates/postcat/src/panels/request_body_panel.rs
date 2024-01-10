@@ -25,11 +25,11 @@ impl RequestBodyPanel {
         crt_id: String,
     ) {
         let envs = workspace_data.get_crt_envs(crt_id.clone());
-        let crt = workspace_data.must_get_crt(crt_id.clone());
+        let mut crt = workspace_data.must_get_crt(crt_id.clone());
         ui.horizontal(|ui| {
             ui.add_space(HORIZONTAL_GAP);
             for x in BodyType::iter() {
-                workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                     utils::selectable_check(
                         ui,
                         &mut crt.rest.request.body.body_type,
@@ -44,12 +44,12 @@ impl RequestBodyPanel {
                     .show_ui(ui, |ui| {
                         ui.style_mut().wrap = Some(false);
                         ui.set_min_width(60.0);
-                        for x in BodyRawType::iter() {
-                            workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                        for body_raw_type in BodyRawType::iter() {
+                            crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                                 ui.selectable_value(
                                     &mut crt.rest.request.body.body_raw_type,
-                                    x.clone(),
-                                    x.to_string(),
+                                    body_raw_type.clone(),
+                                    body_raw_type.to_string(),
                                 );
                             });
                         }
@@ -74,7 +74,7 @@ impl RequestBodyPanel {
                     egui::ScrollArea::vertical()
                         .max_height(200.0)
                         .show(ui, |ui| {
-                            workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                            crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                                 HighlightTemplateSinglelineBuilder::default()
                                     .multiline()
                                     .envs(envs)
@@ -98,7 +98,7 @@ impl RequestBodyPanel {
                 ui.horizontal(|ui| {
                     if ui.button(button_name).clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_file() {
-                            workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                            crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                                 crt.rest.request.body.body_file = path.display().to_string();
                             });
                         }
