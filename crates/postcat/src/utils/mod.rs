@@ -6,8 +6,8 @@ use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
 use egui::text::TextWrapping;
 use egui::{
-    Area, FontSelection, Frame, Id, InnerResponse, Key, Layout, Order, Response, RichText, Style,
-    TextBuffer, Ui, WidgetText,
+    Area, Color32, FontSelection, Frame, Id, InnerResponse, Key, Layout, Order, Response, RichText,
+    Style, TextBuffer, Ui, WidgetText,
 };
 use regex::Regex;
 
@@ -64,7 +64,18 @@ pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) ->
     lb
 }
 
-pub fn build_with_count_ui_header(name: String, count: usize, ui: &Ui) -> LayoutJob {
+pub enum HighlightValue {
+    None,
+    Has,
+    Usize(usize),
+    String(String, Color32),
+}
+
+pub fn build_with_count_ui_header(
+    name: String,
+    highlight_value: HighlightValue,
+    ui: &Ui,
+) -> LayoutJob {
     let mut lb = LayoutJob::default();
     let mut color = ui.visuals().warn_fg_color;
     let style = Style::default();
@@ -72,18 +83,28 @@ pub fn build_with_count_ui_header(name: String, count: usize, ui: &Ui) -> Layout
         .color(ui.visuals().text_color())
         .strong()
         .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
-    if count == usize::MAX {
-        RichText::new("●").color(color.clone()).strong().append_to(
-            &mut lb,
-            &style,
-            FontSelection::Default,
-            Align::Center,
-        );
-    } else if count > 0 {
-        RichText::new("(".to_string() + count.to_string().as_str() + ")")
-            .color(color.clone())
-            .strong()
-            .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+    match highlight_value {
+        HighlightValue::Has => {
+            RichText::new("●").color(color.clone()).strong().append_to(
+                &mut lb,
+                &style,
+                FontSelection::Default,
+                Align::Center,
+            );
+        }
+        HighlightValue::Usize(value) => {
+            RichText::new("(".to_string() + value.to_string().as_str() + ")")
+                .color(color.clone())
+                .strong()
+                .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+        }
+        HighlightValue::String(value, self_color) => {
+            RichText::new("(".to_string() + value.as_str() + ")")
+                .color(self_color)
+                .strong()
+                .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+        }
+        HighlightValue::None => {}
     }
     lb
 }

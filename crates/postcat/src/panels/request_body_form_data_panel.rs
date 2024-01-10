@@ -10,6 +10,7 @@ use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::{MultipartData, MultipartDataType};
 use crate::data::workspace_data::WorkspaceData;
 use crate::utils;
+use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
@@ -130,11 +131,17 @@ impl RequestBodyFormDataPanel {
                             .build("request_body_from_data_value".to_string(), &mut param.value)
                             .ui(ui);
                     } else {
-                        let mut button_name =
-                            utils::build_with_count_ui_header("Select File".to_string(), 0, ui);
+                        let mut button_name = utils::build_with_count_ui_header(
+                            "Select File".to_string(),
+                            HighlightValue::None,
+                            ui,
+                        );
                         if param.value != "" {
-                            button_name =
-                                utils::build_with_count_ui_header("Select File".to_string(), 1, ui);
+                            button_name = utils::build_with_count_ui_header(
+                                "Select File".to_string(),
+                                HighlightValue::Usize(1),
+                                ui,
+                            );
                         }
                         if ui.button(button_name).clicked() {
                             if let Some(path) = rfd::FileDialog::new().pick_file() {

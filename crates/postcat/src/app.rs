@@ -63,7 +63,7 @@ impl App {
         font_def
             .families
             .get_mut(&font_family)?
-            .insert(0, font_name.clone());
+            .push(font_name.clone());
 
         ctx.set_fonts(font_def);
         Some(())

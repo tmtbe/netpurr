@@ -21,6 +21,7 @@ use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::{DataView, VERTICAL_GAP};
 use crate::utils;
+use crate::utils::HighlightValue;
 
 #[derive(Default)]
 pub struct NewCollectionWindows {
@@ -158,36 +159,36 @@ impl NewCollectionWindows {
         panel_enum: NewCollectionContentType,
         parent_auth: &Auth,
         vars: usize,
-    ) -> usize {
+    ) -> HighlightValue {
         match panel_enum {
             NewCollectionContentType::Description => {
                 if cf.borrow().desc.is_empty() {
-                    0
+                    HighlightValue::None
                 } else {
-                    usize::MAX
+                    HighlightValue::Has
                 }
             }
             NewCollectionContentType::Authorization => {
                 match cf.borrow().auth.get_final_type(parent_auth.clone()) {
-                    AuthType::InheritAuthFromParent => 0,
-                    AuthType::NoAuth => 0,
-                    AuthType::BearerToken => usize::MAX,
-                    AuthType::BasicAuth => usize::MAX,
+                    AuthType::InheritAuthFromParent => HighlightValue::None,
+                    AuthType::NoAuth => HighlightValue::None,
+                    AuthType::BearerToken => HighlightValue::Has,
+                    AuthType::BasicAuth => HighlightValue::Has,
                 }
             }
-            NewCollectionContentType::Variables => vars,
+            NewCollectionContentType::Variables => HighlightValue::Usize(vars),
             NewCollectionContentType::PreRequestScript => {
                 if !cf.borrow().pre_request_script.is_empty() {
-                    usize::MAX
+                    HighlightValue::Has
                 } else {
-                    0
+                    HighlightValue::None
                 }
             }
             NewCollectionContentType::Tests => {
                 if !cf.borrow().test_script.is_empty() {
-                    usize::MAX
+                    HighlightValue::Has
                 } else {
-                    0
+                    HighlightValue::None
                 }
             }
         }

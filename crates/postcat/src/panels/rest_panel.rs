@@ -20,6 +20,7 @@ use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::script::script::ScriptScope;
 use crate::utils;
+use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 use crate::windows::cookies_windows::CookiesWindows;
 use crate::windows::save_crt_windows::SaveCRTWindows;
@@ -82,49 +83,59 @@ impl RestPanel {
         self.response_panel
             .set_and_render(ui, operation, workspace_data, crt_id.clone());
     }
-    fn get_count(hr: &HttpRecord, panel_enum: RequestPanelEnum, parent_auth: &Auth) -> usize {
+    fn get_count(
+        hr: &HttpRecord,
+        panel_enum: RequestPanelEnum,
+        parent_auth: &Auth,
+    ) -> HighlightValue {
         match panel_enum {
-            RequestPanelEnum::Params => hr.request.params.iter().filter(|i| i.enable).count(),
+            RequestPanelEnum::Params => {
+                HighlightValue::Usize(hr.request.params.iter().filter(|i| i.enable).count())
+            }
             RequestPanelEnum::Authorization => {
                 match hr.request.auth.get_final_type(parent_auth.clone()) {
-                    AuthType::InheritAuthFromParent => 0,
-                    AuthType::NoAuth => 0,
-                    AuthType::BearerToken => usize::MAX,
-                    AuthType::BasicAuth => usize::MAX,
+                    AuthType::InheritAuthFromParent => HighlightValue::None,
+                    AuthType::NoAuth => HighlightValue::None,
+                    AuthType::BearerToken => HighlightValue::Has,
+                    AuthType::BasicAuth => HighlightValue::Has,
                 }
             }
-            RequestPanelEnum::Headers => hr.request.headers.iter().filter(|i| i.enable).count(),
+            RequestPanelEnum::Headers => {
+                HighlightValue::Usize(hr.request.headers.iter().filter(|i| i.enable).count())
+            }
             RequestPanelEnum::Body => match hr.request.body.body_type {
-                BodyType::NONE => 0,
-                BodyType::FROM_DATA => hr.request.body.body_form_data.len(),
-                BodyType::X_WWW_FROM_URLENCODED => hr.request.body.body_xxx_form.len(),
+                BodyType::NONE => HighlightValue::None,
+                BodyType::FROM_DATA => HighlightValue::Usize(hr.request.body.body_form_data.len()),
+                BodyType::X_WWW_FROM_URLENCODED => {
+                    HighlightValue::Usize(hr.request.body.body_xxx_form.len())
+                }
                 BodyType::RAW => {
                     if hr.request.body.body_str != "" {
-                        usize::MAX
+                        HighlightValue::Has
                     } else {
-                        0
+                        HighlightValue::None
                     }
                 }
                 BodyType::BINARY => {
                     if hr.request.body.body_file != "" {
-                        usize::MAX
+                        HighlightValue::Has
                     } else {
-                        0
+                        HighlightValue::None
                     }
                 }
             },
             RequestPanelEnum::PreRequestScript => {
                 if hr.pre_request_script != "" {
-                    usize::MAX
+                    HighlightValue::Has
                 } else {
-                    0
+                    HighlightValue::None
                 }
             }
             RequestPanelEnum::Tests => {
                 if hr.test_script != "" {
-                    usize::MAX
+                    HighlightValue::Has
                 } else {
-                    0
+                    HighlightValue::None
                 }
             }
         }

@@ -1,3 +1,8 @@
+use eframe::epaint::FontFamily;
+use egui::text::LayoutJob;
+use egui::{Color32, FontId, TextFormat};
+
+use crate::data::test::TestStatus;
 use crate::data::workspace_data::WorkspaceData;
 use crate::panels::HORIZONTAL_GAP;
 
@@ -17,7 +22,7 @@ impl TestResultPanel {
                 for test_info in crt.test_result.test_info_list.iter() {
                     ui.horizontal(|ui| {
                         ui.add_space(HORIZONTAL_GAP * 2.0);
-                        ui.strong(test_info.status.to_string());
+                        ui.label(Self::build_status_job(test_info.status.clone()));
                         ui.separator();
                         ui.vertical(|ui| {
                             ui.label(test_info.name.clone());
@@ -25,7 +30,7 @@ impl TestResultPanel {
                                 ui.horizontal(|ui| {
                                     ui.add_space(HORIZONTAL_GAP * 2.0);
                                     ui.separator();
-                                    ui.strong(tar.assert_result.to_string());
+                                    ui.label(Self::build_status_job(tar.assert_result.clone()));
                                     ui.label(tar.msg.to_string());
                                 });
                             }
@@ -34,5 +39,31 @@ impl TestResultPanel {
                 }
             });
         });
+    }
+
+    fn build_status_job(status: TestStatus) -> LayoutJob {
+        let mut job = LayoutJob::default();
+        let text_format = match status {
+            TestStatus::FAIL => TextFormat {
+                color: Color32::WHITE,
+                background: Color32::DARK_RED,
+                font_id: FontId {
+                    size: 14.0,
+                    family: FontFamily::Monospace,
+                },
+                ..Default::default()
+            },
+            _ => TextFormat {
+                color: Color32::WHITE,
+                background: Color32::DARK_GREEN,
+                font_id: FontId {
+                    size: 14.0,
+                    family: FontFamily::Monospace,
+                },
+                ..Default::default()
+            },
+        };
+        job.append(status.to_string().as_str(), 0.0, text_format);
+        job
     }
 }

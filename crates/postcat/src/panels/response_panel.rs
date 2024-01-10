@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use egui::{RichText, Ui};
+use egui::{Color32, RichText, Ui};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
@@ -17,6 +17,7 @@ use crate::panels::response_log_panel::ResponseLogPanel;
 use crate::panels::test_result_panel::TestResultPanel;
 use crate::panels::DataView;
 use crate::utils;
+use crate::utils::HighlightValue;
 
 #[derive(Default)]
 pub struct ResponsePanel {
@@ -82,16 +83,34 @@ impl ResponsePanel {
         cookies: &BTreeMap<String, Cookie>,
         test_result: &TestResult,
         panel_enum: ResponsePanelEnum,
-    ) -> usize {
+    ) -> HighlightValue {
         match panel_enum {
-            ResponsePanelEnum::Body => 0,
-            ResponsePanelEnum::Cookies => cookies.len(),
-            ResponsePanelEnum::Headers => response.headers.iter().count(),
-            ResponsePanelEnum::Logs => response.logger.logs.len(),
+            ResponsePanelEnum::Body => HighlightValue::None,
+            ResponsePanelEnum::Cookies => HighlightValue::Usize(cookies.len()),
+            ResponsePanelEnum::Headers => HighlightValue::Usize(response.headers.iter().count()),
+            ResponsePanelEnum::Logs => HighlightValue::Usize(response.logger.logs.len()),
             ResponsePanelEnum::TestResult => match test_result.status {
-                TestStatus::None => 0,
-                TestStatus::PASS => usize::MAX,
-                TestStatus::FAIL => usize::MAX,
+                TestStatus::None => HighlightValue::None,
+                TestStatus::PASS => HighlightValue::String(
+                    format!(
+                        "{}/{}",
+                        test_result.test_info_list.len(),
+                        test_result.test_info_list.len()
+                    ),
+                    Color32::DARK_GREEN,
+                ),
+                TestStatus::FAIL => HighlightValue::String(
+                    format!(
+                        "{}/{}",
+                        test_result
+                            .test_info_list
+                            .iter()
+                            .filter(|i| i.status == TestStatus::PASS)
+                            .count(),
+                        test_result.test_info_list.len()
+                    ),
+                    Color32::RED,
+                ),
             },
         }
     }

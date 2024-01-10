@@ -8,6 +8,7 @@ use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
+use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
@@ -89,11 +90,17 @@ impl RequestBodyPanel {
                 });
             }
             BodyType::BINARY => {
-                let mut button_name =
-                    utils::build_with_count_ui_header("Select File".to_string(), 0, ui);
+                let mut button_name = utils::build_with_count_ui_header(
+                    "Select File".to_string(),
+                    HighlightValue::None,
+                    ui,
+                );
                 if crt.rest.request.body.body_file != "" {
-                    button_name =
-                        utils::build_with_count_ui_header("Select File".to_string(), 1, ui);
+                    button_name = utils::build_with_count_ui_header(
+                        "Select File".to_string(),
+                        HighlightValue::Usize(1),
+                        ui,
+                    );
                 }
                 ui.horizontal(|ui| {
                     if ui.button(button_name).clicked() {
