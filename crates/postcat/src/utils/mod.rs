@@ -32,14 +32,7 @@ pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) ->
         justify: false,
     };
     let style = Style::default();
-    let base_url = hr
-        .request
-        .base_url
-        .trim()
-        .trim_start_matches("http://")
-        .trim_start_matches("https://")
-        .to_string();
-    if base_url != "" {
+    if hr.request.base_url != "" {
         RichText::new(hr.request.method.to_string() + " ")
             .color(ui.visuals().warn_fg_color)
             .strong()
@@ -48,7 +41,7 @@ pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) ->
         if hr.name != "" {
             new_name = hr.name.to_string();
         } else {
-            new_name = base_url;
+            new_name = hr.request.base_url;
         }
         match max_char {
             None => {}

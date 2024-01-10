@@ -67,7 +67,7 @@ impl RestSender {
         let client = Client::new();
         let method = Method::from_str(request.method.to_string().to_uppercase().as_str())
             .unwrap_or_default();
-        let mut builder = client.request(method, request.base_url);
+        let mut builder = client.request(method, request.get_url_with_schema());
         for header in request.headers.iter().filter(|h| h.enable) {
             builder = builder.header(header.key.clone(), header.value.clone());
         }
@@ -148,11 +148,6 @@ impl RestSender {
         envs: BTreeMap<String, EnvironmentItemValue>,
     ) -> http::Request {
         let mut build_request = request.clone();
-        if !build_request.base_url.starts_with("http://")
-            && !build_request.base_url.starts_with("https://")
-        {
-            build_request.base_url = "http://".to_string() + build_request.base_url.as_str();
-        }
         build_request.headers = Self::build_header(request.headers.clone(), &envs);
         build_request.body.body_str =
             utils::replace_variable(build_request.body.body_str, envs.clone());

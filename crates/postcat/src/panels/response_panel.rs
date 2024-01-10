@@ -52,7 +52,7 @@ impl ResponsePanel {
         crt_id: String,
     ) {
         let crt = workspace_data.must_get_crt(crt_id.clone());
-        let cookies = workspace_data.get_url_cookies(crt.rest.request.base_url.clone());
+        let cookies = workspace_data.get_url_cookies(crt.rest.request.get_url_with_schema());
         match crt.rest.status {
             ResponseStatus::None => {
                 ui.strong("Response");

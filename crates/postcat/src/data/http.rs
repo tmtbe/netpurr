@@ -58,6 +58,8 @@ impl Default for ResponseStatus {
 #[serde(default)]
 pub struct Request {
     pub method: Method,
+    pub schema: RequestSchema,
+    pub raw_url: String,
     pub base_url: String,
     pub params: Vec<QueryParam>,
     pub headers: Vec<Header>,
@@ -65,7 +67,103 @@ pub struct Request {
     pub auth: Auth,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Display)]
+pub enum RequestSchema {
+    HTTP,
+    HTTPS,
+}
+
+impl Default for RequestSchema {
+    fn default() -> Self {
+        RequestSchema::HTTP
+    }
+}
 impl Request {
+    pub fn sync_header(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, parent_auth: Auth) {
+        // build auto header
+        self.auth
+            .build_head(&mut self.headers, envs.clone(), parent_auth);
+        match self.body.body_type {
+            BodyType::NONE => {}
+            BodyType::FROM_DATA => {
+                self.set_request_content_type("multipart/form-data".to_string());
+            }
+            BodyType::X_WWW_FROM_URLENCODED => {
+                self.set_request_content_type("application/x-www-form-urlencoded".to_string());
+            }
+            BodyType::RAW => match self.body.body_raw_type {
+                BodyRawType::TEXT => self.set_request_content_type("text/plain".to_string()),
+                BodyRawType::JSON => self.set_request_content_type("application/json".to_string()),
+                BodyRawType::HTML => self.set_request_content_type("text/html".to_string()),
+                BodyRawType::XML => self.set_request_content_type("application/xml".to_string()),
+                BodyRawType::JavaScript => {
+                    self.set_request_content_type("application/javascript".to_string())
+                }
+            },
+            BodyType::BINARY => {
+                let path = Path::new(&self.body.body_file);
+                let content_type = mime_guess::from_path(path);
+                self.set_request_content_type(content_type.first_or_octet_stream().to_string());
+            }
+        }
+    }
+    pub fn get_url_with_schema(&self) -> String {
+        format!("{}://{}", self.schema, self.base_url)
+    }
+
+    pub fn build_raw_url(&mut self) {
+        let mut params = vec![];
+        for q in self.params.iter().filter(|q| q.enable) {
+            params.push(format!("{}={}", q.key, q.value))
+        }
+        if !params.is_empty() {
+            self.raw_url = format!("{}?{}", self.get_url_with_schema(), params.join("&"))
+        } else {
+            self.raw_url = self.get_url_with_schema();
+        }
+    }
+    pub fn parse_raw_url(&mut self) {
+        let raw_url_split: Vec<&str> = self.raw_url.splitn(2, "://").collect();
+        let mut schema_str = "http";
+        let mut params_url = "";
+        if raw_url_split.len() >= 2 {
+            schema_str = raw_url_split[0];
+            params_url = raw_url_split[1];
+        } else {
+            params_url = self.raw_url.as_str();
+        }
+        match schema_str {
+            "https" => {
+                self.schema = RequestSchema::HTTPS;
+            }
+            _ => {
+                self.schema = RequestSchema::HTTP;
+            }
+        }
+        let params_url_split: Vec<&str> = params_url.splitn(2, "?").collect();
+        self.base_url = params_url_split[0].to_string();
+        params_url_split.get(1).map(|params| {
+            self.params.retain(|q| !q.enable);
+            let mut retain_params: Vec<QueryParam> = self.params.clone();
+            self.params.clear();
+            for pair_str in params.split("&") {
+                let pair_list: Vec<&str> = pair_str.splitn(2, "=").collect();
+                if pair_list.len() == 2 {
+                    let key = pair_list[0];
+                    let value = pair_list[1];
+                    self.params.push(QueryParam {
+                        key: key.to_string(),
+                        value: value.to_string(),
+                        desc: "".to_string(),
+                        lock_with: Default::default(),
+                        enable: true,
+                    })
+                }
+            }
+            retain_params.retain(|rp| self.params.iter().find(|p| p.key == rp.key).is_none());
+            self.params.append(&mut retain_params);
+        });
+    }
     pub fn compute_signature(&self) -> String {
         let parmas: Vec<String> = self
             .params
@@ -126,33 +224,24 @@ impl Request {
 }
 
 impl HttpRecord {
-    pub fn sync(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, parent_auth: Auth) {
-        self.request
-            .auth
-            .build_head(&mut self.request.headers, envs.clone(), parent_auth);
-        match self.request.body.body_type {
-            BodyType::NONE => {}
-            BodyType::FROM_DATA => {
-                self.set_request_content_type("multipart/form-data".to_string());
-            }
-            BodyType::X_WWW_FROM_URLENCODED => {
-                self.set_request_content_type("application/x-www-form-urlencoded".to_string());
-            }
-            BodyType::RAW => match self.request.body.body_raw_type {
-                BodyRawType::TEXT => self.set_request_content_type("text/plain".to_string()),
-                BodyRawType::JSON => self.set_request_content_type("application/json".to_string()),
-                BodyRawType::HTML => self.set_request_content_type("text/html".to_string()),
-                BodyRawType::XML => self.set_request_content_type("application/xml".to_string()),
-                BodyRawType::JavaScript => {
-                    self.set_request_content_type("application/javascript".to_string())
-                }
-            },
-            BodyType::BINARY => {
-                let path = Path::new(&self.request.body.body_file);
-                let content_type = mime_guess::from_path(path);
-                self.set_request_content_type(content_type.first_or_octet_stream().to_string());
-            }
-        }
+    pub fn sync_header(&mut self, envs: BTreeMap<String, EnvironmentItemValue>, parent_auth: Auth) {
+        self.request.sync_header(envs, parent_auth);
+    }
+    pub fn build_raw_url(&mut self) {
+        self.request.build_raw_url();
+    }
+    pub fn sync_raw_url(&mut self) {
+        self.request.parse_raw_url();
+    }
+
+    pub fn prepare_send(
+        &mut self,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        parent_auth: Auth,
+    ) {
+        self.request.clear_lock_with();
+        self.sync_header(envs, parent_auth);
+        self.sync_raw_url();
     }
 
     pub fn get_response_content_type(&self) -> Option<Header> {

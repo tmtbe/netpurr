@@ -139,7 +139,7 @@ impl RestPanel {
         let envs = workspace_data.get_crt_envs(cursor.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(cursor.clone());
         workspace_data.must_get_mut_crt(cursor.clone(), |crt| {
-            crt.rest.sync(envs.clone(), parent_auth.clone());
+            crt.rest.sync_header(envs.clone(), parent_auth.clone());
             let tab_name = crt.get_tab_name();
             match &crt.collection_path {
                 None => {
@@ -186,8 +186,7 @@ impl RestPanel {
                     } else {
                         if ui.button("Send").clicked() {
                             workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                                crt.rest.request.clear_lock_with();
-                                crt.rest.sync(envs.clone(), parent_auth.clone());
+                                crt.rest.prepare_send(envs.clone(), parent_auth.clone());
                             });
                             if crt.rest.pre_request_script.clone() != "" {
                                 pre_request_parent_script_scopes.push(ScriptScope {
@@ -268,16 +267,19 @@ impl RestPanel {
                                 }
                             });
                         let mut filter: HashSet<String> = HashSet::default();
-                        filter.insert("?".to_string());
                         filter.insert(" ".to_string());
-                        filter.insert("&".to_string());
                         ui.centered_and_justified(|ui| {
-                            HighlightTemplateSinglelineBuilder::default()
+                            let raw_url_text_edit = HighlightTemplateSinglelineBuilder::default()
                                 .filter(filter)
                                 .envs(envs.clone())
                                 .all_space(false)
-                                .build(cursor.clone() + "url", &mut crt.rest.request.base_url)
+                                .build(cursor.clone() + "url", &mut crt.rest.request.raw_url)
                                 .ui(ui);
+                            if raw_url_text_edit.has_focus() {
+                                crt.rest.sync_raw_url();
+                            } else {
+                                crt.rest.build_raw_url();
+                            }
                         });
                     });
                 });

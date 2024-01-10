@@ -148,15 +148,7 @@ impl CentralRequestItem {
         if self.rest.name != "" {
             self.rest.name.clone()
         } else {
-            if self
-                .rest
-                .request
-                .base_url
-                .trim()
-                .trim_start_matches("https://")
-                .trim_start_matches("http://")
-                == ""
-            {
+            if self.rest.request.base_url == "" {
                 "Untitled Request".to_string()
             } else {
                 self.rest.request.base_url.clone()

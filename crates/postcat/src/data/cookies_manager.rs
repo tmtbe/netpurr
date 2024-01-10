@@ -79,9 +79,6 @@ impl CookiesManager {
     }
     pub fn get_url_cookies(&self, mut url: String) -> BTreeMap<String, Cookie> {
         let mut result = BTreeMap::new();
-        if !url.starts_with("http") {
-            url = "http://".to_string() + url.as_str();
-        }
         let url_parse = Url::parse(url.as_str());
         match url_parse {
             Ok(url_parse_ok) => match self.cookie_store.lock() {

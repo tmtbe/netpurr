@@ -259,7 +259,7 @@ impl HighlightTemplateSinglelineBuilder {
             all_space: self.all_space,
             size: self.size,
             envs: self.envs.clone(),
-            content: content,
+            content,
             popup_id: id,
             multiline: self.multiline,
             filter: self.filter.clone(),

@@ -30,7 +30,7 @@ impl ResponseBodyPanel {
             Some(content_type) => {
                 if content_type.value.starts_with("image") {
                     let image = Image::from_bytes(
-                        crt.rest.request.base_url.clone(),
+                        crt.rest.request.get_url_with_schema(),
                         crt.rest.response.body.to_vec(),
                     );
                     ui.add(image);
