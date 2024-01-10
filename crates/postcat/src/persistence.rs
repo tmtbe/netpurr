@@ -16,6 +16,7 @@ pub trait PersistenceItem {
     fn load<T: DeserializeOwned + std::fmt::Debug>(&self, path: PathBuf) -> Option<T>;
     fn load_list(&self, path: PathBuf) -> Vec<PathBuf>;
     fn remove(&self, path: PathBuf, key: String);
+    fn rename(&self, old_path: PathBuf, new_path: PathBuf);
     fn remove_dir(&self, path: PathBuf);
     fn get_workspace_dir(&self) -> PathBuf;
     fn set_workspace(&mut self, workspace: String);
@@ -141,6 +142,21 @@ impl PersistenceItem for Persistence {
         json_path.set_extension("json");
         if fs::remove_file(json_path.clone()).is_err() {
             error!("remove_file {:?} failed", json_path)
+        }
+    }
+
+    fn rename(&self, old_path: PathBuf, new_path: PathBuf) {
+        let workspace_dir = self.get_workspace_dir();
+        let mut rel_old_path = old_path.clone();
+        if !rel_old_path.starts_with(workspace_dir.clone()) {
+            rel_old_path = workspace_dir.join(rel_old_path.clone());
+        }
+        let mut rel_new_path = new_path.clone();
+        if !rel_new_path.starts_with(workspace_dir.clone()) {
+            rel_new_path = workspace_dir.join(rel_new_path.clone());
+        }
+        if fs::rename(rel_old_path.clone(), rel_new_path.clone()).is_err() {
+            error!("rename {:?} to {:?} failed", rel_old_path, rel_new_path);
         }
     }
     fn remove_dir(&self, path: PathBuf) {

@@ -70,7 +70,7 @@ impl WorkspaceData {
     ) {
         self.collections
             .borrow_mut()
-            .insert_http_record(folder, record)
+            .add_http_record(folder, record)
     }
     pub fn collection_remove_http_record(
         &self,
@@ -89,7 +89,7 @@ impl WorkspaceData {
     ) {
         self.collections
             .borrow_mut()
-            .insert_folder(parent_folder, folder)
+            .add_folder(parent_folder, folder)
     }
 
     pub fn get_collection_auth(&self, path: String) -> Auth {
@@ -104,9 +104,12 @@ impl WorkspaceData {
             .map(|(k, _)| k.to_string())
             .collect()
     }
+
+    // will be saved recursively
     pub fn add_collection(&self, collection: Collection) {
-        self.collections.borrow_mut().insert_collection(collection)
+        self.collections.borrow_mut().add_collection(collection)
     }
+
     pub fn import_collection(&self, mut collection: Collection) -> String {
         let new_name = utils::build_copy_name(
             collection.folder.borrow().name.clone(),
@@ -122,6 +125,33 @@ impl WorkspaceData {
             .remove_collection(collection_name)
     }
 
+    pub fn update_collection_info(&self, old_collection_name: String, collection: Collection) {
+        self.collections
+            .borrow_mut()
+            .update_collection_info(old_collection_name, collection)
+    }
+
+    pub fn add_folder(
+        &self,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
+        folder: Rc<RefCell<CollectionFolder>>,
+    ) {
+        self.collections
+            .borrow_mut()
+            .add_folder(parent_folder, folder);
+    }
+
+    pub fn update_folder_info(
+        &self,
+        old_folder_name: String,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
+        folder: Rc<RefCell<CollectionFolder>>,
+    ) {
+        self.collections
+            .borrow_mut()
+            .update_folder_info(old_folder_name, parent_folder, folder)
+    }
+
     pub fn remove_folder(&self, parent_folder: Rc<RefCell<CollectionFolder>>, name: String) {
         self.collections
             .borrow_mut()
@@ -130,10 +160,6 @@ impl WorkspaceData {
 
     pub fn get_collections(&self) -> BTreeMap<String, Collection> {
         self.collections.borrow().data.clone()
-    }
-
-    pub fn update_collection_folder(&self, folder: Rc<RefCell<CollectionFolder>>) {
-        self.collections.borrow().update_folder(folder)
     }
 }
 

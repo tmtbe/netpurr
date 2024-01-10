@@ -39,30 +39,20 @@ impl Collections {
             }
         }
     }
-    pub fn insert_collection(&mut self, collection: Collection) {
-        collection.folder.borrow_mut().fix_path(".".to_string());
+    pub fn add_collection(&mut self, collection: Collection) {
+        collection
+            .folder
+            .borrow_mut()
+            .fix_path_recursion(".".to_string());
         self.data
             .insert(collection.folder.borrow().name.clone(), collection.clone());
-        collection.save(
+        collection.save_recursively(
             self.persistence.clone(),
             Path::new("collections").to_path_buf(),
         );
     }
 
-    pub fn update_folder(&self, folder: Rc<RefCell<CollectionFolder>>) {
-        folder.borrow().save(
-            self.persistence.clone(),
-            Path::new("collections")
-                .join(folder.borrow().parent_path.as_str())
-                .to_path_buf(),
-        )
-    }
-
-    pub fn insert_http_record(
-        &mut self,
-        folder: Rc<RefCell<CollectionFolder>>,
-        record: HttpRecord,
-    ) {
+    pub fn add_http_record(&mut self, folder: Rc<RefCell<CollectionFolder>>, record: HttpRecord) {
         folder
             .borrow_mut()
             .requests
@@ -86,7 +76,7 @@ impl Collections {
         )
     }
 
-    pub fn insert_folder(
+    pub fn add_folder(
         &mut self,
         parent_folder: Rc<RefCell<CollectionFolder>>,
         folder: Rc<RefCell<CollectionFolder>>,
@@ -95,10 +85,50 @@ impl Collections {
             .borrow_mut()
             .folders
             .insert(folder.borrow().name.clone(), folder.clone());
-        folder.borrow_mut().fix_path(
+        folder.borrow_mut().fix_path_recursion(
             parent_folder.borrow().parent_path.clone() + "/" + parent_folder.borrow().name.as_str(),
         );
-        self.update_folder(folder);
+        folder.borrow().save_recursively(
+            self.persistence.clone(),
+            Path::new("collections")
+                .join(folder.borrow().parent_path.as_str())
+                .to_path_buf(),
+        );
+    }
+    pub fn update_folder_info(
+        &self,
+        old_folder_name: String,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
+        folder: Rc<RefCell<CollectionFolder>>,
+    ) {
+        let parent_path = folder.borrow().parent_path.clone();
+        folder.borrow_mut().fix_path_recursion(parent_path);
+        parent_folder
+            .borrow_mut()
+            .folders
+            .remove(old_folder_name.as_str());
+        let new_folder_name = folder.borrow().name.clone();
+        parent_folder
+            .borrow_mut()
+            .folders
+            .insert(new_folder_name.clone(), folder.clone());
+        // rename folder
+        self.persistence.rename(
+            Path::new("collections")
+                .join(folder.borrow().parent_path.clone())
+                .join(old_folder_name.clone()),
+            Path::new("collections")
+                .join(folder.borrow().parent_path.clone())
+                .join(new_folder_name.clone()),
+        );
+        // add new @info
+        folder.borrow().save_info(
+            self.persistence.clone(),
+            Path::new("collections")
+                .join(folder.borrow().parent_path.clone())
+                .join(folder.borrow().name.clone())
+                .to_path_buf(),
+        );
     }
 
     pub fn remove_collection(&mut self, collection_name: String) {
@@ -108,6 +138,33 @@ impl Collections {
         self.persistence.remove(
             Path::new("collections").to_path_buf(),
             collection_name + "@info",
+        );
+    }
+    pub fn update_collection_info(&mut self, old_collection_name: String, collection: Collection) {
+        collection
+            .folder
+            .borrow_mut()
+            .fix_path_recursion(".".to_string());
+        self.data.remove(old_collection_name.as_str());
+        let new_collection_name = collection.folder.borrow().name.clone();
+        self.data
+            .insert(new_collection_name.clone(), collection.clone());
+        // remove old @info
+        self.persistence.remove(
+            Path::new("collections").to_path_buf(),
+            old_collection_name + "@info",
+        );
+        // add new @info
+        collection.save_info(
+            self.persistence.clone(),
+            Path::new("collections").to_path_buf(),
+        );
+        // update new folder @info
+        collection.folder.borrow().save_info(
+            self.persistence.clone(),
+            Path::new("collections")
+                .join(collection.folder.borrow().name.clone())
+                .to_path_buf(),
         );
     }
 
@@ -253,14 +310,19 @@ impl Collection {
         }
         result
     }
-    fn save(&self, persistence: Persistence, path: PathBuf) {
+    fn save_info(&self, persistence: Persistence, path: PathBuf) {
         let save_data = self.to_save_data();
         persistence.save(
             path.clone(),
             self.folder.borrow().name.clone() + "@info",
             &save_data,
         );
-        self.folder.borrow().save(persistence, path.clone());
+    }
+    fn save_recursively(&self, persistence: Persistence, path: PathBuf) {
+        self.save_info(persistence.clone(), path.clone());
+        self.folder
+            .borrow()
+            .save_recursively(persistence, path.clone());
     }
     fn load(&mut self, persistence: Persistence, dir_path: PathBuf, file_path: PathBuf) {
         file_path.clone().file_name().map(|file_name_os| {
@@ -314,7 +376,14 @@ impl CollectionFolder {
     pub fn load(&mut self, persistence: Persistence, path: PathBuf) {
         let collection_folder: Option<CollectionFolder> =
             persistence.load(path.join("folder@info.json").to_path_buf());
-        let path_split: Vec<&str> = path.to_str().unwrap_or_default().split("/").collect();
+        let path_str = path.to_str().unwrap_or_default().trim_start_matches(
+            persistence
+                .get_workspace_dir()
+                .join("collections")
+                .to_str()
+                .unwrap_or_default(),
+        );
+        let path_split: Vec<&str> = path_str.split("/").collect();
         let name = path_split[path_split.len() - 1].to_string();
         let mut parent_path = path_split[1..path_split.len() - 1].join("/");
         if parent_path.is_empty() {
@@ -349,23 +418,28 @@ impl CollectionFolder {
             }
         }
     }
-    pub fn save(&self, persistence: Persistence, path: PathBuf) {
+    pub fn save_info(&self, persistence: Persistence, path: PathBuf) {
+        let save_data = self.to_save_data();
+        persistence.save(path.clone(), "folder@info".to_string(), &save_data);
+    }
+    pub fn save_recursively(&self, persistence: Persistence, path: PathBuf) {
         let path = Path::new(&path).join(self.name.clone()).to_path_buf();
         for (name, request) in self.requests.iter() {
             persistence.save(path.clone(), name.clone(), request);
         }
         for (_, folder) in self.folders.iter() {
-            folder.borrow().save(persistence.clone(), path.clone());
+            folder
+                .borrow()
+                .save_recursively(persistence.clone(), path.clone());
         }
-        let save_data = self.to_save_data();
-        persistence.save(path.clone(), "folder@info".to_string(), &save_data);
+        self.save_info(persistence.clone(), path.clone());
     }
 
-    pub fn fix_path(&mut self, parent_path: String) {
+    pub fn fix_path_recursion(&mut self, parent_path: String) {
         self.parent_path = parent_path;
         for (_, f) in self.folders.iter_mut() {
             f.borrow_mut()
-                .fix_path(self.parent_path.clone() + "/" + self.name.as_str());
+                .fix_path_recursion(self.parent_path.clone() + "/" + self.name.as_str());
         }
     }
 

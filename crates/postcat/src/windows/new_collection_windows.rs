@@ -148,7 +148,7 @@ impl NewCollectionWindows {
                 self.title_name = "CREATE A NEW COLLECTION".to_string();
             }
             Some(collection) => {
-                self.new_collection = collection;
+                self.new_collection = collection.duplicate(collection.folder.borrow().name.clone());
                 self.old_collection_name = Some(self.new_collection.folder.borrow().name.clone());
                 self.title_name = "EDIT COLLECTION".to_string();
             }
@@ -176,17 +176,9 @@ impl NewCollectionWindows {
                 self.new_collection = collection;
                 self.old_folder_name = Some(cf.borrow().name.clone());
                 self.title_name = "EDIT FOLDER".to_string();
-                self.folder = Rc::new(RefCell::new(CollectionFolder {
-                    name: cf.borrow().name.clone(),
-                    parent_path: cf.borrow().parent_path.to_string(),
-                    desc: cf.borrow().desc.clone(),
-                    auth: cf.borrow().auth.clone(),
-                    is_root: cf.borrow().is_root,
-                    requests: cf.borrow().requests.clone(),
-                    folders: cf.borrow().folders.clone(),
-                    pre_request_script: cf.borrow().pre_request_script.clone(),
-                    test_script: cf.borrow().test_script.clone(),
-                }));
+                self.folder = Rc::new(RefCell::new(
+                    cf.borrow().duplicate(cf.borrow().name.clone()),
+                ));
             }
         }
         self.parent_folder = Some(parent_folder.clone());
@@ -358,33 +350,15 @@ impl NewCollectionWindows {
 
                         if ui.button("Save").clicked() {
                             self.new_collection_windows_open = false;
-                            match &self.old_collection_name {
-                                None => {}
-                                Some(old_name) => {
-                                    workspace_data.remove_collection(old_name.clone());
-                                }
-                            }
-                            match &self.parent_folder {
+                            let parent_folder = self.parent_folder.clone();
+                            match parent_folder {
                                 None => {
-                                    workspace_data.add_collection(self.new_collection.clone());
+                                    // means save collection
+                                    self.save_collection(workspace_data);
                                 }
                                 Some(parent_folder) => {
-                                    match &self.old_folder_name {
-                                        None => {}
-                                        Some(old_name) => {
-                                            workspace_data.remove_folder(
-                                                parent_folder.clone(),
-                                                old_name.clone(),
-                                            );
-                                        }
-                                    }
-                                    parent_folder.borrow_mut().folders.insert(
-                                        self.folder.borrow().name.clone(),
-                                        self.folder.clone(),
-                                    );
-                                    self.folder.borrow_mut().parent_path =
-                                        parent_folder.borrow().get_path();
-                                    workspace_data.update_collection_folder(self.folder.clone());
+                                    // means save folder
+                                    self.save_folder(workspace_data, parent_folder);
                                 }
                             }
                         }
@@ -396,5 +370,40 @@ impl NewCollectionWindows {
                     }
                 });
             });
+    }
+
+    fn save_folder(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
+    ) {
+        match &self.old_folder_name {
+            None => {
+                // means add new folder
+                workspace_data.add_folder(parent_folder.clone(), self.folder.clone());
+            }
+            Some(old_name) => {
+                // means edit old folder
+                workspace_data.update_folder_info(
+                    old_name.clone(),
+                    parent_folder.clone(),
+                    self.folder.clone(),
+                );
+            }
+        }
+    }
+
+    fn save_collection(&mut self, workspace_data: &mut WorkspaceData) {
+        match &self.old_collection_name {
+            None => {
+                // means add new collection
+                workspace_data.add_collection(self.new_collection.clone());
+            }
+            Some(old_name) => {
+                // means edit old collection
+                workspace_data
+                    .update_collection_info(old_name.clone(), self.new_collection.clone());
+            }
+        }
     }
 }
