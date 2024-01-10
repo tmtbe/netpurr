@@ -316,7 +316,9 @@ impl WorkspaceData {
             Some(collection_path) => self.get_collection_auth(collection_path.clone()),
         }
     }
-
+    pub fn get_path_parent_scripts(&self, path: String) -> (Vec<ScriptScope>, Vec<ScriptScope>) {
+        self.collections.borrow().get_path_scripts(path.clone())
+    }
     pub fn get_crt_parent_scripts(&self, id: String) -> (Vec<ScriptScope>, Vec<ScriptScope>) {
         let crt = self.must_get_crt(id);
         let mut pre_request_script_scopes = Vec::new();

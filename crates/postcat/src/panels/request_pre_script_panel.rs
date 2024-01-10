@@ -18,6 +18,7 @@ impl RequestPreScriptPanel {
         &mut self,
         ui: &mut Ui,
         operation: &Operation,
+        scope: String,
         mut script: String,
         mut parent_scripts: Vec<ScriptScope>,
         request: Request,
@@ -41,11 +42,11 @@ impl RequestPreScriptPanel {
                     if ui.link("Test").clicked() {
                         let script_scope = ScriptScope {
                             script: script.clone(),
-                            scope: "request".to_string(),
+                            scope: scope.clone(),
                         };
                         parent_scripts.push(script_scope);
                         let context = Context {
-                            scope_name: "request".to_string(),
+                            scope_name: scope.clone(),
                             request: request.clone(),
                             envs,
                             ..Default::default()

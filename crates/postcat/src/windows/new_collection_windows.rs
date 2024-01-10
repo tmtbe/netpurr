@@ -116,12 +116,15 @@ impl Window for NewCollectionWindows {
                         },
                     );
                 }
+                let path = self.folder.borrow().parent_path.clone();
+                let name = self.folder.borrow().name.clone();
                 self.folder.borrow_mut().pre_request_script =
                     self.request_pre_script_panel.set_and_render(
                         ui,
                         &operation,
+                        format!("{}/{}", path, name),
                         script,
-                        Vec::new(),
+                        workspace_data.get_path_parent_scripts(path).0,
                         Request::default(),
                         env,
                         "collection".to_string(),

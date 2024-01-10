@@ -190,14 +190,22 @@ impl RestPanel {
                             });
                             if crt.rest.pre_request_script.clone() != "" {
                                 pre_request_parent_script_scopes.push(ScriptScope {
-                                    scope: "request".to_string(),
+                                    scope: format!(
+                                        "{}/{}",
+                                        crt.collection_path.unwrap_or_default(),
+                                        crt.get_tab_name()
+                                    ),
                                     script: crt.rest.pre_request_script.clone(),
                                 });
                             }
 
                             if crt.rest.test_script.clone() != "" {
                                 test_parent_script_scopes.push(ScriptScope {
-                                    scope: "request".to_string(),
+                                    scope: format!(
+                                        "{}/{}",
+                                        crt.collection_path.unwrap_or_default(),
+                                        crt.get_tab_name()
+                                    ),
                                     script: crt.rest.test_script.clone(),
                                 });
                             }
@@ -334,6 +342,7 @@ impl RestPanel {
                 let script = self.request_pre_script_panel.set_and_render(
                     ui,
                     operation,
+                    crt.get_tab_name(),
                     crt.rest.pre_request_script.clone(),
                     pre_request_parent_script_scopes,
                     crt.rest.request.clone(),
