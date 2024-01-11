@@ -2,8 +2,7 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 
-use eframe::emath::Align2;
-use egui::WidgetText;
+use egui::{emath, WidgetText};
 use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
 use poll_promise::Promise;
 use reqwest::blocking::Client;
@@ -57,7 +56,7 @@ impl Default for Operation {
             modal_flag: Rc::new(RefCell::new(ModalFlag::default())),
             toasts: Rc::new(RefCell::new(
                 Toasts::default()
-                    .anchor(Align2::RIGHT_BOTTOM, (-10.0, -10.0))
+                    .anchor(emath::Align2::RIGHT_BOTTOM, (-10.0, -10.0))
                     .direction(egui::Direction::BottomUp),
             )),
             current_windows: Rc::new(RefCell::new(Windows::default())),

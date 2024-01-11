@@ -170,7 +170,7 @@ impl Widget for HighlightTemplate<'_> {
             .chars()
             .filter(|c| !self.filter.contains(c.to_string().as_str()))
             .collect();
-        self.content.replace(filtered_string.as_str());
+        self.content.replace_with(filtered_string.as_str());
         let mut text_edit = TextEdit::singleline(self.content).layouter(&mut layouter);
         if self.multiline {
             text_edit = TextEdit::multiline(self.content).layouter(&mut layouter);

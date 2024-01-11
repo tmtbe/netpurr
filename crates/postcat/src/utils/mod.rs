@@ -233,7 +233,7 @@ pub fn text_edit_singleline_justify<S: TextBuffer>(ui: &mut Ui, text: &mut S) ->
 }
 
 pub fn text_edit_singleline_filter_justify<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
-    text.replace(
+    text.replace_with(
         text.as_str()
             .replace("/", "_")
             .as_str()
@@ -245,7 +245,7 @@ pub fn text_edit_singleline_filter_justify<S: TextBuffer>(ui: &mut Ui, text: &mu
         .chars()
         .filter(|&c| c.is_ascii_alphabetic() || c.is_alphabetic() || c.is_numeric() || c == '_')
         .collect();
-    text.replace(filtered_string.as_str());
+    text.replace_with(filtered_string.as_str());
     ui.with_layout(
         Layout::top_down(Align::LEFT).with_cross_justify(true),
         |ui| ui.text_edit_singleline(text),
@@ -254,7 +254,7 @@ pub fn text_edit_singleline_filter_justify<S: TextBuffer>(ui: &mut Ui, text: &mu
 }
 
 pub fn text_edit_singleline_filter<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> Response {
-    text.replace(
+    text.replace_with(
         text.as_str()
             .replace("/", "_")
             .as_str()
@@ -266,7 +266,7 @@ pub fn text_edit_singleline_filter<S: TextBuffer>(ui: &mut Ui, text: &mut S) -> 
         .chars()
         .filter(|&c| c.is_ascii_alphabetic() || c.is_alphabetic() || c.is_numeric() || c == '_')
         .collect();
-    text.replace(filtered_string.as_str());
+    text.replace_with(filtered_string.as_str());
     ui.text_edit_singleline(text)
 }
 

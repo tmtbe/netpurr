@@ -4,8 +4,8 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use deno_core::url::Url;
-use deno_core::{op2, ExtensionBuilder, FsModuleLoader, Op, OpState};
-use deno_core::{ModuleCode, PollEventLoopOptions};
+use deno_core::PollEventLoopOptions;
+use deno_core::{op2, ExtensionBuilder, FsModuleLoader, ModuleCodeString, Op, OpState};
 use poll_promise::Promise;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client, Method};
@@ -98,7 +98,7 @@ impl ScriptRuntime {
             .unwrap();
         let temp = Url::from_file_path(Path::new("/postcat/pre-request-script.js")).unwrap();
         let mod_id = js_runtime
-            .load_main_module(&temp, Some(ModuleCode::from(js)))
+            .load_main_module(&temp, Some(ModuleCodeString::from(js)))
             .await?;
         let result = js_runtime.mod_evaluate(mod_id);
         js_runtime
