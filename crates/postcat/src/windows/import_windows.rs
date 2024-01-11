@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 
-use deno_core::error::AnyError;
 use egui::{Direction, Layout, Ui};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
@@ -134,7 +133,7 @@ impl ImportWindows {
         content: String,
         workspace_data: &mut WorkspaceData,
         operation: &Operation,
-    ) -> Result<(), AnyError> {
+    ) -> anyhow::Result<()> {
         let export_result: Result<Export, serde_json::Error> =
             serde_json::from_str(content.as_str());
         match export_result {
@@ -164,7 +163,7 @@ impl ImportWindows {
         &mut self,
         workspace_data: &mut WorkspaceData,
         operation: &Operation,
-    ) -> Result<(), AnyError> {
+    ) -> anyhow::Result<()> {
         if let Some(path) = &self.picked_path {
             let mut file = File::open(path)?;
             let mut content = String::new();

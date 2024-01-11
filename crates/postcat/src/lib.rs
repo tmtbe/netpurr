@@ -8,6 +8,7 @@ pub const APP_NAME: &str = "Postcat";
 
 mod app;
 mod data;
+mod import;
 mod operation;
 mod panels;
 mod persistence;

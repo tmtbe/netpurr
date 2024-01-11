@@ -12,7 +12,9 @@ use reqwest::Method;
 
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http;
-use crate::data::http::{BodyRawType, BodyType, Header, HttpBody, LockWith, MultipartDataType};
+use crate::data::http::{
+    BodyRawType, BodyType, Header, HttpBody, LockWith, MultipartDataType, PathVariables, QueryParam,
+};
 use crate::data::logger::Logger;
 use crate::utils;
 
@@ -148,6 +150,12 @@ impl RestSender {
         envs: BTreeMap<String, EnvironmentItemValue>,
     ) -> http::Request {
         let mut build_request = request.clone();
+        build_request.params = Self::build_query_params(request.params.clone(), &envs);
+        build_request.base_url = Self::build_base_url(
+            request.base_url.clone(),
+            request.path_variables.clone(),
+            &envs,
+        );
         build_request.headers = Self::build_header(request.headers.clone(), &envs);
         build_request.body.body_str =
             utils::replace_variable(build_request.body.body_str, envs.clone());
@@ -177,5 +185,54 @@ impl RestSender {
                 lock_with: h.lock_with.clone(),
             })
             .collect()
+    }
+
+    fn build_query_params(
+        query_params: Vec<QueryParam>,
+        envs: &BTreeMap<String, EnvironmentItemValue>,
+    ) -> Vec<QueryParam> {
+        query_params
+            .iter()
+            .filter(|q| q.enable)
+            .map(|q| QueryParam {
+                key: q.key.clone(),
+                value: utils::replace_variable(q.value.clone(), envs.clone()),
+                desc: q.desc.clone(),
+                enable: q.enable,
+                lock_with: q.lock_with.clone(),
+            })
+            .collect()
+    }
+
+    fn build_base_url(
+        base_url: String,
+        path_variables: Vec<PathVariables>,
+        envs: &BTreeMap<String, EnvironmentItemValue>,
+    ) -> String {
+        let build_path_variables: Vec<PathVariables> = path_variables
+            .iter()
+            .map(|p| PathVariables {
+                key: p.key.clone(),
+                value: utils::replace_variable(p.value.clone(), envs.clone()),
+                desc: p.desc.clone(),
+            })
+            .collect();
+        let build_base_url: Vec<String> = base_url
+            .split("/")
+            .map(|part| {
+                if part.starts_with(":") {
+                    let variable = &part[1..];
+                    build_path_variables
+                        .iter()
+                        .find(|v| v.key == variable)
+                        .cloned()
+                        .unwrap_or_default()
+                        .value
+                } else {
+                    part.to_string()
+                }
+            })
+            .collect();
+        build_base_url.join("/")
     }
 }

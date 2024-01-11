@@ -3,8 +3,6 @@ use std::path::Path;
 use std::rc::Rc;
 use std::str::FromStr;
 
-use deno_core::anyhow::Error;
-use deno_core::error::AnyError;
 use deno_core::url::Url;
 use deno_core::{op2, ExtensionBuilder, FsModuleLoader, Op, OpState};
 use deno_core::{ModuleCode, PollEventLoopOptions};
@@ -43,14 +41,14 @@ impl ScriptRuntime {
         &self,
         scripts: Vec<ScriptScope>,
         context: Context,
-    ) -> Promise<Result<Context, Error>> {
+    ) -> Promise<anyhow::Result<Context>> {
         Promise::spawn_thread("script", || ScriptRuntime::run_block_many(scripts, context))
     }
 
     pub fn run_block_many(
         scripts: Vec<ScriptScope>,
         mut context: Context,
-    ) -> Result<Context, Error> {
+    ) -> anyhow::Result<Context> {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -69,7 +67,7 @@ impl ScriptRuntime {
         Ok(context)
     }
 
-    async fn run_js(js: String, context: Context) -> Result<Context, Error> {
+    async fn run_js(js: String, context: Context) -> anyhow::Result<Context> {
         let runjs_extension = ExtensionBuilder::default()
             .ops(vec![
                 op_set_env::DECL,
@@ -111,7 +109,7 @@ impl ScriptRuntime {
         let new_context = op_state
             .borrow()
             .try_borrow::<Context>()
-            .ok_or(Error::msg("get context error"))?
+            .ok_or(anyhow::Error::msg("get context error"))?
             .clone();
         Ok(new_context)
     }
@@ -299,7 +297,7 @@ impl JsResponse {
 }
 #[op2(async)]
 #[serde]
-async fn op_http_fetch(#[serde] request: JsRequest) -> Result<JsResponse, AnyError> {
+async fn op_http_fetch(#[serde] request: JsRequest) -> anyhow::Result<JsResponse> {
     let method_enum = Method::from_str(request.method.to_uppercase().as_str())?;
     let mut request_headers = HeaderMap::new();
     for header in request.headers.iter() {

@@ -61,6 +61,7 @@ pub struct Request {
     pub schema: RequestSchema,
     pub raw_url: String,
     pub base_url: String,
+    pub path_variables: Vec<PathVariables>,
     pub params: Vec<QueryParam>,
     pub headers: Vec<Header>,
     pub body: HttpBody,
@@ -121,6 +122,16 @@ impl Request {
         )
     }
 
+    pub fn get_path_variable_keys(&self) -> Vec<String> {
+        let mut keys = vec![];
+        for url_part in self.base_url.split("/") {
+            if url_part.starts_with(":") {
+                keys.push(url_part[1..].to_string());
+            }
+        }
+        keys
+    }
+
     pub fn build_raw_url(&mut self) {
         let mut params = vec![];
         for q in self.params.iter().filter(|q| q.enable) {
@@ -173,9 +184,31 @@ impl Request {
             retain_params.retain(|rp| self.params.iter().find(|p| p.key == rp.key).is_none());
             self.params.append(&mut retain_params);
         });
+        let path_variables = self.get_path_variable_keys();
+        for path_variable in path_variables.iter() {
+            if self
+                .path_variables
+                .iter()
+                .find(|p| p.key == path_variable.clone())
+                .is_none()
+            {
+                self.path_variables.push(PathVariables {
+                    key: path_variable.to_string(),
+                    value: "".to_string(),
+                    desc: "".to_string(),
+                })
+            }
+        }
+        self.path_variables
+            .retain(|p| path_variables.contains(&p.key));
     }
     pub fn compute_signature(&self) -> String {
-        let parmas: Vec<String> = self
+        let path_variables: Vec<String> = self
+            .path_variables
+            .iter()
+            .map(|p| p.compute_signature())
+            .collect();
+        let params: Vec<String> = self
             .params
             .iter()
             .filter(|q| q.lock_with == LockWith::NoLock)
@@ -188,10 +221,12 @@ impl Request {
             .map(|h| h.compute_signature())
             .collect();
         format!(
-            "Method:{} BaseUrl:{} Params:[{}] Headers:[{}] Body:{} Auth:{}",
+            "Schema:{} Method:{} BaseUrl:{} PathVariables:[{}] Params:[{}] Headers:[{}] Body:{} Auth:{}",
+            self.schema,
             self.method,
             self.base_url,
-            parmas.join(";"),
+            path_variables.join(";"),
+            params.join(";"),
             headers.join(";"),
             self.body.compute_signature(),
             self.auth.compute_signature()
@@ -314,13 +349,26 @@ pub struct QueryParam {
     pub lock_with: LockWith,
     pub enable: bool,
 }
-
 impl QueryParam {
     pub fn compute_signature(&self) -> String {
         format!(
             "Key:{} Value:{} Desc:{} Enable:{}",
             self.key, self.value, self.desc, self.enable
         )
+    }
+}
+
+#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PathVariables {
+    pub key: String,
+    pub value: String,
+    pub desc: String,
+}
+
+impl PathVariables {
+    pub fn compute_signature(&self) -> String {
+        format!("Key:{} Value:{} Desc:{}", self.key, self.value, self.desc)
     }
 }
 
