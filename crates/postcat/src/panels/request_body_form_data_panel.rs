@@ -124,7 +124,7 @@ impl RequestBodyFormDataPanel {
                         .ui(ui);
                 });
                 row.col(|ui| {
-                    if param.data_type == MultipartDataType::Text {
+                    if param.data_type == MultipartDataType::TEXT {
                         HighlightTemplateSinglelineBuilder::default()
                             .envs(envs.clone())
                             .all_space(false)
@@ -198,7 +198,7 @@ impl RequestBodyFormDataPanel {
                     .ui(ui);
             });
             row.col(|ui| {
-                if self.new_form.data_type == MultipartDataType::Text {
+                if self.new_form.data_type == MultipartDataType::TEXT {
                     HighlightTemplateSinglelineBuilder::default()
                         .envs(envs.clone())
                         .all_space(false)

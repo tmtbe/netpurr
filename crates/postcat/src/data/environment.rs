@@ -200,5 +200,6 @@ pub struct EnvironmentItem {
     pub enable: bool,
     pub key: String,
     pub value: String,
+    pub desc: String,
     pub value_type: EnvironmentValueType,
 }

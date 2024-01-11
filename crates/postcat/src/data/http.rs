@@ -68,7 +68,7 @@ pub struct Request {
     pub auth: Auth,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Display)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Display, EnumString)]
 pub enum RequestSchema {
     HTTP,
     HTTPS,
@@ -407,13 +407,13 @@ impl MultipartData {
 
 #[derive(Clone, PartialEq, Eq, Debug, Display, EnumIter, EnumString, Serialize, Deserialize)]
 pub enum MultipartDataType {
-    File,
-    Text,
+    FILE,
+    TEXT,
 }
 
 impl Default for MultipartDataType {
     fn default() -> Self {
-        MultipartDataType::Text
+        MultipartDataType::TEXT
     }
 }
 

@@ -9,6 +9,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 use crate::data::config_data::ConfigData;
 use crate::data::export::{Export, ExportType};
 use crate::data::workspace_data::WorkspaceData;
+use crate::import::postman::Postman;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::utils;
@@ -150,14 +151,34 @@ impl ImportWindows {
                 ExportType::Request => {}
                 ExportType::Environment => {}
                 ExportType::None => {
-                    operation.add_error_toast("Error while importing: format not recognized");
+                    Self::import_postman(content, workspace_data, operation);
                 }
             },
             Err(_) => {
-                operation.add_error_toast("Error while importing: format not recognized");
+                Self::import_postman(content, workspace_data, operation);
             }
         }
         Ok(())
+    }
+
+    fn import_postman(content: String, workspace_data: &mut WorkspaceData, operation: &Operation) {
+        let postman_result: Result<Postman, serde_json::Error> =
+            serde_json::from_str(content.as_str());
+        match postman_result {
+            Ok(postman) => match postman.to_collection() {
+                Ok(collection) => {
+                    let new_name = workspace_data.import_collection(collection);
+                    operation
+                        .add_success_toast(format!("Import collections `{}` success.", new_name));
+                }
+                Err(_) => Self::import_final(content, operation),
+            },
+            Err(_) => Self::import_final(content, operation),
+        }
+    }
+
+    fn import_final(content: String, operation: &Operation) {
+        operation.add_error_toast("Error while importing: format not recognized");
     }
     fn process_file(
         &mut self,

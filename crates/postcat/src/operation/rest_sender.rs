@@ -86,12 +86,12 @@ impl RestSender {
                 let mut form = multipart::Form::new();
                 for md in request.body.body_form_data.iter().filter(|md| md.enable) {
                     match md.data_type {
-                        MultipartDataType::File => {
+                        MultipartDataType::FILE => {
                             form = form
                                 .file(md.key.clone(), Path::new(md.value.as_str()).to_path_buf())
                                 .unwrap()
                         }
-                        MultipartDataType::Text => {
+                        MultipartDataType::TEXT => {
                             form = form.text(md.key.clone(), md.value.clone());
                         }
                     }
