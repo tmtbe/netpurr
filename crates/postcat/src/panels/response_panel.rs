@@ -119,7 +119,7 @@ impl ResponsePanel {
         &mut self,
         operation: &Operation,
         workspace_data: &mut WorkspaceData,
-        cursor: String,
+        crt_id: String,
         ui: &mut Ui,
         data: &CentralRequestItem,
         cookies: BTreeMap<String, Cookie>,
@@ -176,22 +176,22 @@ impl ResponsePanel {
         match self.open_panel_enum {
             ResponsePanelEnum::Body => {
                 self.response_body_panel
-                    .set_and_render(ui, workspace_data, cursor);
+                    .set_and_render(ui, workspace_data, operation, crt_id);
             }
             ResponsePanelEnum::Cookies => {
                 self.response_cookies_panel.set_and_render(ui, &cookies);
             }
             ResponsePanelEnum::Headers => {
                 self.response_headers_panel
-                    .set_and_render(ui, workspace_data, cursor);
+                    .set_and_render(ui, workspace_data, crt_id);
             }
             ResponsePanelEnum::Logs => {
                 self.response_log_panel
-                    .set_and_render(ui, workspace_data, cursor);
+                    .set_and_render(ui, workspace_data, crt_id);
             }
             ResponsePanelEnum::TestResult => {
                 self.test_result_panel
-                    .set_and_render(ui, workspace_data, cursor);
+                    .set_and_render(ui, workspace_data, crt_id);
             }
         }
     }

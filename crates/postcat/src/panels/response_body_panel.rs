@@ -2,6 +2,8 @@ use egui::{Image, TextBuffer};
 
 use crate::data::http::Response;
 use crate::data::workspace_data::WorkspaceData;
+use crate::operation::operation::Operation;
+use crate::windows::view_json_windows::ViewJsonWindows;
 
 #[derive(Default)]
 pub struct ResponseBodyPanel {}
@@ -11,6 +13,7 @@ impl ResponseBodyPanel {
         &mut self,
         ui: &mut egui::Ui,
         workspace_data: &mut WorkspaceData,
+        operation: &Operation,
         crt_id: String,
     ) {
         let crt = workspace_data.must_get_crt(crt_id.clone());
@@ -37,10 +40,21 @@ impl ResponseBodyPanel {
                 } else {
                     match String::from_utf8(crt.rest.response.body.to_vec()) {
                         Ok(s) => {
-                            let tooltip = "Click to copy the response body";
-                            if ui.button("📋").on_hover_text(tooltip).clicked() {
-                                ui.output_mut(|o| o.copied_text = s.to_owned());
-                            }
+                            ui.horizontal(|ui| {
+                                let tooltip = "Click to copy the response body";
+                                if ui.button("📋").on_hover_text(tooltip).clicked() {
+                                    ui.output_mut(|o| o.copied_text = s.to_owned());
+                                    operation.add_success_toast("Copy success");
+                                }
+                                if content_type.value.contains("json") {
+                                    if ui.button("View Json Tree").clicked() {
+                                        operation.add_window(Box::new(
+                                            ViewJsonWindows::default()
+                                                .with_json(s.clone(), crt_id.clone()),
+                                        ))
+                                    }
+                                }
+                            });
                             let mut content = s;
                             ui.push_id("response_body", |ui| {
                                 egui::ScrollArea::vertical().show(ui, |ui| {

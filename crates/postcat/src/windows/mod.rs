@@ -6,4 +6,5 @@ pub mod request_close_windows;
 pub mod save_crt_windows;
 pub mod save_windows;
 pub mod test_script_windows;
+pub mod view_json_windows;
 pub mod workspace_windows;

@@ -69,10 +69,12 @@ impl Window for ImportWindows {
         match self.select_type {
             ImportType::File => {
                 ui.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
-                    if ui
-                        .button("Drag and drop Postcat data or any of the formats below")
-                        .clicked()
-                    {
+                    ui.label("Drag and drop Postcat data or any of the formats below");
+                });
+                ui.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
+                    ui.label("Postman");
+                    ui.label("OR");
+                    if ui.button("Upload Files").clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_file() {
                             if path.is_dir() {
                                 operation

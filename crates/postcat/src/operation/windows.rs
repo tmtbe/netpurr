@@ -25,6 +25,7 @@ pub trait Window {
 #[derive(Default, Clone)]
 pub struct WindowSetting {
     name: String,
+    id: String,
     collapsible: bool,
     resizable: bool,
     default_width: Option<f32>,
@@ -42,6 +43,16 @@ impl WindowSetting {
             name: name.into(),
             ..Default::default()
         }
+    }
+    pub fn new_with_id(name: impl Into<String>, id: impl Into<String>) -> Self {
+        WindowSetting {
+            name: name.into(),
+            id: id.into(),
+            ..Default::default()
+        }
+    }
+    pub fn get_windows_id(&self) -> String {
+        format!("{}-{}", self.name, self.id)
     }
     pub fn collapsible(mut self, collapsible: bool) -> Self {
         self.collapsible = collapsible;
@@ -79,6 +90,9 @@ impl WindowSetting {
         self.default_width = Some(default_width);
         self
     }
+    pub fn id(&self) -> &str {
+        &self.id
+    }
 }
 
 #[derive(Default)]
@@ -88,8 +102,18 @@ pub struct Windows {
 
 impl Windows {
     pub fn add(&mut self, mut window: Rc<RefCell<Box<dyn Window>>>) {
-        window.borrow_mut().set_open(true);
-        self.show_windows.push(window);
+        if self
+            .show_windows
+            .iter()
+            .find(|w| {
+                w.borrow().window_setting().get_windows_id()
+                    == window.borrow().window_setting().get_windows_id()
+            })
+            .is_none()
+        {
+            window.borrow_mut().set_open(true);
+            self.show_windows.push(window);
+        }
     }
     pub fn retain(&mut self) {
         self.show_windows.retain(|w| w.borrow().get_open());
@@ -106,7 +130,11 @@ impl Windows {
             if window.borrow().window_setting().modal {
                 operation.lock_ui(window.borrow().window_setting().name.clone(), true);
             }
-            let mut w = egui::Window::new(window.borrow().window_setting().name.clone());
+            let mut w = egui::Window::new(window.borrow().window_setting().name).id(window
+                .borrow()
+                .window_setting()
+                .get_windows_id()
+                .into());
             if let Some(v) = window.borrow().window_setting().max_width {
                 w = w.max_width(v)
             }

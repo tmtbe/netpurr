@@ -37,10 +37,8 @@ egui = { version = "0.25.0", features = [
 egui_extras = { version = "0.25.0", features = ["image", "syntect"] }
 egui_plot = { version = "0.25.0" }
 eframe = { version = "0.25.0", default-features = false, features = [
-    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
-    "persistence",   # Enable restoring app state when restarting the app.
 ] }
 log = { version = "0.4", features = ["std"] }
 
@@ -78,6 +76,7 @@ url = "2.5.0"
 reqwest_cookie_store = { path = "./../reqwest_cookie_store" }
 cookie_store = { path = "./../cookie_store" }
 anyhow = "1.0"
+egui_json_tree = "0.3.0"
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rfd = { version = "0.12.1", optional = true }
