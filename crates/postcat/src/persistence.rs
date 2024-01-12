@@ -39,7 +39,10 @@ impl Default for Persistence {
 
 impl Persistence {
     pub fn encode(key: String) -> String {
-        key.as_str().replace(".", "%dot")
+        key.as_str()
+            .replace(".", "%dot")
+            .trim_start_matches("/")
+            .to_string()
     }
     pub fn decode(key: String) -> String {
         key.as_str().replace("%dot", ".")
@@ -57,14 +60,15 @@ impl PersistenceItem for Persistence {
         if !rel_path.starts_with(workspace_dir.clone()) {
             rel_path = workspace_dir.join(rel_path.clone());
         }
-        if fs::create_dir_all(rel_path.clone()).is_err() {
-            error!("create_dir_all {:?} failed", rel_path);
-            return;
-        };
         match serde_json::to_string(data) {
             Ok(json) => {
                 let mut json_path = rel_path.join(save_key);
                 json_path.set_extension("json");
+                json_path.parent().map(|s| {
+                    if fs::create_dir_all(s.clone()).is_err() {
+                        error!("create_dir_all {:?} failed", rel_path);
+                    }
+                });
                 let mut file_result = File::create(json_path.clone());
                 match file_result {
                     Ok(mut file) => {
