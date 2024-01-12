@@ -2,12 +2,14 @@ use std::collections::BTreeMap;
 use std::ops::Add;
 
 use egui::Ui;
+use egui_code_editor::{CodeEditor, ColorTheme};
 
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::Request;
 use crate::operation::operation::Operation;
 use crate::panels::HORIZONTAL_GAP;
 use crate::script::script::{Context, ScriptScope};
+use crate::widgets::syntax::js_syntax;
 use crate::windows::test_script_windows::TestScriptWindows;
 
 #[derive(Default)]
@@ -25,13 +27,6 @@ impl RequestPreScriptPanel {
         envs: BTreeMap<String, EnvironmentItemValue>,
         id: String,
     ) -> String {
-        let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
-        let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
-            let mut layout_job =
-                egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, "js");
-            layout_job.wrap.max_width = wrap_width;
-            ui.fonts(|f| f.layout_job(layout_job))
-        };
         ui.horizontal(|ui| {
             egui::SidePanel::right("pre_request_right_".to_string() + id.as_str())
                 .resizable(true)
@@ -107,15 +102,18 @@ console.log(response)"#)
                         egui::ScrollArea::vertical()
                             .min_scrolled_height(300.0)
                             .show(ui, |ui| {
-                                ui.add(
-                                    egui::TextEdit::multiline(&mut script)
-                                        .font(egui::TextStyle::Monospace) // for cursor height
-                                        .code_editor()
-                                        .desired_rows(10)
-                                        .lock_focus(true)
-                                        .desired_width(f32::INFINITY)
-                                        .layouter(&mut layouter),
-                                );
+                                let mut code_editor = CodeEditor::default()
+                                    .id_source("request_pre_script_code_editor")
+                                    .with_rows(10)
+                                    .with_ui_fontsize(ui)
+                                    .with_syntax(js_syntax())
+                                    .with_numlines(true);
+                                if ui.visuals().dark_mode {
+                                    code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)
+                                } else {
+                                    code_editor = code_editor.with_theme(ColorTheme::GRUVBOX_LIGHT)
+                                }
+                                code_editor.show(ui, &mut script);
                             });
                     });
                 });

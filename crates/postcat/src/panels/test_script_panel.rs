@@ -1,21 +1,16 @@
 use std::ops::Add;
 
 use egui::Ui;
+use egui_code_editor::{CodeEditor, ColorTheme};
 
 use crate::panels::HORIZONTAL_GAP;
+use crate::widgets::syntax::js_syntax;
 
 #[derive(Default)]
 pub struct TestScriptPanel {}
 
 impl TestScriptPanel {
     pub fn set_and_render(&mut self, ui: &mut Ui, mut script: String, id: String) -> String {
-        let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
-        let mut layouter = |ui: &Ui, string: &str, wrap_width: f32| {
-            let mut layout_job =
-                egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, "js");
-            layout_job.wrap.max_width = wrap_width;
-            ui.fonts(|f| f.layout_job(layout_job))
-        };
         ui.horizontal(|ui| {
             egui::SidePanel::right("test_script_right_".to_string() + id.as_str())
                 .resizable(true)
@@ -70,15 +65,18 @@ postcat.test("This is a test example",function(){
                         egui::ScrollArea::vertical()
                             .min_scrolled_height(300.0)
                             .show(ui, |ui| {
-                                ui.add(
-                                    egui::TextEdit::multiline(&mut script)
-                                        .font(egui::TextStyle::Monospace) // for cursor height
-                                        .code_editor()
-                                        .desired_rows(10)
-                                        .lock_focus(true)
-                                        .desired_width(f32::INFINITY)
-                                        .layouter(&mut layouter),
-                                );
+                                let mut code_editor = CodeEditor::default()
+                                    .id_source("test_code_editor")
+                                    .with_rows(10)
+                                    .with_ui_fontsize(ui)
+                                    .with_syntax(js_syntax())
+                                    .with_numlines(true);
+                                if ui.visuals().dark_mode {
+                                    code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)
+                                } else {
+                                    code_editor = code_editor.with_theme(ColorTheme::GRUVBOX_LIGHT)
+                                }
+                                code_editor.show(ui, &mut script);
                             });
                     });
                 });

@@ -1,4 +1,7 @@
+use egui_code_editor::{CodeEditor, ColorTheme};
+
 use crate::data::workspace_data::WorkspaceData;
+use crate::widgets::syntax::log_syntax;
 
 #[derive(Default)]
 pub struct ResponseLogPanel {}
@@ -20,16 +23,23 @@ impl ResponseLogPanel {
         };
         ui.push_id("log_info", |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for log in crt.rest.response.logger.logs.iter() {
+                for (index, log) in crt.rest.response.logger.logs.iter().enumerate() {
                     let mut content = format!("> {}", log.show());
-                    egui::TextEdit::multiline(&mut content)
-                        .font(egui::TextStyle::Monospace)
-                        .code_editor()
-                        .desired_rows(1)
-                        .lock_focus(true)
-                        .desired_width(f32::INFINITY)
-                        .layouter(&mut layouter)
-                        .show(ui);
+                    let mut code_editor = CodeEditor::default()
+                        .id_source(format!("{}-{}", "log", index))
+                        .with_rows(1)
+                        .with_ui_fontsize(ui)
+                        .with_syntax(log_syntax())
+                        .with_numlines(false);
+                    if ui.visuals().dark_mode {
+                        code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)
+                    } else {
+                        code_editor = code_editor.with_theme(ColorTheme::GRUVBOX_LIGHT)
+                    }
+                    code_editor
+                        .show(ui, &mut content)
+                        .response
+                        .on_hover_text(content);
                 }
             });
         });
