@@ -10,7 +10,7 @@ default-run = "postcat"
 [package.metadata.bundle]
 name = "Postcat"
 identifier = "com.thoughtworks.postcat"
-icon = ["icon/icon*.png"]
+icon = ["icon/icon256.png"]
 
 
 [package.metadata.docs.rs]

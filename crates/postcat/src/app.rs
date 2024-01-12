@@ -1,4 +1,3 @@
-use std::io::Read;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use egui::{Context, Event, Ui, Visuals};
@@ -43,12 +42,10 @@ impl App {
     }
 
     pub fn configure_fonts(ctx: &egui::Context) -> Option<()> {
-        let font_file = Self::find_cjk_font()?;
-        let font_name = font_file.split('/').last()?.split('.').next()?.to_string();
-        let font_file_bytes = std::fs::read(font_file).ok()?;
+        let font_name = "NotoSansSC-Regular".to_string();
+        let font_file_bytes = include_bytes!("./../font/NotoSansSC-Regular.ttf").to_vec();
 
-        let mut font_data = egui::FontData::from_owned(font_file_bytes);
-        font_data.tweak.baseline_offset_factor = 0.2;
+        let font_data = egui::FontData::from_owned(font_file_bytes);
 
         let mut font_def = eframe::egui::FontDefinitions::default();
         font_def.font_data.insert(font_name.to_string(), font_data);
@@ -181,13 +178,13 @@ impl App {
                     if ui.button("Zoom In").clicked() {}
                     if ui.button("Zoom Out").clicked() {}
                 });
-                //egui::widgets::global_dark_light_mode_buttons(ui);
+                egui::widgets::global_dark_light_mode_buttons(ui);
             });
             ui.add_space(HORIZONTAL_GAP);
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.horizontal(|ui| {
-                    if ui.button("New").clicked() {}
-                    ui.add_space(HORIZONTAL_GAP);
+                    //if ui.button("New").clicked() {}
+                    //ui.add_space(HORIZONTAL_GAP);
                     if ui.button("Import").clicked() {
                         self.operation
                             .add_window(Box::new(ImportWindows::default()))
