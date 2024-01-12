@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use egui::{Context, Event, Ui};
+use egui::{Context, Event, Ui, Visuals};
 use log::info;
 use poll_promise::Promise;
 
@@ -66,6 +66,11 @@ impl App {
             .push(font_name.clone());
 
         ctx.set_fonts(font_def);
+        let mut visuals = Visuals::default();
+        visuals.window_highlight_topmost = false;
+        ctx.style_mut(|s| {
+            s.visuals = visuals;
+        });
         Some(())
     }
 
@@ -176,7 +181,7 @@ impl App {
                     if ui.button("Zoom In").clicked() {}
                     if ui.button("Zoom Out").clicked() {}
                 });
-                egui::widgets::global_dark_light_mode_buttons(ui);
+                //egui::widgets::global_dark_light_mode_buttons(ui);
             });
             ui.add_space(HORIZONTAL_GAP);
             egui::ScrollArea::vertical().show(ui, |ui| {
