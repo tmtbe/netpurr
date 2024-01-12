@@ -45,3 +45,8 @@ ready.
 
 The GitHub automated build will generate two versions: one for `Mac` and one for `Windows`. You can also manually
 download the code and compile it yourself.
+
+## Bugs and Feature Requests
+
+Have a bug or a feature request? First, read the issue guidelines and search for existing and closed issues. If your
+problem or idea is not addressed yet, please open a new issue.
