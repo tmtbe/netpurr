@@ -1,35 +1,47 @@
-# Postcat
+# Postcat API Client
 
-An API tool similar to postman, very small and fast, built with rust.
-![img.png](pics%2Fimg.png)
+Postcat is an open-source, cross-platform API client for REST (Support for other protocols will be gradually added).
+It is very compact and swift, coded in Rust.
 
-## API Request
+With Postcat you can:
 
-![api.png](pics%2Fapi.png)
+* **Debug APIs** using the most popular protocols and formats.
+* **Test APIs** using `JavaScript`.
+* **Build CI/CD** pipelines using the native `Postcat` CLI for linting and testing.(Coming soon)
+* **Design APIs** using the native OpenAPI editor and visual preview.(Planned support)
+* **Mock APIs** (Planned support)
+* **Collaborate with others** using the `git` to share your projects.
 
-## Environment
+The following storage options are supported for your projects, collections, specs and all other files:
 
-Support environment variable management.
-![env.png](pics%2Fenv.png)
+* **Workspace** Switch between multiple workspaces easily, isolating them from each other.
+* **Git Sync** The workspace will support Git synchronization, and file storage will be organized at the granularity of
+  APIs, reducing the potential for conflicts during modifications.
+* **No remote server** storage involved, ensuring the security of the data.
 
-## Collection
+Performance:
 
-Support collection management.
-![collection.png](pics%2Fcollection.png)
+* Extremely fast startup speed, nearly zero opening delay.
+* Due to the separate storage of files at the granularity of APIs, changes result in lower disk and memory usage.
+* Rust brings excellent memory control and runtime safety.
 
-## Cookie
+And a lot more!
 
-Support cookie management.
-![cookie.png](pics%2Fcookie.png)
+* Support for importing Postman data. We have plans to continue supporting data import from Insomnia.
+* Real-time rendering of environment variables.
+* Introduced `deno-core` as the JavaScript runtime, full support for ES6.
 
-## Workspace
+![view.png](pics%2Fview.png)
 
-Support switching between multiple workspaces, support git.
-![workspace.png](pics%2Fworkspace.png)
-![git.png](pics%2Fgit.png)
+## Get started
 
-## Script
+The project is actively in development, with many features continuously being added. You can download the latest builds
+from the releases section.
 
-Support JS script.
-![script.png](pics%2Fscript.png)
-![check.png](pics%2Fcheck.png)
+https://github.com/tmtbe/postcat/releases
+
+There is currently no official 1.0 version. We will release version 1.0 once all foundational features are stable and
+ready.
+
+The GitHub automated build will generate two versions: one for `Mac` and one for `Windows`. You can also manually
+download the code and compile it yourself.
