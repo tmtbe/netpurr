@@ -1,13 +1,16 @@
-# Postcat API Client
+# Netpurr API Client
 
-Postcat is an open-source, cross-platform API client for REST (Support for other protocols will be gradually added).
+Due to a repository name conflict, `Postcat` has been renamed to `NetPurr`. Choosing "Net" as the prefix signifies
+future support for more than one protocol.
+
+Netpurr is an open-source, cross-platform API client for REST (Support for other protocols will be gradually added).
 It is very compact and swift, coded in Rust.
 
-With Postcat you can:
+With Netpurr you can:
 
 * **Debug APIs** using the most popular protocols and formats.
 * **Test APIs** using `JavaScript`.
-* **Build CI/CD** pipelines using the native `Postcat` CLI for linting and testing.(Coming soon)
+* **Build CI/CD** pipelines using the native `Netpurr` CLI for linting and testing.(Coming soon)
 * **Design APIs** using the native OpenAPI editor and visual preview.(Planned support)
 * **Mock APIs** (Planned support)
 * **Collaborate with others** using the `git` to share your projects.

@@ -69,7 +69,7 @@ impl Window for ImportWindows {
         match self.select_type {
             ImportType::File => {
                 ui.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
-                    ui.label("Drag and drop Postcat data or any of the formats below");
+                    ui.label("Drag and drop Netpurr data or any of the formats below");
                 });
                 ui.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
                     ui.label("Postman");

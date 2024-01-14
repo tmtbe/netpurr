@@ -12,7 +12,7 @@ use log4rs::config::{Appender, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::Config;
 
-use postcat::APP_NAME;
+use netpurr::APP_NAME;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
@@ -32,7 +32,7 @@ fn main() -> eframe::Result<()> {
         native_options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Box::new(postcat::App::new(cc))
+            Box::new(netpurr::App::new(cc))
         }),
     )
 }

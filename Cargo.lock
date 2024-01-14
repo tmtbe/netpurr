@@ -2416,6 +2416,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "netpurr"
+version = "1.0.0"
+dependencies = [
+    "anyhow",
+    "base64",
+    "bytemuck",
+    "chrono",
+    "cookie_store 0.20.0",
+    "data-url",
+    "deno_core",
+    "dirs",
+    "eframe",
+    "egui",
+    "egui-toast",
+    "egui_code_editor",
+    "egui_extras",
+    "egui_json_tree",
+    "egui_plot",
+    "image",
+    "log",
+    "log4rs",
+    "mime_guess",
+    "poll-promise",
+    "puffin",
+    "puffin_http",
+    "rand",
+    "regex",
+    "reqwest",
+    "reqwest_cookie_store",
+    "rfd",
+    "rustygit",
+    "serde",
+    "serde_json",
+    "strum",
+    "strum_macros",
+    "tokio",
+    "url",
+    "urlencoding",
+    "uuid",
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
+    "web-sys",
+]
+
+[[package]]
 name = "nix"
 version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2817,51 +2862,6 @@ name = "pollster"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22686f4785f02a4fcc856d3b3bb19bf6c8160d103f7a99cc258bddd0251dc7f2"
-
-[[package]]
-name = "postcat"
-version = "1.0.0"
-dependencies = [
-    "anyhow",
-    "base64",
-    "bytemuck",
-    "chrono",
-    "cookie_store 0.20.0",
-    "data-url",
-    "deno_core",
-    "dirs",
-    "eframe",
-    "egui",
-    "egui-toast",
-    "egui_code_editor",
-    "egui_extras",
-    "egui_json_tree",
-    "egui_plot",
-    "image",
-    "log",
-    "log4rs",
-    "mime_guess",
-    "poll-promise",
-    "puffin",
-    "puffin_http",
-    "rand",
-    "regex",
-    "reqwest",
-    "reqwest_cookie_store",
-    "rfd",
-    "rustygit",
-    "serde",
-    "serde_json",
-    "strum",
-    "strum_macros",
-    "tokio",
-    "url",
-    "urlencoding",
-    "uuid",
-    "wasm-bindgen",
-    "wasm-bindgen-futures",
-    "web-sys",
-]
 
 [[package]]
 name = "powerfmt"

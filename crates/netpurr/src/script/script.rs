@@ -96,7 +96,7 @@ impl ScriptRuntime {
         js_runtime
             .execute_script_static("[runjs:runtime.js]", runtime_init_code)
             .unwrap();
-        let temp = Url::from_file_path(Path::new("/postcat/pre-request-script.js")).unwrap();
+        let temp = Url::from_file_path(Path::new("/netpurr/pre-request-script.js")).unwrap();
         let mod_id = js_runtime
             .load_main_module(&temp, Some(ModuleCodeString::from(js)))
             .await?;

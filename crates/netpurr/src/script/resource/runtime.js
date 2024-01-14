@@ -33,7 +33,7 @@
             core.ops.op_error(argsToMessage(...args));
         },
     };
-    globalThis.postcat = {
+    globalThis.netpurr = {
         set_env: (key, value) => {
             return core.ops.op_set_env(key, value)
         },

@@ -23,9 +23,9 @@ impl TestScriptPanel {
                     egui::ScrollArea::vertical()
                         .show(ui, |ui| {
                             if ui.link("Test Example").clicked() {
-                                script = script.clone().add(r#"let response = postcat.resp();                                
+                                script = script.clone().add(r#"let response = netpurr.resp();                                
 console.log(response);
-postcat.test("This is a test example",function(){
+netpurr.test("This is a test example",function(){
     // assert("expect", "actual");
 	assert("test",response.json.cookies.freeform);
 });
@@ -41,19 +41,19 @@ postcat.test("This is a test example",function(){
                                 script = script.clone().add("\nconsole.error(\"error1\",\"error2\");");
                             }
                             if ui.link("Get a variable").clicked() {
-                                script = script.clone().add("\npostcat.get_env(\"variable_key\");");
+                                script = script.clone().add("\nnetpurr.get_env(\"variable_key\");");
                             }
                             if ui.link("Set a variable").clicked() {
-                                script = script.clone().add("\npostcat.set_env(\"variable_key\",\"variable_value\");");
+                                script = script.clone().add("\nnetpurr.set_env(\"variable_key\",\"variable_value\");");
                             }
                             if ui.link("Get a shared").clicked() {
-                                script = script.clone().add("\npostcat.get_shared(\"shared_key\");");
+                                script = script.clone().add("\nnetpurr.get_shared(\"shared_key\");");
                             }
                             if ui.link("Set a shared").clicked() {
-                                script = script.clone().add("\npostcat.set_shared(\"shared_key\",\"shared_value\");");
+                                script = script.clone().add("\nnetpurr.set_shared(\"shared_key\",\"shared_value\");");
                             }
                             if ui.link("Get response").clicked() {
-                                script = script.clone().add("\nlet response = postcat.resp();\nconsole.log(response)");
+                                script = script.clone().add("\nlet response = netpurr.resp();\nconsole.log(response)");
                             }
                         });
                 });

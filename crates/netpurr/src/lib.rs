@@ -4,7 +4,7 @@ use std::string::ToString;
 
 pub use app::App;
 
-pub const APP_NAME: &str = "Postcat";
+pub const APP_NAME: &str = "Netpurr";
 
 mod app;
 mod data;

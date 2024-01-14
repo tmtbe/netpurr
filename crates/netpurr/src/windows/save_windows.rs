@@ -51,7 +51,7 @@ impl Window for SaveWindows {
         workspace_data: &mut WorkspaceData,
         operation: Operation,
     ) {
-        ui.label("Requests in Postcat are saved in collections (a group of requests).");
+        ui.label("Requests in Netpurr are saved in collections (a group of requests).");
         ui.add_space(VERTICAL_GAP);
         ui.label("Request name");
         utils::text_edit_singleline_filter_justify(ui, &mut self.http_record.name);

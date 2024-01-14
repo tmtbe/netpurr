@@ -1,15 +1,15 @@
 [package]
-name = "postcat"
+name = "netpurr"
 version = "1.0.0"
 description = "This is a rest api request tools"
 authors = ["Emil <jincheng.zhang@thoughtworks.com>"]
 edition.workspace = true
 rust-version.workspace = true
-default-run = "postcat"
+default-run = "netpurr"
 
 [package.metadata.bundle]
-name = "Postcat"
-identifier = "com.thoughtworks.postcat"
+name = "Netpurr"
+identifier = "com.thoughtworks.netpurr"
 icon = ["icon/icon256.png"]
 
 

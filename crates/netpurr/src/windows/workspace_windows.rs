@@ -255,7 +255,7 @@ impl WorkspaceWindows {
                     }
                 }
                 utils::text_edit_singleline_justify(ui, &mut self.user_git_remote_url)
-                    .on_hover_text("Since Postcat uses local git tools, it is recommended to use `ssh` to set the git address to prevent errors.");
+                    .on_hover_text("Since Netpurr uses local git tools, it is recommended to use `ssh` to set the git address to prevent errors.");
             }
         });
     }
