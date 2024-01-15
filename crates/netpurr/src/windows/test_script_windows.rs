@@ -1,12 +1,12 @@
-use deno_core::anyhow::Error;
 use egui::Ui;
 use poll_promise::Promise;
+
+use netpurr_core::script::{Context, ScriptScope};
 
 use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
-use crate::script::script::{Context, ScriptScope};
 use crate::utils;
 
 #[derive(Default)]
@@ -14,7 +14,7 @@ pub struct TestScriptWindows {
     test_windows_open: bool,
     script_scopes: Vec<ScriptScope>,
     context: Option<Context>,
-    run_result: Option<Promise<Result<Context, Error>>>,
+    run_result: Option<Promise<Result<Context, anyhow::Error>>>,
 }
 
 impl Window for TestScriptWindows {
@@ -47,11 +47,8 @@ impl Window for TestScriptWindows {
             None => {
                 if ui.button("Run Script").clicked() {
                     if let Some(context) = &self.context {
-                        self.run_result = Some(
-                            operation
-                                .script_runtime()
-                                .run(self.script_scopes.clone(), context.clone()),
-                        );
+                        self.run_result =
+                            Some(operation.run_script(self.script_scopes.clone(), context.clone()));
                     }
                 }
                 ui.separator();

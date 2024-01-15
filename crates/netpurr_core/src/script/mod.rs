@@ -92,7 +92,7 @@ impl ScriptRuntime {
             ..Default::default()
         });
         js_runtime.op_state().borrow_mut().put(context);
-        let runtime_init_code = include_str!("./resource/runtime.js");
+        let runtime_init_code = include_str!("resource/runtime.js");
         js_runtime
             .execute_script_static("[runjs:runtime.js]", runtime_init_code)
             .unwrap();

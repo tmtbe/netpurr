@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
 
 use egui::{Color32, RichText, Ui};
+
+use netpurr_core::data::cookies_manager::Cookie;
+use netpurr_core::data::http::{Response, ResponseStatus};
+use netpurr_core::data::test::{TestResult, TestStatus};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::central_request_data::CentralRequestItem;
-use crate::data::cookies_manager::Cookie;
-use crate::data::http::{Response, ResponseStatus};
-use crate::data::test::{TestResult, TestStatus};
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;

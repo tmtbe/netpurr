@@ -13,13 +13,12 @@ use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::windows::import_windows::ImportWindows;
 use crate::windows::workspace_windows::WorkspaceWindows;
 
-#[derive(Default)]
 pub struct App {
+    workspace_data: WorkspaceData,
+    operation: Operation,
+    config_data: ConfigData,
     left_panel: MyLeftPanel,
     central_panel: MyCentralPanel,
-    workspace_data: WorkspaceData,
-    config_data: ConfigData,
-    operation: Operation,
     show_confirmation_dialog: bool,
     allowed_to_close: bool,
     current_workspace: String,
@@ -34,7 +33,19 @@ impl App {
             s.spacing.item_spacing.x = 7.0;
             s.spacing.item_spacing.y = 7.0;
         });
-        let mut app = App::default();
+        let workspace_data = WorkspaceData::default();
+        let mut app = App {
+            operation: Operation::new(workspace_data.get_cookies_manager()),
+            config_data: Default::default(),
+            left_panel: Default::default(),
+            central_panel: Default::default(),
+            show_confirmation_dialog: false,
+            allowed_to_close: false,
+            current_workspace: "".to_string(),
+            sync_promise: None,
+            workspace_data,
+            auto_save_time: 0,
+        };
         app.config_data = ConfigData::load();
         app.workspace_data
             .load_all(app.config_data.select_workspace().to_string());

@@ -5,12 +5,13 @@ use egui::ahash::HashSet;
 use egui::text::{CCursor, CCursorRange};
 use egui::text_edit::{CursorRange, TextEditState};
 use egui::{Context, Id, Pos2, Response, RichText, TextBuffer, TextEdit, Ui, Widget};
+
+use netpurr_core::data::environment::EnvironmentItemValue;
 use serde::{Deserialize, Serialize};
 
-use crate::data::environment::EnvironmentItemValue;
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
-use crate::utils::{popup_widget, replace_variable};
+use crate::utils::popup_widget;
 use crate::widgets::highlight::highlight_template;
 
 pub struct HighlightTemplate<'t> {
@@ -184,7 +185,10 @@ impl Widget for HighlightTemplate<'_> {
         let mut output = text_edit.show(ui);
         ui.set_enabled(true);
         let mut response = output.response.clone();
-        let text = replace_variable(self.content.as_str().to_string(), self.envs.clone());
+        let text = netpurr_core::utils::replace_variable(
+            self.content.as_str().to_string(),
+            self.envs.clone(),
+        );
         if response.hovered() && text.len() > 0 && text != self.content.as_str() {
             response = response.on_hover_text(text);
         }

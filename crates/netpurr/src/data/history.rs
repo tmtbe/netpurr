@@ -4,11 +4,11 @@ use std::path::Path;
 use std::str::FromStr;
 
 use chrono::{DateTime, Local, NaiveDate, Utc};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::data::http::HttpRecord;
-use crate::persistence::{Persistence, PersistenceItem};
+use netpurr_core::data::http::HttpRecord;
+use netpurr_core::persistence::{Persistence, PersistenceItem};
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct HistoryDataList {

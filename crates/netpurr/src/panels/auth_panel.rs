@@ -3,13 +3,13 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use egui::{Ui, Widget};
+
+use netpurr_core::data::auth::{Auth, AuthType};
+use netpurr_core::data::collections::{Collection, CollectionFolder};
+use netpurr_core::data::environment::EnvironmentItemValue;
 use strum::IntoEnumIterator;
 
-use crate::data::auth::{Auth, AuthType};
-use crate::data::collections::{Collection, CollectionFolder};
-use crate::data::environment::EnvironmentItemValue;
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
-use crate::utils;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 
 #[derive(Default)]
@@ -135,7 +135,7 @@ impl AuthPanel {
                                 ui.horizontal(|ui| {
                                     ui.add_space(HORIZONTAL_GAP);
                                     ui.label("Token:");
-                                    ui.label(utils::replace_variable(parent_auth.bearer_token.clone(), self.envs.clone()));
+                                    ui.label(netpurr_core::utils::replace_variable(parent_auth.bearer_token.clone(), self.envs.clone()));
                                     ui.add_space(HORIZONTAL_GAP);
                                 });
                                 ui.add_space(VERTICAL_GAP * 5.0);
@@ -145,13 +145,13 @@ impl AuthPanel {
                                 ui.horizontal(|ui| {
                                     ui.add_space(HORIZONTAL_GAP);
                                     ui.label("Username:");
-                                    ui.label(utils::replace_variable(parent_auth.basic_username.clone(), self.envs.clone()));
+                                    ui.label(netpurr_core::utils::replace_variable(parent_auth.basic_username.clone(), self.envs.clone()));
                                 });
                                 ui.add_space(VERTICAL_GAP);
                                 ui.horizontal(|ui| {
                                     ui.add_space(HORIZONTAL_GAP);
                                     ui.label("Password: ");
-                                    ui.label(utils::replace_variable(parent_auth.basic_password.clone(), self.envs.clone()));
+                                    ui.label(netpurr_core::utils::replace_variable(parent_auth.basic_password.clone(), self.envs.clone()));
                                 });
                                 ui.add_space(VERTICAL_GAP * 2.0);
                             }

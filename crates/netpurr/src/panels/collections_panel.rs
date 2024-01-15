@@ -6,10 +6,11 @@ use std::rc::Rc;
 
 use egui::{CollapsingHeader, Response, RichText, Ui};
 
+use netpurr_core::data::collections::{Collection, CollectionFolder};
+use netpurr_core::data::http::HttpRecord;
+
 use crate::data::central_request_data::CentralRequestItem;
-use crate::data::collections::{Collection, CollectionFolder};
 use crate::data::export::{Export, ExportType};
-use crate::data::http::HttpRecord;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::utils;

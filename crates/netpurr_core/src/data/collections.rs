@@ -9,12 +9,12 @@ use crate::data::auth::{Auth, AuthType};
 use crate::data::environment::{EnvironmentConfig, EnvironmentItemValue};
 use crate::data::http::HttpRecord;
 use crate::persistence::{Persistence, PersistenceItem};
-use crate::script::script::ScriptScope;
+use crate::script::ScriptScope;
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct Collections {
     persistence: Persistence,
-    pub(crate) data: BTreeMap<String, Collection>,
+    pub data: BTreeMap<String, Collection>,
 }
 
 impl Collections {
@@ -285,7 +285,7 @@ impl Default for Collection {
 }
 
 impl Collection {
-    pub(crate) fn duplicate(&self, name: String) -> Self {
+    pub fn duplicate(&self, name: String) -> Self {
         let json = serde_json::to_string(self).unwrap();
         let dup: Self = serde_json::from_str(json.as_str()).unwrap();
         dup.folder.borrow_mut().name = name;

@@ -4,7 +4,7 @@ use eframe::emath::Align;
 use egui::{Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBuilder};
 
-use crate::data::cookies_manager::Cookie;
+use netpurr_core::data::cookies_manager::Cookie;
 
 #[derive(Default)]
 pub struct ResponseCookiesPanel {}

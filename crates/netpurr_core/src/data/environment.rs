@@ -29,7 +29,7 @@ impl Environment {
             &self.status,
         );
     }
-    pub(crate) fn get_variable_hash_map(
+    pub fn get_variable_hash_map(
         &self,
         collection: Option<Collection>,
     ) -> BTreeMap<String, EnvironmentItemValue> {

@@ -2,7 +2,8 @@ use eframe::epaint::FontFamily;
 use egui::text::LayoutJob;
 use egui::{Color32, FontId, TextFormat};
 
-use crate::data::test::TestStatus;
+use netpurr_core::data::test::TestStatus;
+
 use crate::data::workspace_data::WorkspaceData;
 use crate::panels::HORIZONTAL_GAP;
 

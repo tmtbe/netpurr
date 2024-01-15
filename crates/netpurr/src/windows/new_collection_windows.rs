@@ -5,14 +5,17 @@ use std::rc::Rc;
 
 use egui::{Align, Button, Checkbox, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
+
+use netpurr_core::data::auth::{Auth, AuthType};
+use netpurr_core::data::collections::{Collection, CollectionFolder};
+use netpurr_core::data::environment::{
+    EnvironmentItem, EnvironmentItemValue, EnvironmentValueType,
+};
+use netpurr_core::data::http::Request;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::auth::{Auth, AuthType};
-use crate::data::collections::{Collection, CollectionFolder};
 use crate::data::config_data::ConfigData;
-use crate::data::environment::{EnvironmentItem, EnvironmentItemValue, EnvironmentValueType};
-use crate::data::http::Request;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};

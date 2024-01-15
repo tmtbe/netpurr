@@ -4,7 +4,8 @@ use std::rc::Rc;
 
 use egui::{Align, Button, Layout, ScrollArea, Ui};
 
-use crate::data::collections::{Collection, CollectionFolder};
+use netpurr_core::data::collections::{Collection, CollectionFolder};
+
 use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;

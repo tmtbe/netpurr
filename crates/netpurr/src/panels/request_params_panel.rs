@@ -4,9 +4,10 @@ use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBody, TableBuilder};
 
+use netpurr_core::data::environment::EnvironmentItemValue;
+use netpurr_core::data::http::{LockWith, QueryParam};
+
 use crate::data::central_request_data::CentralRequestItem;
-use crate::data::environment::EnvironmentItemValue;
-use crate::data::http::{LockWith, QueryParam};
 use crate::data::workspace_data::WorkspaceData;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 

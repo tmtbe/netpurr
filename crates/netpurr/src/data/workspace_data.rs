@@ -1,21 +1,20 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashSet};
 use std::rc::Rc;
-use std::time::Duration;
 
 use chrono::NaiveDate;
 use log::error;
-use reqwest::blocking::Client;
 use uuid::Uuid;
 
-use crate::data::auth::{Auth, AuthType};
+use netpurr_core::data::auth::{Auth, AuthType};
+use netpurr_core::data::collections::{Collection, CollectionFolder, Collections};
+use netpurr_core::data::cookies_manager::{Cookie, CookiesManager};
+use netpurr_core::data::environment::{Environment, EnvironmentConfig, EnvironmentItemValue};
+use netpurr_core::data::http::HttpRecord;
+use netpurr_core::script::ScriptScope;
+
 use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
-use crate::data::collections::{Collection, CollectionFolder, Collections};
-use crate::data::cookies_manager::{Cookie, CookiesManager};
-use crate::data::environment::{Environment, EnvironmentConfig, EnvironmentItemValue};
 use crate::data::history::{DateGroupHistoryList, HistoryDataList};
-use crate::data::http::HttpRecord;
-use crate::script::script::ScriptScope;
 use crate::utils;
 
 #[derive(Default, Clone, Debug)]
@@ -26,26 +25,6 @@ pub struct WorkspaceData {
     history_data_list: RefCell<HistoryDataList>,
     environment: RefCell<Environment>,
     collections: RefCell<Collections>,
-    client: Option<Client>,
-}
-
-impl WorkspaceData {
-    pub fn build_http_client(&mut self) -> Client {
-        match &self.client {
-            None => {
-                let client = Client::builder()
-                    .cookie_provider(self.cookies_manager.borrow().cookie_store.clone())
-                    .trust_dns(true)
-                    .tcp_nodelay(true)
-                    .timeout(Duration::from_secs(60))
-                    .build()
-                    .unwrap_or_default();
-                self.client = Some(client.clone());
-                client
-            }
-            Some(client) => client.clone(),
-        }
-    }
 }
 
 //collections
@@ -160,6 +139,10 @@ impl WorkspaceData {
 
     pub fn get_collections(&self) -> BTreeMap<String, Collection> {
         self.collections.borrow().data.clone()
+    }
+
+    pub fn get_cookies_manager(&self) -> CookiesManager {
+        self.cookies_manager.borrow().clone()
     }
 }
 

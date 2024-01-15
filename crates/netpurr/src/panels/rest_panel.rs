@@ -1,14 +1,16 @@
 use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
 use poll_promise::Promise;
+
+use netpurr_core::data::auth::{Auth, AuthType};
+use netpurr_core::data::http::{BodyType, HttpRecord, LockWith, Method};
+use netpurr_core::data::test::TestStatus;
+use netpurr_core::data::{http, test};
+use netpurr_core::script::ScriptScope;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-use crate::data::auth::{Auth, AuthType};
-use crate::data::http::{BodyType, HttpRecord, LockWith, Method};
-use crate::data::test::TestStatus;
 use crate::data::workspace_data::WorkspaceData;
-use crate::data::{http, test};
 use crate::operation::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_body_panel::RequestBodyPanel;
@@ -18,7 +20,6 @@ use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
-use crate::script::script::ScriptScope;
 use crate::utils;
 use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
@@ -181,7 +182,6 @@ impl RestPanel {
         ui: &mut Ui,
     ) {
         let mut send_rest = None;
-        let client = workspace_data.build_http_client();
         let (mut pre_request_parent_script_scopes, mut test_parent_script_scopes) =
             workspace_data.get_crt_parent_scripts(crt_id.clone());
         let envs = workspace_data.get_crt_envs(crt_id.clone());
@@ -222,7 +222,6 @@ impl RestPanel {
                                 envs.clone(),
                                 pre_request_parent_script_scopes,
                                 test_parent_script_scopes,
-                                client,
                             );
                             self.send_promise = Some(send_response);
                             send_rest = Some(crt.rest.clone());

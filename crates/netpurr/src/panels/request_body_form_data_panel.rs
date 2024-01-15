@@ -3,11 +3,12 @@ use std::collections::BTreeMap;
 use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder, TableRow};
+
+use netpurr_core::data::environment::EnvironmentItemValue;
+use netpurr_core::data::http::{MultipartData, MultipartDataType};
 use strum::IntoEnumIterator;
 
 use crate::data::central_request_data::CentralRequestItem;
-use crate::data::environment::EnvironmentItemValue;
-use crate::data::http::{MultipartData, MultipartDataType};
 use crate::data::workspace_data::WorkspaceData;
 use crate::utils;
 use crate::utils::HighlightValue;

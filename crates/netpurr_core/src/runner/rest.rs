@@ -16,7 +16,6 @@ use crate::data::http::{
     BodyRawType, BodyType, Header, HttpBody, LockWith, MultipartDataType, PathVariables, QueryParam,
 };
 use crate::data::logger::Logger;
-use crate::utils;
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct RestSender {}
@@ -158,14 +157,14 @@ impl RestSender {
         );
         build_request.headers = Self::build_header(request.headers.clone(), &envs);
         build_request.body.body_str =
-            utils::replace_variable(build_request.body.body_str, envs.clone());
+            crate::utils::replace_variable(build_request.body.body_str, envs.clone());
         for md in build_request.body.body_xxx_form.iter_mut() {
-            md.key = utils::replace_variable(md.key.clone(), envs.clone());
-            md.value = utils::replace_variable(md.value.clone(), envs.clone());
+            md.key = crate::utils::replace_variable(md.key.clone(), envs.clone());
+            md.value = crate::utils::replace_variable(md.value.clone(), envs.clone());
         }
         for md in build_request.body.body_form_data.iter_mut() {
-            md.key = utils::replace_variable(md.key.clone(), envs.clone());
-            md.value = utils::replace_variable(md.value.clone(), envs.clone());
+            md.key = crate::utils::replace_variable(md.key.clone(), envs.clone());
+            md.value = crate::utils::replace_variable(md.value.clone(), envs.clone());
         }
         build_request
     }
@@ -179,7 +178,7 @@ impl RestSender {
             .filter(|h| h.enable)
             .map(|h| Header {
                 key: h.key.clone(),
-                value: utils::replace_variable(h.value.clone(), envs.clone()),
+                value: crate::utils::replace_variable(h.value.clone(), envs.clone()),
                 desc: h.desc.clone(),
                 enable: h.enable,
                 lock_with: h.lock_with.clone(),
@@ -196,7 +195,7 @@ impl RestSender {
             .filter(|q| q.enable)
             .map(|q| QueryParam {
                 key: q.key.clone(),
-                value: utils::replace_variable(q.value.clone(), envs.clone()),
+                value: crate::utils::replace_variable(q.value.clone(), envs.clone()),
                 desc: q.desc.clone(),
                 enable: q.enable,
                 lock_with: q.lock_with.clone(),
@@ -213,7 +212,7 @@ impl RestSender {
             .iter()
             .map(|p| PathVariables {
                 key: p.key.clone(),
-                value: utils::replace_variable(p.value.clone(), envs.clone()),
+                value: crate::utils::replace_variable(p.value.clone(), envs.clone()),
                 desc: p.desc.clone(),
             })
             .collect();

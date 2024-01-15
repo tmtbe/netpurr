@@ -3,7 +3,6 @@ use std::fs::File;
 use std::sync::Arc;
 
 use log::error;
-use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -16,7 +15,6 @@ use crate::persistence::{Persistence, PersistenceItem};
 pub struct CookiesManager {
     persistence: Persistence,
     pub cookie_store: Arc<CookieStoreMutex>,
-    pub client: Option<Client>,
 }
 
 impl CookiesManager {

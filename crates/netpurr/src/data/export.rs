@@ -1,6 +1,5 @@
+use netpurr_core::data::collections::Collection;
 use serde::{Deserialize, Serialize};
-
-use crate::data::collections::Collection;
 
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(default)]

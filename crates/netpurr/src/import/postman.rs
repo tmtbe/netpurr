@@ -4,15 +4,15 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use anyhow::anyhow;
-use serde::{Deserialize, Serialize};
 
-use crate::data::auth::{Auth, AuthType};
-use crate::data::collections::{Collection, CollectionFolder};
-use crate::data::environment::{EnvironmentConfig, EnvironmentItem, EnvironmentValueType};
-use crate::data::http::{
+use netpurr_core::data::auth::{Auth, AuthType};
+use netpurr_core::data::collections::{Collection, CollectionFolder};
+use netpurr_core::data::environment::{EnvironmentConfig, EnvironmentItem, EnvironmentValueType};
+use netpurr_core::data::http::{
     BodyRawType, Header, HttpBody, HttpRecord, Method, MultipartData, MultipartDataType,
     PathVariables, QueryParam, Request, RequestSchema,
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default, Clone)]
 #[serde(default)]

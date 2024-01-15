@@ -1,8 +1,9 @@
 use egui::{Align, Button, Checkbox, Layout, ScrollArea, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
+use netpurr_core::data::environment::{EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
+
 use crate::data::config_data::ConfigData;
-use crate::data::environment::{EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};

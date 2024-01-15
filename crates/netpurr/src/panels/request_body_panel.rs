@@ -1,7 +1,8 @@
 use egui::{Ui, Widget};
+
+use netpurr_core::data::http::{BodyRawType, BodyType};
 use strum::IntoEnumIterator;
 
-use crate::data::http::{BodyRawType, BodyType};
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;

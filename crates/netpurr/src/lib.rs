@@ -11,8 +11,6 @@ mod data;
 mod import;
 mod operation;
 mod panels;
-mod persistence;
-mod script;
 mod utils;
 mod widgets;
 mod windows;

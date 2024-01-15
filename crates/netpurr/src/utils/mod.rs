@@ -1,6 +1,5 @@
 use std::cmp::min;
-use std::collections::{BTreeMap, HashSet};
-use std::str::FromStr;
+use std::collections::HashSet;
 
 use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
@@ -9,11 +8,9 @@ use egui::{
     Area, Color32, FontSelection, Frame, Id, InnerResponse, Key, Layout, Order, Response, RichText,
     Style, TextBuffer, Ui, WidgetText,
 };
-use regex::Regex;
 
-use crate::data::environment::{EnvironmentItemValue, EnvironmentValueType};
-use crate::data::environment_function::{get_env_result, EnvFunction};
-use crate::data::http::HttpRecord;
+use netpurr_core::data::http::HttpRecord;
+
 use crate::panels::HORIZONTAL_GAP;
 
 pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) -> LayoutJob {
@@ -163,44 +160,6 @@ pub fn popup_widget<R>(
     } else {
         None
     }
-}
-
-pub fn replace_variable(content: String, envs: BTreeMap<String, EnvironmentItemValue>) -> String {
-    let re = Regex::new(r"\{\{.*?}}").unwrap();
-    let mut result = content.clone();
-    loop {
-        let temp = result.clone();
-        let find = re.find_iter(temp.as_str()).next();
-        match find {
-            None => break,
-            Some(find_match) => {
-                let key = find_match
-                    .as_str()
-                    .trim_start_matches("{{")
-                    .trim_end_matches("}}");
-                let v = envs.get(key);
-                match v {
-                    None => result.replace_range(find_match.range(), "{UNKNOWN}"),
-                    Some(etv) => match etv.value_type {
-                        EnvironmentValueType::String => {
-                            result.replace_range(find_match.range(), etv.value.as_str())
-                        }
-                        EnvironmentValueType::Function => {
-                            let env_func = EnvFunction::from_str(etv.value.as_str());
-                            match env_func {
-                                Ok(f) => result
-                                    .replace_range(find_match.range(), get_env_result(f).as_str()),
-                                Err(_) => {
-                                    result.replace_range(find_match.range(), "{UNKNOWN}");
-                                }
-                            }
-                        }
-                    },
-                }
-            }
-        }
-    }
-    result
 }
 
 pub fn select_label(ui: &mut Ui, text: impl Into<WidgetText>) -> Response {

@@ -1,12 +1,12 @@
 use std::path::Path;
 
 use eframe::epaint::ahash::HashMap;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::data::http::HttpRecord;
-use crate::data::test::TestResult;
-use crate::persistence::{Persistence, PersistenceItem};
+use netpurr_core::data::http::HttpRecord;
+use netpurr_core::data::test::TestResult;
+use netpurr_core::persistence::{Persistence, PersistenceItem};
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct CentralRequestDataList {
