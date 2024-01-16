@@ -39,7 +39,7 @@ image = { version = "0.24.7", optional = true, default-features = false, feature
     "jpeg",
     "png",
 ] }
-egui-toast = "0.10.2"
+egui-toast = "0.11.0"
 egui_json_tree = "0.3.0"
 egui_code_editor = "0.2.1"
 

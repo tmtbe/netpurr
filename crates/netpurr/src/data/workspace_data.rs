@@ -389,8 +389,13 @@ impl WorkspaceData {
         self.add_crt(duplicate);
     }
 
-    pub fn add_new_crt(&self) {
-        self.central_request_data_list.borrow_mut().add_new();
+    pub fn add_new_rest_crt(&self) {
+        self.central_request_data_list.borrow_mut().add_new_rest();
+    }
+    pub fn add_new_websocket_crt(&self) {
+        self.central_request_data_list
+            .borrow_mut()
+            .add_new_websocket();
     }
 
     pub fn contains_crt_id(&self, crt_id: String) -> bool {

@@ -67,7 +67,7 @@ netpurr.test("This is a test example",function(){
                             .show(ui, |ui| {
                                 let mut code_editor = CodeEditor::default()
                                     .id_source("test_code_editor")
-                                    .with_rows(10)
+                                    .with_rows(12)
                                     .with_ui_fontsize(ui)
                                     .with_syntax(js_syntax())
                                     .with_numlines(true);

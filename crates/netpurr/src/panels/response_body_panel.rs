@@ -63,7 +63,7 @@ impl ResponseBodyPanel {
                                         egui::TextEdit::multiline(&mut content)
                                             .font(egui::TextStyle::Monospace) // for cursor height
                                             .code_editor()
-                                            .desired_rows(10)
+                                            .desired_rows(12)
                                             .lock_focus(true)
                                             .desired_width(f32::INFINITY)
                                             .layouter(&mut layouter),

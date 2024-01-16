@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use netpurr_core::data::record::Record;
+use netpurr_core::data::record::Record::{Rest, WebSocket};
 use netpurr_core::data::test::TestResult;
+use netpurr_core::data::websocket::WebSocketRecord;
 use netpurr_core::persistence::{Persistence, PersistenceItem};
 
 #[derive(Default, Clone, Debug)]
@@ -70,11 +72,22 @@ impl CentralRequestDataList {
             },
         );
     }
-    pub fn add_new(&mut self) {
+    pub fn add_new_rest(&mut self) {
         let id = Uuid::new_v4().to_string();
         let crt = CentralRequestItem {
             id: id.clone(),
             collection_path: None,
+            record: Rest(Default::default()),
+            ..Default::default()
+        };
+        self.add_crt(crt);
+    }
+    pub fn add_new_websocket(&mut self) {
+        let id = Uuid::new_v4().to_string();
+        let crt = CentralRequestItem {
+            id: id.clone(),
+            collection_path: None,
+            record: WebSocket(WebSocketRecord::default()),
             ..Default::default()
         };
         self.add_crt(crt);

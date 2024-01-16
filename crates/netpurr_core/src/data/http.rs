@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use base64::engine::general_purpose;
@@ -38,6 +39,14 @@ impl HttpRecord {
     pub fn error(&mut self) {
         self.status = ResponseStatus::Error;
     }
+    pub fn compute_signature(&self) -> String {
+        format!(
+            "Request:[{}] TestScript:[{}] PreRequestScript:[{}]",
+            self.request.compute_signature(),
+            self.test_script.clone(),
+            self.pre_request_script.clone()
+        )
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
@@ -72,6 +81,8 @@ pub struct Request {
 pub enum RequestSchema {
     HTTP,
     HTTPS,
+    WS,
+    WSS,
 }
 
 impl Default for RequestSchema {
@@ -153,14 +164,8 @@ impl Request {
         } else {
             params_url = self.raw_url.as_str();
         }
-        match schema_str {
-            "https" => {
-                self.schema = RequestSchema::HTTPS;
-            }
-            _ => {
-                self.schema = RequestSchema::HTTP;
-            }
-        }
+        self.schema =
+            RequestSchema::from_str(schema_str.to_uppercase().as_str()).unwrap_or_default();
         let params_url_split: Vec<&str> = params_url.splitn(2, "?").collect();
         self.base_url = params_url_split[0].to_string();
         params_url_split.get(1).map(|params| {

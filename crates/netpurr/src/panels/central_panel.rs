@@ -1,5 +1,5 @@
 use eframe::emath::Align;
-use egui::{FontSelection, Response, RichText, Style, Ui, WidgetText};
+use egui::{FontSelection, Label, Response, RichText, Style, Ui, Widget, WidgetText};
 
 use netpurr_core::data::environment::ENVIRONMENT_GLOBALS;
 use netpurr_core::data::record::Record;
@@ -7,6 +7,7 @@ use netpurr_core::data::record::Record;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::rest_panel::RestPanel;
+use crate::panels::websocket_panel::WebSocketPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::utils;
 use crate::windows::environment_windows::EnvironmentWindows;
@@ -15,6 +16,7 @@ use crate::windows::request_close_windows::RequestCloseWindows;
 #[derive(Default)]
 pub struct MyCentralPanel {
     rest_panel: RestPanel,
+    web_socket_panel: WebSocketPanel,
     select_crt_id: Option<String>,
 }
 
@@ -42,17 +44,31 @@ impl MyCentralPanel {
         });
         ui.separator();
         match &workspace_data.get_crt_select_id() {
-            Some(request_id) => match workspace_data.must_get_crt(request_id.clone()).record {
-                Record::Rest(_) => {
-                    self.rest_panel.set_and_render(
-                        ui,
-                        operation,
-                        workspace_data,
-                        request_id.clone(),
-                    );
+            Some(crt_id) => {
+                ui.horizontal(|ui| {
+                    ui.add_space(HORIZONTAL_GAP);
+                    self.render_name_label(workspace_data, crt_id.clone(), ui);
+                });
+                ui.separator();
+                match workspace_data.must_get_crt(crt_id.clone()).record {
+                    Record::Rest(_) => {
+                        self.rest_panel.set_and_render(
+                            ui,
+                            operation,
+                            workspace_data,
+                            crt_id.clone(),
+                        );
+                    }
+                    Record::WebSocket(_) => {
+                        self.web_socket_panel.set_and_render(
+                            ui,
+                            operation,
+                            workspace_data,
+                            crt_id.clone(),
+                        );
+                    }
                 }
-                Record::WebSocket(_) => {}
-            },
+            }
             _ => {}
         }
 
@@ -199,19 +215,53 @@ impl MyCentralPanel {
                             }
                         }
                     }
-                    if ui.button("+").clicked() {
-                        workspace_data.add_new_crt();
-                    }
+                    ui.menu_button("+", |ui| {
+                        if ui.button("New Rest").clicked() {
+                            workspace_data.add_new_rest_crt();
+                            ui.close_menu();
+                        }
+                        if ui.button("New WebSocket").clicked() {
+                            workspace_data.add_new_websocket_crt();
+                            ui.close_menu();
+                        }
+                    });
                     if ui.button("...").clicked() {}
                 });
             });
         let crt_list = workspace_data.get_crt_id_list();
         if crt_list.len() == 0 {
-            workspace_data.add_new_crt();
+            workspace_data.add_new_rest_crt();
         }
         let crt_list = workspace_data.get_crt_id_list();
         if self.select_crt_id.is_none() {
             workspace_data.set_crt_select_id(crt_list.get(0).cloned());
+        }
+    }
+    fn render_name_label(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        crt_id: String,
+        ui: &mut Ui,
+    ) {
+        let crt = workspace_data.must_get_crt(crt_id.clone());
+        let tab_name = crt.get_tab_name();
+        match &crt.collection_path {
+            None => {
+                ui.horizontal(|ui| {
+                    ui.strong(tab_name);
+                });
+            }
+            Some(collection_path) => {
+                ui.horizontal(|ui| {
+                    Label::new(
+                        RichText::new(collection_path)
+                            .strong()
+                            .background_color(ui.visuals().extreme_bg_color),
+                    )
+                    .ui(ui);
+                    ui.strong(tab_name);
+                });
+            }
         }
     }
 }

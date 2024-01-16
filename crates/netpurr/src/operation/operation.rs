@@ -5,9 +5,11 @@ use std::rc::Rc;
 use egui::{emath, WidgetText};
 use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
 use poll_promise::Promise;
+use url::Url;
 
 use netpurr_core::data::cookies_manager::CookiesManager;
 use netpurr_core::data::environment::EnvironmentItemValue;
+use netpurr_core::data::websocket::WebSocketSession;
 use netpurr_core::data::{http, test};
 use netpurr_core::runner::Runner;
 use netpurr_core::script::{Context, ScriptScope};
@@ -62,7 +64,7 @@ impl Operation {
             git: Default::default(),
         }
     }
-    pub fn send_with_script(
+    pub fn send_rest_with_script(
         &self,
         request: http::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
@@ -70,7 +72,18 @@ impl Operation {
         test_scripts: Vec<ScriptScope>,
     ) -> Promise<Result<(http::Request, http::Response, test::TestResult), String>> {
         self.runner
-            .send_with_script(request, envs, pre_request_scripts, test_scripts)
+            .send_rest_with_script(request, envs, pre_request_scripts, test_scripts)
+    }
+
+    pub fn connect_websocket_with_script(
+        &self,
+        url: Url,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        pre_request_scripts: Vec<ScriptScope>,
+        test_scripts: Vec<ScriptScope>,
+    ) -> WebSocketSession {
+        self.runner
+            .connect_websocket_with_script(url, envs, pre_request_scripts, test_scripts)
     }
 
     pub fn run_script(

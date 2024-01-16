@@ -4,13 +4,16 @@ use std::time::Duration;
 
 use poll_promise::Promise;
 use reqwest::blocking::Client;
+use url::Url;
 
 use rest::RestSender;
 
 use crate::data::cookies_manager::CookiesManager;
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::logger::Logger;
+use crate::data::websocket::WebSocketSession;
 use crate::data::{http, test};
+use crate::runner::websocket::WebSocketSender;
 use crate::script::{Context, JsResponse, ScriptRuntime, ScriptScope};
 
 mod rest;
@@ -42,7 +45,17 @@ impl Runner {
     ) -> Promise<anyhow::Result<Context>> {
         self.script_runtime.run(scripts, context)
     }
-    pub fn send_with_script(
+
+    pub fn connect_websocket_with_script(
+        &self,
+        url: Url,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        pre_request_scripts: Vec<ScriptScope>,
+        test_scripts: Vec<ScriptScope>,
+    ) -> WebSocketSession {
+        WebSocketSender::connect(url)
+    }
+    pub fn send_rest_with_script(
         &self,
         request: http::Request,
         envs: BTreeMap<String, EnvironmentItemValue>,

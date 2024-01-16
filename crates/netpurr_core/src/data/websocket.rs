@@ -6,23 +6,59 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+use crate::data::http::{HttpRecord, Request, RequestSchema};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct WebSocketRecord {
-    pub name: String,
-    pub desc: String,
-    pub pre_request_script: String,
-    pub test_script: String,
-    pub url: String,
-    pub send_messages: Vec<Message>,
+    pub http_record: HttpRecord,
+    pub history_send_messages: Vec<Message>,
     #[serde(skip)]
-    pub session: Option<Session>,
+    pub session: Option<WebSocketSession>,
 }
 
+impl Default for WebSocketRecord {
+    fn default() -> Self {
+        WebSocketRecord {
+            http_record: HttpRecord {
+                name: "".to_string(),
+                desc: "".to_string(),
+                request: Request {
+                    method: Default::default(),
+                    schema: RequestSchema::WS,
+                    raw_url: "".to_string(),
+                    base_url: "".to_string(),
+                    path_variables: vec![],
+                    params: vec![],
+                    headers: vec![],
+                    body: Default::default(),
+                    auth: Default::default(),
+                },
+                response: Default::default(),
+                status: Default::default(),
+                pre_request_script: "".to_string(),
+                test_script: "".to_string(),
+            },
+            history_send_messages: vec![],
+            session: None,
+        }
+    }
+}
+
+impl WebSocketRecord {
+    pub fn compute_signature(&self) -> String {
+        format!(
+            "HttpRecord:{} History:{}",
+            self.http_record.compute_signature(),
+            self.history_send_messages.len()
+        )
+    }
+}
 #[derive(Default, Clone, Debug)]
 pub struct SessionState {
-    pub(crate) status: WebSocketStatus,
+    status: WebSocketStatus,
     messages: Messages,
+    events: Vec<WebSocketStatus>,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -53,6 +89,7 @@ pub enum WebSocketMessage {
 #[derive(Clone, Debug, PartialEq)]
 pub enum WebSocketStatus {
     Connect,
+    Connecting,
     Disconnect,
     ConnectError(String),
     SendError(String),
@@ -65,13 +102,13 @@ impl Default for WebSocketStatus {
 }
 
 #[derive(Clone, Debug)]
-pub struct Session {
+pub struct WebSocketSession {
     pub state: Arc<Mutex<SessionState>>,
     pub url: Url,
     pub sender: Sender<tokio_tungstenite::tungstenite::Message>,
 }
 
-impl Session {
+impl WebSocketSession {
     pub fn add_message(&self, message: WebSocketMessage) {
         self.state.lock().unwrap().messages.push(message.clone());
         if let WebSocketMessage::Send(_, msg) = message {
@@ -83,7 +120,26 @@ impl Session {
     }
 
     pub fn disconnect(&self) {
-        self.state.lock().unwrap().status = WebSocketStatus::Disconnect
+        self.set_status(WebSocketStatus::Disconnect)
+    }
+    pub fn get_status(&self) -> WebSocketStatus {
+        self.state.lock().unwrap().status.clone()
+    }
+    pub fn set_status(&self, status: WebSocketStatus) {
+        self.state.lock().unwrap().status = status.clone();
+        self.add_event(status.clone())
+    }
+
+    pub fn next_event(&self) -> Option<WebSocketStatus> {
+        self.state.lock().unwrap().events.pop()
+    }
+
+    pub fn add_event(&self, web_socket_status: WebSocketStatus) {
+        self.state
+            .lock()
+            .unwrap()
+            .events
+            .insert(0, web_socket_status)
     }
 }
 

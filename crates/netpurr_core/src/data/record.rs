@@ -13,37 +13,37 @@ impl Record {
     pub fn set_pre_request_script(&mut self, script: String) {
         match self {
             Record::Rest(rest) => rest.pre_request_script = script,
-            Record::WebSocket(websocket) => websocket.pre_request_script = script,
+            Record::WebSocket(websocket) => websocket.http_record.pre_request_script = script,
         }
     }
     pub fn set_test_script(&mut self, script: String) {
         match self {
             Record::Rest(rest) => rest.test_script = script,
-            Record::WebSocket(websocket) => websocket.test_script = script,
+            Record::WebSocket(websocket) => websocket.http_record.test_script = script,
         }
     }
     pub fn pre_request_script(&self) -> String {
         match self {
             Record::Rest(rest) => rest.pre_request_script.clone(),
-            Record::WebSocket(websocket) => websocket.pre_request_script.clone(),
+            Record::WebSocket(websocket) => websocket.http_record.pre_request_script.clone(),
         }
     }
     pub fn test_script(&self) -> String {
         match self {
             Record::Rest(rest) => rest.test_script.clone(),
-            Record::WebSocket(websocket) => websocket.test_script.clone(),
+            Record::WebSocket(websocket) => websocket.http_record.test_script.clone(),
         }
     }
     pub fn must_get_rest(&self) -> &HttpRecord {
         match self {
             Record::Rest(rest) => rest,
-            Record::WebSocket(_) => panic!("not rest"),
+            Record::WebSocket(websocket) => &websocket.http_record,
         }
     }
     pub fn must_get_mut_rest(&mut self) -> &mut HttpRecord {
         match self {
             Record::Rest(rest) => rest,
-            Record::WebSocket(_) => panic!("not rest"),
+            Record::WebSocket(websocket) => &mut websocket.http_record,
         }
     }
     pub fn must_get_websocket(&self) -> &WebSocketRecord {
@@ -61,74 +61,64 @@ impl Record {
     pub fn desc(&self) -> String {
         match self {
             Record::Rest(rest) => rest.desc.clone(),
-            Record::WebSocket(websocket) => websocket.desc.clone(),
+            Record::WebSocket(websocket) => websocket.http_record.desc.clone(),
         }
     }
     pub fn set_desc(&mut self, desc: String) {
         match self {
             Record::Rest(rest) => rest.desc = desc,
-            Record::WebSocket(websocket) => websocket.desc = desc,
+            Record::WebSocket(websocket) => websocket.http_record.desc = desc,
         }
     }
     pub fn name(&self) -> String {
         match self {
             Record::Rest(rest) => rest.name.clone(),
-            Record::WebSocket(websocket) => websocket.name.clone(),
+            Record::WebSocket(websocket) => websocket.http_record.name.clone(),
         }
     }
 
     pub fn method(&self) -> String {
         match self {
             Record::Rest(rest) => rest.request.method.to_string(),
-            Record::WebSocket(websocket) => "Ws".to_string(),
+            Record::WebSocket(websocket) => "WS".to_string(),
         }
     }
 
     pub fn base_url(&self) -> String {
         match self {
             Record::Rest(rest) => rest.request.base_url.to_string(),
-            Record::WebSocket(websocket) => todo!(),
+            Record::WebSocket(websocket) => websocket.http_record.request.base_url.to_string(),
+        }
+    }
+    pub fn raw_url(&self) -> String {
+        match self {
+            Record::Rest(rest) => rest.request.raw_url.to_string(),
+            Record::WebSocket(websocket) => websocket.http_record.request.raw_url.to_string(),
         }
     }
     pub fn set_name(&mut self, name: String) {
         match self {
             Record::Rest(rest) => rest.name = name,
-            Record::WebSocket(websocket) => websocket.name = name,
+            Record::WebSocket(websocket) => websocket.http_record.name = name,
         }
     }
 
     pub fn get_tab_name(&self) -> String {
-        match self {
-            Record::Rest(rest) => {
-                if rest.name != "" {
-                    rest.name.clone()
-                } else {
-                    if rest.request.base_url == "" {
-                        "Untitled Request".to_string()
-                    } else {
-                        rest.request.base_url.clone()
-                    }
-                }
-            }
-            Record::WebSocket(websocket) => {
-                todo!()
+        if self.name() != "" {
+            self.name()
+        } else {
+            if self.base_url() == "" {
+                "Untitled Request".to_string()
+            } else {
+                self.base_url()
             }
         }
     }
 
     pub fn compute_signature(&self) -> String {
         match self {
-            Record::Rest(rest) => {
-                format!(
-                    "Request:[{}] TestScript:[{}] PreRequestScript:[{}]",
-                    rest.request.compute_signature(),
-                    rest.test_script.clone(),
-                    rest.pre_request_script.clone()
-                )
-            }
-            Record::WebSocket(websocket) => {
-                todo!()
-            }
+            Record::Rest(rest) => rest.compute_signature(),
+            Record::WebSocket(websocket) => websocket.compute_signature(),
         }
     }
 }

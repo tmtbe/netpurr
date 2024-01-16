@@ -9,20 +9,21 @@ use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 use url::Url;
 
-use crate::data::websocket::WebSocketStatus::{Connect, ConnectError, SendError};
-use crate::data::websocket::{Session, WebSocketMessage};
+use crate::data::websocket::WebSocketStatus::{Connect, ConnectError, Connecting, SendError};
+use crate::data::websocket::{WebSocketMessage, WebSocketSession};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct WebSocketSender {}
 
 impl WebSocketSender {
-    pub fn connect(url: Url) -> Session {
+    pub fn connect(url: Url) -> WebSocketSession {
         let (sender, receiver): (Sender<Message>, Receiver<Message>) = mpsc::channel();
-        let session = Session {
+        let mut session = WebSocketSession {
             state: Arc::new(Mutex::new(Default::default())),
             url,
             sender,
         };
+        session.set_status(Connecting);
         let copy_session = session.clone();
         let _ = poll_promise::Promise::spawn_thread("ws", || {
             let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -35,37 +36,37 @@ impl WebSocketSender {
         session
     }
 
-    async fn async_connect(session: Session, receiver: Receiver<Message>) {
+    async fn async_connect(mut session: WebSocketSession, receiver: Receiver<Message>) {
         match connect_async(session.url.clone()).await {
             Ok((ws_stream, _)) => {
-                session.state.lock().unwrap().status = Connect;
+                session.set_status(Connect);
                 let (mut tx, rx) = ws_stream.split();
                 let copy_session = session.clone();
                 tokio::spawn(async move {
                     let mut incoming = rx.map(Result::unwrap);
                     while let Some(message) = incoming.next().await {
-                        if copy_session.state.lock().unwrap().status != Connect {
+                        if copy_session.get_status() != Connect {
                             break;
                         }
                         copy_session.add_message(WebSocketMessage::Receive(Local::now(), message))
                     }
                 });
                 loop {
-                    if session.state.lock().unwrap().status != Connect {
+                    if session.get_status() != Connect {
                         break;
                     }
                     let message = receiver.recv().unwrap();
                     match tx.send(message).await {
                         Ok(_) => {}
                         Err(e) => {
-                            session.state.lock().unwrap().status = SendError(e.to_string());
+                            session.set_status(SendError(e.to_string()));
                             break;
                         }
                     };
                 }
             }
             Err(e) => {
-                session.state.lock().unwrap().status = ConnectError(e.to_string());
+                session.set_status(ConnectError(e.to_string()));
             }
         }
     }
@@ -78,7 +79,7 @@ fn test_connect() {
     loop {
         println!("{:?}", session.state.lock().unwrap());
         sleep(Duration::from_secs(2));
-        if session.state.lock().unwrap().status == Connect {
+        if session.get_status() == Connect {
             session.send_message(Message::Text("hello".to_string()));
         }
         if index > 5 {
