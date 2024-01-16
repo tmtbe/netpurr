@@ -24,22 +24,22 @@ impl ResponseBodyPanel {
                 ui.ctx(),
                 &theme,
                 string,
-                ResponseBodyPanel::get_language(&crt.rest.response).as_str(),
+                ResponseBodyPanel::get_language(&crt.record.must_get_rest().response).as_str(),
             );
             layout_job.wrap.max_width = wrap_width;
             ui.fonts(|f| f.layout_job(layout_job))
         };
-        match crt.rest.get_response_content_type() {
+        match crt.record.must_get_rest().get_response_content_type() {
             None => {}
             Some(content_type) => {
                 if content_type.value.starts_with("image") {
                     let image = Image::from_bytes(
-                        crt.rest.request.get_url_with_schema(),
-                        crt.rest.response.body.to_vec(),
+                        crt.record.must_get_rest().request.get_url_with_schema(),
+                        crt.record.must_get_rest().response.body.to_vec(),
                     );
                     ui.add(image);
                 } else {
-                    match String::from_utf8(crt.rest.response.body.to_vec()) {
+                    match String::from_utf8(crt.record.must_get_rest().response.body.to_vec()) {
                         Ok(s) => {
                             ui.horizontal(|ui| {
                                 let tooltip = "Click to copy the response body";

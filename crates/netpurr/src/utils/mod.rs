@@ -9,11 +9,11 @@ use egui::{
     Style, TextBuffer, Ui, WidgetText,
 };
 
-use netpurr_core::data::http::HttpRecord;
+use netpurr_core::data::record::Record;
 
 use crate::panels::HORIZONTAL_GAP;
 
-pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) -> LayoutJob {
+pub fn build_rest_ui_header(record: Record, max_char: Option<usize>, ui: &Ui) -> LayoutJob {
     let mut lb = LayoutJob {
         text: Default::default(),
         sections: Default::default(),
@@ -29,16 +29,16 @@ pub fn build_rest_ui_header(hr: HttpRecord, max_char: Option<usize>, ui: &Ui) ->
         justify: false,
     };
     let style = Style::default();
-    if hr.request.base_url != "" {
-        RichText::new(hr.request.method.to_string() + " ")
+    if record.base_url() != "" {
+        RichText::new(record.method() + " ")
             .color(ui.visuals().warn_fg_color)
             .strong()
             .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
         let mut new_name = "".to_string();
-        if hr.name != "" {
-            new_name = hr.name.to_string();
+        if record.name() != "" {
+            new_name = record.name();
         } else {
-            new_name = hr.request.base_url;
+            new_name = record.base_url();
         }
         match max_char {
             None => {}

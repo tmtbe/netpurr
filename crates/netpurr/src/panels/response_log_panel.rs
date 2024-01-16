@@ -23,7 +23,15 @@ impl ResponseLogPanel {
         };
         ui.push_id("log_info", |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for (index, log) in crt.rest.response.logger.logs.iter().enumerate() {
+                for (index, log) in crt
+                    .record
+                    .must_get_rest()
+                    .response
+                    .logger
+                    .logs
+                    .iter()
+                    .enumerate()
+                {
                     let mut content = format!("> {}", log.show());
                     let mut code_editor = CodeEditor::default()
                         .id_source(format!("{}-{}", "log", index))

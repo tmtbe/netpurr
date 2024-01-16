@@ -61,14 +61,22 @@ impl RequestHeadersPanel {
                     });
             });
             if delete_index.is_some() {
-                crt.rest.request.headers.remove(delete_index.unwrap());
+                crt.record
+                    .must_get_mut_rest()
+                    .request
+                    .headers
+                    .remove(delete_index.unwrap());
             }
             if self.new_header.key != ""
                 || self.new_header.value != ""
                 || self.new_header.desc != ""
             {
                 self.new_header.enable = true;
-                crt.rest.request.headers.push(self.new_header.clone());
+                crt.record
+                    .must_get_mut_rest()
+                    .request
+                    .headers
+                    .push(self.new_header.clone());
                 self.new_header.key = "".to_string();
                 self.new_header.value = "".to_string();
                 self.new_header.desc = "".to_string();
@@ -83,7 +91,14 @@ impl RequestHeadersPanel {
         mut body: &mut TableBody,
     ) -> Option<usize> {
         let mut delete_index = None;
-        for (index, header) in data.rest.request.headers.iter_mut().enumerate() {
+        for (index, header) in data
+            .record
+            .must_get_mut_rest()
+            .request
+            .headers
+            .iter_mut()
+            .enumerate()
+        {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
                     ui.add_enabled(

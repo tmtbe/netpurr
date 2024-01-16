@@ -58,7 +58,8 @@ impl RequestBodyXXXFormPanel {
                     self.build_new_body(envs, body);
                 });
             if delete_index.is_some() {
-                crt.rest
+                crt.record
+                    .must_get_mut_rest()
                     .request
                     .body
                     .body_xxx_form
@@ -66,7 +67,8 @@ impl RequestBodyXXXFormPanel {
             }
             if self.new_form.key != "" || self.new_form.value != "" || self.new_form.desc != "" {
                 self.new_form.enable = true;
-                crt.rest
+                crt.record
+                    .must_get_mut_rest()
                     .request
                     .body
                     .body_xxx_form
@@ -88,7 +90,15 @@ impl RequestBodyXXXFormPanel {
         mut body: &mut TableBody,
     ) -> Option<usize> {
         let mut delete_index: Option<usize> = None;
-        for (index, param) in data.rest.request.body.body_xxx_form.iter_mut().enumerate() {
+        for (index, param) in data
+            .record
+            .must_get_mut_rest()
+            .request
+            .body
+            .body_xxx_form
+            .iter_mut()
+            .enumerate()
+        {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
                     ui.checkbox(&mut param.enable, "");

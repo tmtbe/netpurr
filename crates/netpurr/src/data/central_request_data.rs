@@ -1,12 +1,12 @@
 use std::path::Path;
 
 use eframe::epaint::ahash::HashMap;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use netpurr_core::data::http::HttpRecord;
+use netpurr_core::data::record::Record;
 use netpurr_core::data::test::TestResult;
 use netpurr_core::persistence::{Persistence, PersistenceItem};
-use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct CentralRequestDataList {
@@ -114,7 +114,7 @@ impl CentralRequestDataList {
         }
         let old_crt = self.data_map.remove(old_id.as_str());
         old_crt.map(|mut crt| {
-            crt.rest.name = new_name.clone();
+            crt.record.set_name(new_name.clone());
             crt.id = new_id.clone();
             self.data_map.insert(new_id.clone(), crt);
         });
@@ -138,34 +138,21 @@ impl CentralRequestDataList {
 pub struct CentralRequestItem {
     pub id: String,
     pub collection_path: Option<String>,
-    pub rest: HttpRecord,
+    pub record: Record,
     pub test_result: TestResult,
     pub modify_baseline: String,
 }
 
 impl CentralRequestItem {
     pub fn get_tab_name(&self) -> String {
-        if self.rest.name != "" {
-            self.rest.name.clone()
-        } else {
-            if self.rest.request.base_url == "" {
-                "Untitled Request".to_string()
-            } else {
-                self.rest.request.base_url.clone()
-            }
-        }
+        self.record.get_tab_name()
     }
     pub fn set_baseline(&mut self) {
         self.modify_baseline = self.compute_signature();
     }
 
     fn compute_signature(&self) -> String {
-        format!(
-            "Request:[{}] TestScript:[{}] PreRequestScript:[{}]",
-            &self.rest.request.compute_signature(),
-            self.rest.test_script.clone(),
-            self.rest.pre_request_script.clone()
-        )
+        self.record.compute_signature()
     }
 
     pub fn is_modify(&self) -> bool {

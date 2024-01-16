@@ -7,7 +7,7 @@ use std::rc::Rc;
 use egui::{CollapsingHeader, Response, RichText, Ui};
 
 use netpurr_core::data::collections::{Collection, CollectionFolder};
-use netpurr_core::data::http::HttpRecord;
+use netpurr_core::data::record::Record;
 
 use crate::data::central_request_data::CentralRequestItem;
 use crate::data::export::{Export, ExportType};
@@ -259,12 +259,12 @@ impl CollectionsPanel {
         workspace_data: &mut WorkspaceData,
         collection_name: String,
         response: Response,
-        request: &HttpRecord,
+        record: &Record,
         path: &String,
     ) {
         response.context_menu(|ui| {
             if utils::select_label(ui, "Open in New Table").clicked() {
-                let mut crt_id = path.clone() + "/" + request.name.as_str();
+                let mut crt_id = path.clone() + "/" + record.name().as_str();
                 if workspace_data.contains_crt_id(crt_id.clone()) {
                     crt_id =
                         utils::build_copy_name(crt_id.clone(), workspace_data.get_crt_id_set());
@@ -272,14 +272,14 @@ impl CollectionsPanel {
                 workspace_data.add_crt(CentralRequestItem {
                     id: crt_id,
                     collection_path: Some(path.clone()),
-                    rest: request.clone(),
+                    record: record.clone(),
                     ..Default::default()
                 });
                 ui.close_menu();
             }
             if utils::select_label(ui, "Save as").clicked() {
                 operation.add_window(Box::new(SaveWindows::default().with(
-                    request.clone(),
+                    record.clone(),
                     Some(path.clone()),
                     false,
                 )));
@@ -287,7 +287,7 @@ impl CollectionsPanel {
             }
             if utils::select_label(ui, "Edit").clicked() {
                 operation.add_window(Box::new(SaveWindows::default().with(
-                    request.clone(),
+                    record.clone(),
                     Some(path.clone()),
                     true,
                 )));
@@ -297,16 +297,16 @@ impl CollectionsPanel {
                 let (_, folder) = workspace_data.get_folder_with_path(path.clone());
                 folder.map(|f| {
                     let cf = f.borrow().clone();
-                    let request = cf.requests.get(request.name.as_str());
+                    let request = cf.requests.get(record.name().as_str());
                     request.map(|r| {
                         let mut new_request = r.clone();
-                        let name = new_request.name.clone();
+                        let name = new_request.name();
                         let new_name = utils::build_copy_name(
                             name,
                             f.borrow().requests.iter().map(|(k, v)| k.clone()).collect(),
                         );
-                        new_request.name = new_name.to_string();
-                        workspace_data.collection_insert_http_record(f.clone(), new_request);
+                        new_request.set_name(new_name.to_string());
+                        workspace_data.collection_insert_record(f.clone(), new_request);
                     });
                 });
                 ui.close_menu();
@@ -314,7 +314,7 @@ impl CollectionsPanel {
             if utils::select_label(ui, "Remove").clicked() {
                 let (_, folder) = workspace_data.get_folder_with_path(path.clone());
                 folder.map(|f| {
-                    workspace_data.collection_remove_http_record(f.clone(), request.name.clone());
+                    workspace_data.collection_remove_http_record(f.clone(), record.name());
                 });
                 ui.close_menu();
             }
@@ -328,16 +328,16 @@ impl CollectionsPanel {
         workspace_data: &mut WorkspaceData,
         collection_name: String,
         path: &String,
-        requests: BTreeMap<String, HttpRecord>,
+        requests: BTreeMap<String, Record>,
     ) {
-        for (_, hr) in requests.iter() {
-            let lb = utils::build_rest_ui_header(hr.clone(), None, ui);
+        for (_, record) in requests.iter() {
+            let lb = utils::build_rest_ui_header(record.clone(), None, ui);
             let button = ui.button(lb);
             if button.clicked() {
                 workspace_data.add_crt(CentralRequestItem {
-                    id: path.clone() + "/" + hr.name.as_str(),
+                    id: path.clone() + "/" + record.name().as_str(),
                     collection_path: Some(path.clone()),
-                    rest: hr.clone(),
+                    record: record.clone(),
                     ..Default::default()
                 })
             }
@@ -346,7 +346,7 @@ impl CollectionsPanel {
                 workspace_data,
                 collection_name.clone(),
                 button,
-                &hr,
+                &record,
                 path,
             )
         }

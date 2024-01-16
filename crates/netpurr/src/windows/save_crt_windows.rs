@@ -278,9 +278,9 @@ impl SaveCRTWindows {
                                     workspace_data.save_crt(
                                         self.crt_id.clone(),
                                         collection_path.clone(),
-                                        |hr| {
-                                            hr.name = self.save_name.clone();
-                                            hr.desc = self.save_desc.clone();
+                                        |record| {
+                                            record.set_name(self.save_name.clone());
+                                            record.set_desc(self.save_desc.clone());
                                         },
                                     );
                                     operation.add_success_toast("Save success.");

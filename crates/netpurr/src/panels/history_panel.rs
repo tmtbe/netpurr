@@ -15,13 +15,13 @@ impl HistoryPanel {
                 .show(ui, |ui| {
                     for history_rest_item in date_history_data.history_list.iter().rev() {
                         let lb =
-                            utils::build_rest_ui_header(history_rest_item.rest.clone(), None, ui);
+                            utils::build_rest_ui_header(history_rest_item.record.clone(), None, ui);
                         let button = ui.button(lb);
                         if button.clicked() {
                             workspace_data.add_crt(CentralRequestItem {
                                 id: history_rest_item.id.clone(),
                                 collection_path: None,
-                                rest: history_rest_item.rest.clone(),
+                                record: history_rest_item.record.clone(),
                                 ..Default::default()
                             })
                         }

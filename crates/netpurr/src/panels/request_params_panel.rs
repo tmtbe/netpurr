@@ -26,7 +26,8 @@ impl RequestParamsPanel {
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
             self.render_query_params(ui, &envs, crt);
-            let get_path_variable_keys = crt.rest.request.get_path_variable_keys();
+            let get_path_variable_keys =
+                crt.record.must_get_rest().request.get_path_variable_keys();
             if !get_path_variable_keys.is_empty() {
                 self.render_path_variables(ui, &envs, crt);
             }
@@ -75,14 +76,22 @@ impl RequestParamsPanel {
                 });
         });
         if delete_index.is_some() {
-            crt.rest.request.params.remove(delete_index.unwrap());
+            crt.record
+                .must_get_mut_rest()
+                .request
+                .params
+                .remove(delete_index.unwrap());
         }
         if self.new_query_param.key != ""
             || self.new_query_param.value != ""
             || self.new_query_param.desc != ""
         {
             self.new_query_param.enable = true;
-            crt.rest.request.params.push(self.new_query_param.clone());
+            crt.record
+                .must_get_mut_rest()
+                .request
+                .params
+                .push(self.new_query_param.clone());
             self.new_query_param.key = "".to_string();
             self.new_query_param.value = "".to_string();
             self.new_query_param.desc = "".to_string();
@@ -140,7 +149,14 @@ impl RequestParamsPanel {
         body: &mut TableBody,
     ) -> Option<usize> {
         let mut delete_index = None;
-        for (index, param) in data.rest.request.params.iter_mut().enumerate() {
+        for (index, param) in data
+            .record
+            .must_get_mut_rest()
+            .request
+            .params
+            .iter_mut()
+            .enumerate()
+        {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
                     ui.add_enabled(
@@ -194,7 +210,14 @@ impl RequestParamsPanel {
         envs: &BTreeMap<String, EnvironmentItemValue>,
         body: &mut TableBody,
     ) {
-        for (index, path_variable) in data.rest.request.path_variables.iter_mut().enumerate() {
+        for (index, path_variable) in data
+            .record
+            .must_get_mut_rest()
+            .request
+            .path_variables
+            .iter_mut()
+            .enumerate()
+        {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
                     let mut enable = true;

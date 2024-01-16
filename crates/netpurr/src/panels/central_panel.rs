@@ -2,6 +2,7 @@ use eframe::emath::Align;
 use egui::{FontSelection, Response, RichText, Style, Ui, WidgetText};
 
 use netpurr_core::data::environment::ENVIRONMENT_GLOBALS;
+use netpurr_core::data::record::Record;
 
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
@@ -13,7 +14,7 @@ use crate::windows::request_close_windows::RequestCloseWindows;
 
 #[derive(Default)]
 pub struct MyCentralPanel {
-    editor_panel: RestPanel,
+    rest_panel: RestPanel,
     select_crt_id: Option<String>,
 }
 
@@ -41,10 +42,17 @@ impl MyCentralPanel {
         });
         ui.separator();
         match &workspace_data.get_crt_select_id() {
-            Some(request_id) => {
-                self.editor_panel
-                    .set_and_render(ui, operation, workspace_data, request_id.clone());
-            }
+            Some(request_id) => match workspace_data.must_get_crt(request_id.clone()).record {
+                Record::Rest(_) => {
+                    self.rest_panel.set_and_render(
+                        ui,
+                        operation,
+                        workspace_data,
+                        request_id.clone(),
+                    );
+                }
+                Record::WebSocket(_) => {}
+            },
             _ => {}
         }
 
@@ -132,7 +140,7 @@ impl MyCentralPanel {
                             }
                             Some(request_data) => {
                                 let mut lb = utils::build_rest_ui_header(
-                                    request_data.rest.clone(),
+                                    request_data.record.clone(),
                                     Some(15),
                                     ui,
                                 );

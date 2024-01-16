@@ -1,14 +1,14 @@
 use egui::ahash::HashSet;
 use egui::{Button, Label, RichText, Ui, Widget};
 use poll_promise::Promise;
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter, EnumString};
 
 use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::http::{BodyType, HttpRecord, LockWith, Method};
 use netpurr_core::data::test::TestStatus;
 use netpurr_core::data::{http, test};
 use netpurr_core::script::ScriptScope;
-use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
@@ -151,7 +151,9 @@ impl RestPanel {
         let envs = workspace_data.get_crt_envs(cursor.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(cursor.clone());
         workspace_data.must_get_mut_crt(cursor.clone(), |crt| {
-            crt.rest.sync_everytime(envs.clone(), parent_auth.clone());
+            crt.record
+                .must_get_mut_rest()
+                .sync_everytime(envs.clone(), parent_auth.clone());
             let tab_name = crt.get_tab_name();
             match &crt.collection_path {
                 None => {
@@ -197,34 +199,36 @@ impl RestPanel {
                     } else {
                         if ui.button("Send").clicked() {
                             crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                                crt.rest.prepare_send(envs.clone(), parent_auth.clone());
+                                crt.record
+                                    .must_get_mut_rest()
+                                    .prepare_send(envs.clone(), parent_auth.clone());
                             });
                             let scope = format!(
                                 "{}/{}",
                                 crt.collection_path.clone().unwrap_or_default(),
                                 crt.get_tab_name()
                             );
-                            if crt.rest.pre_request_script.clone() != "" {
+                            if crt.record.pre_request_script() != "" {
                                 pre_request_parent_script_scopes.push(ScriptScope {
                                     scope: scope.clone(),
-                                    script: crt.rest.pre_request_script.clone(),
+                                    script: crt.record.pre_request_script(),
                                 });
                             }
 
-                            if crt.rest.test_script.clone() != "" {
+                            if crt.record.test_script() != "" {
                                 test_parent_script_scopes.push(ScriptScope {
                                     scope: scope.clone(),
-                                    script: crt.rest.test_script.clone(),
+                                    script: crt.record.test_script(),
                                 });
                             }
                             let send_response = operation.send_with_script(
-                                crt.rest.request.clone(),
+                                crt.record.must_get_rest().request.clone(),
                                 envs.clone(),
                                 pre_request_parent_script_scopes,
                                 test_parent_script_scopes,
                             );
                             self.send_promise = Some(send_response);
-                            send_rest = Some(crt.rest.clone());
+                            send_rest = Some(crt.record.clone());
                         }
                     }
                     if ui.button("Save").clicked() {
@@ -269,13 +273,13 @@ impl RestPanel {
                 .show_inside(ui, |ui| {
                     ui.horizontal(|ui| {
                         egui::ComboBox::from_id_source("method")
-                            .selected_text(crt.rest.request.method.clone().to_string())
+                            .selected_text(crt.record.method())
                             .show_ui(ui, |ui| {
                                 ui.style_mut().wrap = Some(false);
                                 ui.set_min_width(60.0);
                                 for x in Method::iter() {
                                     ui.selectable_value(
-                                        &mut crt.rest.request.method,
+                                        &mut crt.record.must_get_mut_rest().request.method,
                                         x.clone(),
                                         x.to_string(),
                                     );
@@ -288,12 +292,15 @@ impl RestPanel {
                                 .filter(filter)
                                 .envs(envs.clone())
                                 .all_space(false)
-                                .build(cursor.clone() + "url", &mut crt.rest.request.raw_url)
+                                .build(
+                                    cursor.clone() + "url",
+                                    &mut crt.record.must_get_mut_rest().request.raw_url,
+                                )
                                 .ui(ui);
                             if raw_url_text_edit.has_focus() {
-                                crt.rest.sync_raw_url();
+                                crt.record.must_get_mut_rest().sync_raw_url();
                             } else {
-                                crt.rest.build_raw_url();
+                                crt.record.must_get_mut_rest().build_raw_url();
                             }
                         });
                     });
@@ -330,7 +337,7 @@ impl RestPanel {
                 {
                     crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                         self.auth_panel
-                            .set_and_render(ui, &mut crt.rest.request.auth);
+                            .set_and_render(ui, &mut crt.record.must_get_mut_rest().request.auth);
                     });
                 }
             }
@@ -350,27 +357,27 @@ impl RestPanel {
                     ui,
                     operation,
                     crt.get_tab_name(),
-                    crt.rest.pre_request_script.clone(),
+                    crt.record.pre_request_script(),
                     pre_request_parent_script_scopes,
-                    crt.rest.request.clone(),
+                    crt.record.must_get_rest().request.clone(),
                     envs.clone(),
                     "rest".to_string(),
                 );
                 {
                     crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                        crt.rest.pre_request_script = script;
+                        crt.record.set_pre_request_script(script);
                     });
                 }
             }
             RequestPanelEnum::Tests => {
                 let script = self.test_script_panel.set_and_render(
                     ui,
-                    crt.rest.test_script.clone(),
+                    crt.record.test_script(),
                     "rest".to_string(),
                 );
                 {
                     crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                        crt.rest.test_script = script;
+                        crt.record.set_test_script(script);
                     });
                 }
             }
@@ -394,10 +401,14 @@ impl RestPanel {
                             .iter()
                             .filter(|h| h.lock_with != LockWith::NoLock)
                             .for_each(|h| {
-                                crt.rest.request.headers.push(h.clone());
+                                crt.record
+                                    .must_get_mut_rest()
+                                    .request
+                                    .headers
+                                    .push(h.clone());
                             });
-                        crt.rest.response = response.clone();
-                        crt.rest.ready();
+                        crt.record.must_get_mut_rest().response = response.clone();
+                        crt.record.must_get_mut_rest().ready();
                         operation.add_success_toast("Send request success");
                         crt.test_result = test_result.clone();
                         match test_result.status {
@@ -411,7 +422,7 @@ impl RestPanel {
                         }
                     }
                     Err(e) => {
-                        crt.rest.error();
+                        crt.record.must_get_mut_rest().error();
                         operation
                             .add_error_toast(format!("Send request failed: {}", e.to_string()));
                     }
@@ -419,7 +430,9 @@ impl RestPanel {
                 self.send_promise = None;
             } else {
                 ui.ctx().request_repaint();
-                workspace_data.must_get_mut_crt(crt_id.clone(), |crt| crt.rest.pending());
+                workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                    crt.record.must_get_mut_rest().pending()
+                });
             }
         }
     }
@@ -444,7 +457,7 @@ impl RestPanel {
                             x.clone(),
                             utils::build_with_count_ui_header(
                                 x.to_string(),
-                                RestPanel::get_count(&crt.rest, x, &parent_auth),
+                                RestPanel::get_count(crt.record.must_get_rest(), x, &parent_auth),
                                 ui,
                             ),
                         );

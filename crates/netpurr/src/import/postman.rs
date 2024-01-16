@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use anyhow::anyhow;
+use serde::{Deserialize, Serialize};
 
 use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::collections::{Collection, CollectionFolder};
@@ -12,7 +13,7 @@ use netpurr_core::data::http::{
     BodyRawType, Header, HttpBody, HttpRecord, Method, MultipartData, MultipartDataType,
     PathVariables, QueryParam, Request, RequestSchema,
 };
-use serde::{Deserialize, Serialize};
+use netpurr_core::data::record::Record;
 
 #[derive(Serialize, Deserialize, Default, Clone)]
 #[serde(default)]
@@ -74,67 +75,71 @@ pub struct PostmanItemGroup {
 }
 
 impl PostmanItemGroup {
-    pub fn gen_requests(pgs: Vec<PostmanItemGroup>) -> BTreeMap<String, HttpRecord> {
-        let http_records: Vec<HttpRecord> = pgs
+    pub fn gen_requests(pgs: Vec<PostmanItemGroup>) -> BTreeMap<String, Record> {
+        let http_records: Vec<Record> = pgs
             .iter()
             .filter(|p| p.item.is_empty())
-            .map(|p| HttpRecord {
-                name: p.name.to_string(),
-                desc: p.description.to_string(),
-                request: Request {
-                    method: Method::from_str(p.request.method.to_uppercase().as_str())
+            .map(|p| {
+                Record::Rest(HttpRecord {
+                    name: p.name.to_string(),
+                    desc: p.description.to_string(),
+                    request: Request {
+                        method: Method::from_str(p.request.method.to_uppercase().as_str())
+                            .unwrap_or_default(),
+                        schema: RequestSchema::from_str(
+                            p.request.url.protocol.to_uppercase().as_str(),
+                        )
                         .unwrap_or_default(),
-                    schema: RequestSchema::from_str(p.request.url.protocol.to_uppercase().as_str())
-                        .unwrap_or_default(),
-                    raw_url: p.request.url.raw.clone(),
-                    base_url: "".to_string(),
-                    path_variables: p
-                        .request
-                        .url
-                        .variable
-                        .iter()
-                        .map(|v| PathVariables {
-                            key: v.key.clone(),
-                            value: v.value.clone(),
-                            desc: v.description.clone(),
-                        })
-                        .collect(),
-                    params: p
-                        .request
-                        .url
-                        .query
-                        .iter()
-                        .map(|q| QueryParam {
-                            key: q.key.clone(),
-                            value: q.value.clone(),
-                            desc: q.description.clone(),
-                            lock_with: Default::default(),
-                            enable: !q.disabled,
-                        })
-                        .collect(),
-                    headers: p
-                        .request
-                        .header
-                        .iter()
-                        .map(|h| Header {
-                            key: h.key.clone(),
-                            value: h.value.clone(),
-                            desc: h.description.clone(),
-                            enable: !h.disabled,
-                            lock_with: Default::default(),
-                        })
-                        .collect(),
-                    body: p.request.body.to(),
-                    auth: p.auth.to(),
-                },
-                ..Default::default()
+                        raw_url: p.request.url.raw.clone(),
+                        base_url: "".to_string(),
+                        path_variables: p
+                            .request
+                            .url
+                            .variable
+                            .iter()
+                            .map(|v| PathVariables {
+                                key: v.key.clone(),
+                                value: v.value.clone(),
+                                desc: v.description.clone(),
+                            })
+                            .collect(),
+                        params: p
+                            .request
+                            .url
+                            .query
+                            .iter()
+                            .map(|q| QueryParam {
+                                key: q.key.clone(),
+                                value: q.value.clone(),
+                                desc: q.description.clone(),
+                                lock_with: Default::default(),
+                                enable: !q.disabled,
+                            })
+                            .collect(),
+                        headers: p
+                            .request
+                            .header
+                            .iter()
+                            .map(|h| Header {
+                                key: h.key.clone(),
+                                value: h.value.clone(),
+                                desc: h.description.clone(),
+                                enable: !h.disabled,
+                                lock_with: Default::default(),
+                            })
+                            .collect(),
+                        body: p.request.body.to(),
+                        auth: p.auth.to(),
+                    },
+                    ..Default::default()
+                })
             })
             .collect();
         let mut result = BTreeMap::default();
         for http_record in http_records.iter() {
             let mut record_clone = http_record.clone();
-            record_clone.request.parse_raw_url();
-            result.insert(http_record.name.clone(), record_clone);
+            record_clone.must_get_mut_rest().request.parse_raw_url();
+            result.insert(http_record.name(), record_clone);
         }
         result
     }

@@ -4,11 +4,11 @@ use std::path::Path;
 use std::str::FromStr;
 
 use chrono::{DateTime, Local, NaiveDate, Utc};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use netpurr_core::data::http::HttpRecord;
+use netpurr_core::data::record::Record;
 use netpurr_core::persistence::{Persistence, PersistenceItem};
-use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct HistoryDataList {
@@ -48,9 +48,9 @@ impl HistoryDataList {
     pub fn get_group(&self) -> &BTreeMap<NaiveDate, DateGroupHistoryList> {
         &self.date_group
     }
-    pub fn record(&mut self, mut rest: HttpRecord) {
-        rest.name = "".to_string();
-        rest.desc = "".to_string();
+    pub fn record(&mut self, mut record: Record) {
+        record.set_name("".to_string());
+        record.set_desc("".to_string());
         let today = Local::now().naive_local().date();
         if !self.date_group.contains_key(&today) {
             self.date_group.insert(
@@ -63,7 +63,7 @@ impl HistoryDataList {
         let hrt = HistoryRestItem {
             id: Uuid::new_v4().to_string(),
             record_date: Local::now().with_timezone(&Utc),
-            rest,
+            record,
         };
         self.date_group
             .get_mut(&today)
@@ -81,7 +81,7 @@ impl HistoryDataList {
 pub struct HistoryRestItem {
     pub id: String,
     pub record_date: DateTime<Utc>,
-    pub rest: HttpRecord,
+    pub record: Record,
 }
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]

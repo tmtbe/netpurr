@@ -1,7 +1,7 @@
 use egui::{Ui, Widget};
+use strum::IntoEnumIterator;
 
 use netpurr_core::data::http::{BodyRawType, BodyType};
-use strum::IntoEnumIterator;
 
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
@@ -34,22 +34,30 @@ impl RequestBodyPanel {
                 crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                     utils::selectable_check(
                         ui,
-                        &mut crt.rest.request.body.body_type,
+                        &mut crt.record.must_get_mut_rest().request.body.body_type,
                         x.clone(),
                         x.to_string(),
                     );
                 });
             }
-            if crt.rest.request.body.body_type == BodyType::RAW {
+            if crt.record.must_get_rest().request.body.body_type == BodyType::RAW {
                 egui::ComboBox::from_id_source("body_raw_type")
-                    .selected_text(crt.rest.request.body.body_raw_type.clone().to_string())
+                    .selected_text(
+                        crt.record
+                            .must_get_rest()
+                            .request
+                            .body
+                            .body_raw_type
+                            .clone()
+                            .to_string(),
+                    )
                     .show_ui(ui, |ui| {
                         ui.style_mut().wrap = Some(false);
                         ui.set_min_width(60.0);
                         for body_raw_type in BodyRawType::iter() {
                             crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                                 ui.selectable_value(
-                                    &mut crt.rest.request.body.body_raw_type,
+                                    &mut crt.record.must_get_mut_rest().request.body.body_raw_type,
                                     body_raw_type.clone(),
                                     body_raw_type.to_string(),
                                 );
@@ -59,7 +67,7 @@ impl RequestBodyPanel {
             }
         });
         ui.add_space(VERTICAL_GAP);
-        match crt.rest.request.body.body_type {
+        match crt.record.must_get_rest().request.body.body_type {
             BodyType::NONE => {
                 ui.label("This request does not have a body");
             }
@@ -83,7 +91,7 @@ impl RequestBodyPanel {
                                     .all_space(true)
                                     .build(
                                         "request_body".to_string(),
-                                        &mut crt.rest.request.body.body_str,
+                                        &mut crt.record.must_get_mut_rest().request.body.body_str,
                                     )
                                     .ui(ui);
                             });
@@ -96,7 +104,7 @@ impl RequestBodyPanel {
                     HighlightValue::None,
                     ui,
                 );
-                if crt.rest.request.body.body_file != "" {
+                if crt.record.must_get_rest().request.body.body_file != "" {
                     button_name = utils::build_with_count_ui_header(
                         "Select File".to_string(),
                         HighlightValue::Usize(1),
@@ -107,11 +115,12 @@ impl RequestBodyPanel {
                     if ui.button(button_name).clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_file() {
                             crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                                crt.rest.request.body.body_file = path.display().to_string();
+                                crt.record.must_get_mut_rest().request.body.body_file =
+                                    path.display().to_string();
                             });
                         }
                     }
-                    let mut path = crt.rest.request.body.body_file.clone();
+                    let mut path = crt.record.must_get_rest().request.body.body_file.clone();
                     utils::text_edit_singleline_justify(ui, &mut path);
                 });
             }

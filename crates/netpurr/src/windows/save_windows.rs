@@ -5,7 +5,7 @@ use std::rc::Rc;
 use egui::{Align, Button, Layout, ScrollArea, Ui};
 
 use netpurr_core::data::collections::{Collection, CollectionFolder};
-use netpurr_core::data::http::HttpRecord;
+use netpurr_core::data::record::Record;
 
 use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
@@ -17,7 +17,7 @@ use crate::utils;
 #[derive(Default)]
 pub struct SaveWindows {
     save_windows_open: bool,
-    http_record: HttpRecord,
+    record: Record,
     select_collection_path: Option<String>,
     add_collection: bool,
     add_folder: bool,
@@ -55,10 +55,10 @@ impl Window for SaveWindows {
         ui.label("Requests in Netpurr are saved in collections (a group of requests).");
         ui.add_space(VERTICAL_GAP);
         ui.label("Request name");
-        utils::text_edit_singleline_filter_justify(ui, &mut self.http_record.name);
+        utils::text_edit_singleline_filter_justify(ui, &mut self.record.name());
         ui.add_space(VERTICAL_GAP);
         ui.label("Request description (Optional)");
-        utils::text_edit_multiline_justify(ui, &mut self.http_record.desc);
+        utils::text_edit_multiline_justify(ui, &mut self.record.desc());
         ui.add_space(VERTICAL_GAP);
         if !self.edit {
             ui.label("Select a collection or folder to save to:");
@@ -71,19 +71,14 @@ impl Window for SaveWindows {
 }
 
 impl SaveWindows {
-    pub fn with(
-        mut self,
-        http_record: HttpRecord,
-        default_path: Option<String>,
-        edit: bool,
-    ) -> Self {
+    pub fn with(mut self, record: Record, default_path: Option<String>, edit: bool) -> Self {
         self.save_windows_open = true;
-        self.http_record = http_record;
-        self.old_name = self.http_record.name.clone();
-        if self.http_record.name == "" {
-            self.http_record.name = self.http_record.request.base_url.clone();
+        self.record = record;
+        self.old_name = self.record.name();
+        if self.record.name() == "" {
+            self.record.set_name(self.record.base_url());
         } else {
-            self.http_record.name = self.http_record.name.clone();
+            self.record.set_name(self.record.name());
         }
         self.add_folder = false;
         self.add_collection = false;
@@ -284,7 +279,7 @@ impl SaveWindows {
                         }
                         Some(collection_path) => {
                             let mut ui_enable = true;
-                            if self.http_record.name.is_empty() {
+                            if self.record.name().is_empty() {
                                 ui_enable = false;
                             }
                             let button_name = "Save to ".to_string()
@@ -294,13 +289,13 @@ impl SaveWindows {
                             match &option {
                                 None => {}
                                 Some(cf) => {
-                                    if self.edit && self.old_name == self.http_record.name {
+                                    if self.edit && self.old_name == self.record.name() {
                                         ui_enable = true;
                                     } else {
                                         if cf
                                             .borrow()
                                             .requests
-                                            .contains_key(self.http_record.name.as_str())
+                                            .contains_key(self.record.name().as_str())
                                         {
                                             ui_enable = false;
                                         }
@@ -318,14 +313,14 @@ impl SaveWindows {
                                                     self.old_name.clone(),
                                                 )
                                             }
-                                            workspace_data.collection_insert_http_record(
+                                            workspace_data.collection_insert_record(
                                                 cf.clone(),
-                                                self.http_record.clone(),
+                                                self.record.clone(),
                                             );
                                             workspace_data.update_crt_old_name_to_new_name(
                                                 collection_path.clone(),
                                                 self.old_name.clone(),
-                                                self.http_record.name.clone(),
+                                                self.record.name(),
                                             );
                                         }
                                     }

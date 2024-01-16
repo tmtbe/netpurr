@@ -111,7 +111,7 @@ impl RequestCloseWindows {
         crt_option.map(|crt| match &crt.collection_path {
             None => {
                 operation.add_window(Box::new(SaveWindows::default().with(
-                    crt.rest.clone(),
+                    crt.record.clone(),
                     None,
                     false,
                 )));

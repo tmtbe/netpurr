@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::data::auth::{Auth, AuthType};
 use crate::data::environment::{EnvironmentConfig, EnvironmentItemValue};
-use crate::data::http::HttpRecord;
+use crate::data::record::Record;
 use crate::persistence::{Persistence, PersistenceItem};
 use crate::script::ScriptScope;
 
@@ -52,16 +52,16 @@ impl Collections {
         );
     }
 
-    pub fn add_http_record(&mut self, folder: Rc<RefCell<CollectionFolder>>, record: HttpRecord) {
+    pub fn add_record(&mut self, folder: Rc<RefCell<CollectionFolder>>, record: Record) {
         folder
             .borrow_mut()
             .requests
-            .insert(record.name.clone(), record.clone());
+            .insert(record.name(), record.clone());
         self.persistence.save(
             Path::new("collections")
                 .join(folder.borrow().parent_path.as_str())
                 .join(folder.borrow().name.as_str()),
-            record.name.clone(),
+            record.name(),
             &record,
         );
     }
@@ -351,7 +351,7 @@ pub struct CollectionFolder {
     pub desc: String,
     pub auth: Auth,
     pub is_root: bool,
-    pub requests: BTreeMap<String, HttpRecord>,
+    pub requests: BTreeMap<String, Record>,
     pub folders: BTreeMap<String, Rc<RefCell<CollectionFolder>>>,
     pub pre_request_script: String,
     pub test_script: String,
@@ -402,9 +402,9 @@ impl CollectionFolder {
             if item.is_file() {
                 item.to_str().map(|name| {
                     if name.ends_with(".json") && !name.ends_with("folder@info.json") {
-                        let request: Option<HttpRecord> = persistence.load(item.clone());
+                        let request: Option<Record> = persistence.load(item.clone());
                         request.map(|r| {
-                            self.requests.insert(r.name.clone(), r);
+                            self.requests.insert(r.name(), r);
                         });
                     }
                 });

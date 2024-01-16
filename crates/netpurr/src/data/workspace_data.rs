@@ -10,7 +10,7 @@ use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::collections::{Collection, CollectionFolder, Collections};
 use netpurr_core::data::cookies_manager::{Cookie, CookiesManager};
 use netpurr_core::data::environment::{Environment, EnvironmentConfig, EnvironmentItemValue};
-use netpurr_core::data::http::HttpRecord;
+use netpurr_core::data::record::Record;
 use netpurr_core::script::ScriptScope;
 
 use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
@@ -42,14 +42,8 @@ impl WorkspaceData {
         self.collections.borrow().get_folder_with_path(path)
     }
 
-    pub fn collection_insert_http_record(
-        &self,
-        folder: Rc<RefCell<CollectionFolder>>,
-        record: HttpRecord,
-    ) {
-        self.collections
-            .borrow_mut()
-            .add_http_record(folder, record)
+    pub fn collection_insert_record(&self, folder: Rc<RefCell<CollectionFolder>>, record: Record) {
+        self.collections.borrow_mut().add_record(folder, record)
     }
     pub fn collection_remove_http_record(
         &self,
@@ -183,8 +177,8 @@ impl WorkspaceData {
     pub fn get_history_group(&self) -> BTreeMap<NaiveDate, DateGroupHistoryList> {
         self.history_data_list.borrow().get_group().clone()
     }
-    pub fn history_record(&self, rest: HttpRecord) {
-        self.history_data_list.borrow_mut().record(rest);
+    pub fn history_record(&self, record: Record) {
+        self.history_data_list.borrow_mut().record(record);
     }
 }
 // cookie
@@ -240,7 +234,7 @@ impl WorkspaceData {
         &mut self,
         crt_id: String,
         collection_path: String,
-        modify_http_record: impl FnOnce(&mut HttpRecord),
+        modify_record: impl FnOnce(&mut Record),
     ) {
         let mut new_name_option = None;
         self.central_request_data_list
@@ -250,10 +244,10 @@ impl WorkspaceData {
             .map(|crt| {
                 let (_, cf_option) = self.get_folder_with_path(collection_path.clone());
                 cf_option.map(|cf| {
-                    let mut http_record = crt.rest.clone();
-                    modify_http_record(&mut http_record);
-                    new_name_option = Some(http_record.name.clone());
-                    self.collection_insert_http_record(cf.clone(), http_record);
+                    let mut record = crt.record.clone();
+                    modify_record(&mut record);
+                    new_name_option = Some(record.name());
+                    self.collection_insert_record(cf.clone(), record);
                     crt.set_baseline();
                 });
             });

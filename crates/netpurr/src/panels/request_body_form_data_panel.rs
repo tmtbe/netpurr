@@ -3,10 +3,10 @@ use std::collections::BTreeMap;
 use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextBuffer, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder, TableRow};
+use strum::IntoEnumIterator;
 
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::{MultipartData, MultipartDataType};
-use strum::IntoEnumIterator;
 
 use crate::data::central_request_data::CentralRequestItem;
 use crate::data::workspace_data::WorkspaceData;
@@ -44,7 +44,8 @@ impl RequestBodyFormDataPanel {
                 self.build_new_body(body, envs.clone());
             });
             if delete_index.is_some() {
-                crt.rest
+                crt.record
+                    .must_get_mut_rest()
                     .request
                     .body
                     .body_form_data
@@ -52,7 +53,8 @@ impl RequestBodyFormDataPanel {
             }
             if self.new_form.key != "" || self.new_form.value != "" || self.new_form.desc != "" {
                 self.new_form.enable = true;
-                crt.rest
+                crt.record
+                    .must_get_mut_rest()
                     .request
                     .body
                     .body_form_data
@@ -94,7 +96,15 @@ impl RequestBodyFormDataPanel {
         envs: BTreeMap<String, EnvironmentItemValue>,
     ) -> Option<usize> {
         let mut delete_index: Option<usize> = None;
-        for (index, param) in data.rest.request.body.body_form_data.iter_mut().enumerate() {
+        for (index, param) in data
+            .record
+            .must_get_mut_rest()
+            .request
+            .body
+            .body_form_data
+            .iter_mut()
+            .enumerate()
+        {
             body.row(18.0, |mut row| {
                 row.col(|ui| {
                     ui.checkbox(&mut param.enable, "");
