@@ -1,7 +1,8 @@
-use netpurr_core::data::collections::Collection;
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+use netpurr_core::data::collections::Collection;
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Export {
     pub export_type: ExportType,

@@ -1,87 +1,19 @@
-use std::ops::{Deref, DerefMut};
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread::sleep;
 use std::time::Duration;
 
-use chrono::{DateTime, Local};
+use chrono::Local;
 use deno_core::futures::{SinkExt, StreamExt};
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::tungstenite::Message;
 use url::Url;
 
-use crate::runner::websocket::WebSocketStatus::{Connect, Disconnect, SendError};
+use crate::data::websocket::WebSocketStatus::{Connect, ConnectError, SendError};
+use crate::data::websocket::{Session, WebSocketMessage};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct WebSocketSender {}
-
-#[derive(Clone)]
-pub struct Session {
-    state: Arc<Mutex<SessionState>>,
-    url: Url,
-    sender: Sender<Message>,
-}
-
-impl Session {
-    pub fn add_message(&self, message: WebSocketMessage) {
-        self.state.lock().unwrap().messages.push(message.clone());
-        if let WebSocketMessage::Send(_, msg) = message {
-            self.sender.send(msg);
-        }
-    }
-    pub fn send_message(&self, message: Message) {
-        self.add_message(WebSocketMessage::Send(Local::now(), message))
-    }
-
-    pub fn disconnect(&self) {
-        self.state.lock().unwrap().status = Disconnect
-    }
-}
-
-#[derive(Default, Clone, Debug)]
-pub struct SessionState {
-    status: WebSocketStatus,
-    messages: Messages,
-}
-
-#[derive(Default, Clone, Debug)]
-pub struct Messages {
-    inner: Vec<WebSocketMessage>,
-}
-
-impl DerefMut for Messages {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
-
-impl Deref for Messages {
-    type Target = Vec<WebSocketMessage>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum WebSocketMessage {
-    Send(DateTime<Local>, Message),
-    Receive(DateTime<Local>, Message),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum WebSocketStatus {
-    Connect,
-    Disconnect,
-    ConnectError(String),
-    SendError(String),
-}
-
-impl Default for WebSocketStatus {
-    fn default() -> Self {
-        WebSocketStatus::Disconnect
-    }
-}
 
 impl WebSocketSender {
     pub fn connect(url: Url) -> Session {
@@ -133,7 +65,7 @@ impl WebSocketSender {
                 }
             }
             Err(e) => {
-                session.state.lock().unwrap().status = WebSocketStatus::ConnectError(e.to_string());
+                session.state.lock().unwrap().status = ConnectError(e.to_string());
             }
         }
     }

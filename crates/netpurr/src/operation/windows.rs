@@ -172,7 +172,8 @@ impl Windows {
         }
     }
 }
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+
+#[derive(Default, Clone, Debug)]
 pub struct OpenWindows {
     pub save_opened: bool,
     pub edit: bool,

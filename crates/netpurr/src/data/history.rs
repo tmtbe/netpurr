@@ -10,7 +10,7 @@ use uuid::Uuid;
 use netpurr_core::data::record::Record;
 use netpurr_core::persistence::{Persistence, PersistenceItem};
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct HistoryDataList {
     persistence: Persistence,
     date_group: BTreeMap<NaiveDate, DateGroupHistoryList>,
@@ -76,7 +76,7 @@ impl HistoryDataList {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct HistoryRestItem {
     pub id: String,
@@ -84,7 +84,7 @@ pub struct HistoryRestItem {
     pub record: Record,
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct DateGroupHistoryList {
     pub history_list: Vec<HistoryRestItem>,
 }

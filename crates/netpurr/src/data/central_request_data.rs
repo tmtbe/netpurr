@@ -8,7 +8,7 @@ use netpurr_core::data::record::Record;
 use netpurr_core::data::test::TestResult;
 use netpurr_core::persistence::{Persistence, PersistenceItem};
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct CentralRequestDataList {
     pub select_id: Option<String>,
     pub data_list: Vec<String>,
@@ -133,7 +133,7 @@ impl CentralRequestDataList {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub struct CentralRequestItem {
     pub id: String,
@@ -161,7 +161,7 @@ impl CentralRequestItem {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Default, Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 struct CentralRequestDataListSaved {
     pub select_id: Option<String>,

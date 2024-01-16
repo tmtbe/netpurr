@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::data::http::HttpRecord;
 use crate::data::websocket::WebSocketRecord;
 
-#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Record {
     Rest(HttpRecord),
     WebSocket(WebSocketRecord),

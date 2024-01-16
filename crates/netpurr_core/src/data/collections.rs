@@ -11,7 +11,7 @@ use crate::data::record::Record;
 use crate::persistence::{Persistence, PersistenceItem};
 use crate::script::ScriptScope;
 
-#[derive(Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct Collections {
     persistence: Persistence,
     pub data: BTreeMap<String, Collection>,
@@ -253,7 +253,7 @@ impl Collections {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Collection {
     pub envs: EnvironmentConfig,
@@ -343,7 +343,7 @@ impl Collection {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CollectionFolder {
     pub name: String,
