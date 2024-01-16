@@ -4,7 +4,8 @@ members = [
     "crates/netpurr",
     "crates/cookie_store",
     "crates/reqwest_cookie_store",
-    "crates/netpurr_core"
+    "crates/netpurr_core",
+    "crates/netpurr_test_runner",
 ]
 
 [workspace.package]
@@ -34,7 +35,7 @@ lto = true
 opt-level = 2
 
 [workspace.dependencies]
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1.0"
 strum = "0.25.0"
 strum_macros = "0.25.3"

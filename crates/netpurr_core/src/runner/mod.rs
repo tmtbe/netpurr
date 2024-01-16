@@ -14,6 +14,7 @@ use crate::data::{http, test};
 use crate::script::{Context, JsResponse, ScriptRuntime, ScriptScope};
 
 mod rest;
+mod websocket;
 
 #[derive(Clone)]
 pub struct Runner {
