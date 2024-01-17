@@ -14,6 +14,7 @@ use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
+use crate::panels::websocket_content_panel::WebsocketContentPanel;
 use crate::panels::HORIZONTAL_GAP;
 use crate::utils;
 use crate::utils::HighlightValue;
@@ -23,6 +24,7 @@ use crate::windows::save_crt_windows::SaveCRTWindows;
 
 #[derive(Default)]
 pub struct WebSocketPanel {
+    websocket_content_panel: WebsocketContentPanel,
     open_request_panel_enum: RequestPanelEnum,
     request_params_panel: RequestParamsPanel,
     auth_panel: AuthPanel,
@@ -66,7 +68,6 @@ impl WebSocketPanel {
             });
             ui.separator();
             self.render_middle_select(operation, workspace_data, crt_id.clone(), ui);
-            ui.separator();
         });
         ui.separator();
         self.render_request_open_panel(ui, operation, workspace_data, crt_id.clone());
@@ -140,6 +141,9 @@ impl WebSocketPanel {
                             WebSocketStatus::SendError(_) => {
                                 connect = false;
                             }
+                            WebSocketStatus::SendSuccess => {
+                                connect = true;
+                            }
                         },
                     }
                     ui.add_enabled_ui(!lock, |ui| {
@@ -207,15 +211,16 @@ impl WebSocketPanel {
             if let Some(session) = &crt.record.must_get_websocket().session {
                 if let Some(event) = session.next_event() {
                     match event {
-                        WebSocketStatus::Connect => operation.add_success_toast("Connect Success"),
+                        WebSocketStatus::Connect => operation.add_success_toast("Connected"),
                         WebSocketStatus::Connecting => {}
-                        WebSocketStatus::Disconnect => {
-                            operation.add_success_toast("Disconnect Success")
-                        }
+                        WebSocketStatus::Disconnect => operation.add_success_toast("Disconnected"),
                         WebSocketStatus::ConnectError(e) => {
                             operation.add_error_toast(e.to_string())
                         }
                         WebSocketStatus::SendError(e) => operation.add_error_toast(e.to_string()),
+                        WebSocketStatus::SendSuccess => {
+                            operation.add_success_toast("Send message success.")
+                        }
                     }
                 }
             }
@@ -294,7 +299,12 @@ impl WebSocketPanel {
                 self.request_headers_panel
                     .set_and_render(ui, workspace_data, crt_id.clone())
             }
-            RequestPanelEnum::Content => {}
+            RequestPanelEnum::Content => self.websocket_content_panel.set_and_render(
+                ui,
+                operation,
+                workspace_data,
+                crt_id.clone(),
+            ),
             RequestPanelEnum::PreRequestScript => {
                 let script = self.request_pre_script_panel.set_and_render(
                     ui,

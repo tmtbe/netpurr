@@ -20,6 +20,7 @@ pub mod response_panel;
 pub mod rest_panel;
 pub mod test_result_panel;
 pub mod test_script_panel;
+pub mod websocket_content_panel;
 pub mod websocket_panel;
 
 pub const HORIZONTAL_GAP: f32 = 8.0;

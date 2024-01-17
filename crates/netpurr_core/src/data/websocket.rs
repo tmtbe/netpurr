@@ -2,8 +2,12 @@ use std::ops::{Deref, DerefMut};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 
+use base64::engine::general_purpose;
+use base64::Engine;
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumIter, EnumString};
+use tokio_tungstenite::tungstenite::Message;
 use url::Url;
 
 use crate::data::http::{HttpRecord, Request, RequestSchema};
@@ -12,7 +16,9 @@ use crate::data::http::{HttpRecord, Request, RequestSchema};
 #[serde(default)]
 pub struct WebSocketRecord {
     pub http_record: HttpRecord,
-    pub history_send_messages: Vec<Message>,
+    pub select_message_type: MessageType,
+    pub retain_content: String,
+    pub history_send_messages: Vec<(MessageType, String)>,
     #[serde(skip)]
     pub session: Option<WebSocketSession>,
 }
@@ -39,6 +45,8 @@ impl Default for WebSocketRecord {
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
             },
+            select_message_type: Default::default(),
+            retain_content: "".to_string(),
             history_send_messages: vec![],
             session: None,
         }
@@ -93,6 +101,7 @@ pub enum WebSocketStatus {
     Disconnect,
     ConnectError(String),
     SendError(String),
+    SendSuccess,
 }
 
 impl Default for WebSocketStatus {
@@ -115,8 +124,21 @@ impl WebSocketSession {
             self.sender.send(msg);
         }
     }
-    pub fn send_message(&self, message: tokio_tungstenite::tungstenite::Message) {
-        self.add_message(WebSocketMessage::Send(Local::now(), message))
+    pub fn send_message(&self, msg_type: MessageType, msg: String) {
+        match msg_type {
+            MessageType::Text => {
+                self.add_message(WebSocketMessage::Send(Local::now(), Message::Text(msg)));
+                self.add_event(WebSocketStatus::SendSuccess)
+            }
+            MessageType::Binary => {
+                let decoded_data = general_purpose::STANDARD.decode(&msg);
+                match decoded_data {
+                    Ok(data) => self
+                        .add_message(WebSocketMessage::Send(Local::now(), Message::Binary(data))),
+                    Err(e) => self.add_event(WebSocketStatus::SendError(e.to_string())),
+                }
+            }
+        }
     }
 
     pub fn disconnect(&self) {
@@ -143,8 +165,14 @@ impl WebSocketSession {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-pub enum Message {
-    Text(String),
-    Binary(String),
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, EnumIter, EnumString, Display)]
+pub enum MessageType {
+    Text,
+    Binary,
+}
+
+impl Default for MessageType {
+    fn default() -> Self {
+        MessageType::Text
+    }
 }
