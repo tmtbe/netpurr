@@ -5,10 +5,10 @@ use std::rc::Rc;
 use egui::{emath, WidgetText};
 use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
 use poll_promise::Promise;
-use url::Url;
 
 use netpurr_core::data::cookies_manager::CookiesManager;
 use netpurr_core::data::environment::EnvironmentItemValue;
+use netpurr_core::data::http::Request;
 use netpurr_core::data::websocket::WebSocketSession;
 use netpurr_core::data::{http, test};
 use netpurr_core::runner::Runner;
@@ -77,13 +77,17 @@ impl Operation {
 
     pub fn connect_websocket_with_script(
         &self,
-        url: Url,
+        http_request: Request,
         envs: BTreeMap<String, EnvironmentItemValue>,
         pre_request_scripts: Vec<ScriptScope>,
         test_scripts: Vec<ScriptScope>,
     ) -> WebSocketSession {
-        self.runner
-            .connect_websocket_with_script(url, envs, pre_request_scripts, test_scripts)
+        self.runner.connect_websocket_with_script(
+            http_request,
+            envs,
+            pre_request_scripts,
+            test_scripts,
+        )
     }
 
     pub fn run_script(

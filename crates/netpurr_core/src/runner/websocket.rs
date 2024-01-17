@@ -1,26 +1,26 @@
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{mpsc, Arc, Mutex};
-use std::thread::sleep;
-use std::time::Duration;
 
+use base64::engine::general_purpose;
+use base64::Engine;
 use chrono::Local;
 use deno_core::futures::{SinkExt, StreamExt};
 use tokio_tungstenite::connect_async;
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
 use tokio_tungstenite::tungstenite::Message;
-use url::Url;
 
+use crate::data::http::Request;
 use crate::data::websocket::WebSocketStatus::{Connect, ConnectError, Connecting, SendError};
-use crate::data::websocket::{WebSocketMessage, WebSocketSession};
+use crate::data::websocket::{MessageType, WebSocketMessage, WebSocketSession};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct WebSocketSender {}
 
 impl WebSocketSender {
-    pub fn connect(url: Url) -> WebSocketSession {
+    pub fn connect(request: Request) -> WebSocketSession {
         let (sender, receiver): (Sender<Message>, Receiver<Message>) = mpsc::channel();
         let mut session = WebSocketSession {
             state: Arc::new(Mutex::new(Default::default())),
-            url,
             sender,
         };
         session.set_status(Connecting);
@@ -31,14 +31,20 @@ impl WebSocketSender {
                 .enable_all()
                 .build()
                 .unwrap();
-            runtime.block_on(Self::async_connect(copy_session, receiver))
+            runtime.block_on(Self::async_connect(copy_session, request, receiver))
         });
         session
     }
-
-    async fn async_connect(mut session: WebSocketSession, receiver: Receiver<Message>) {
-        match connect_async(session.url.clone()).await {
-            Ok((ws_stream, _)) => {
+    async fn async_connect<R>(
+        mut session: WebSocketSession,
+        request: R,
+        receiver: Receiver<Message>,
+    ) where
+        R: IntoClientRequest + Unpin,
+    {
+        match connect_async(request).await {
+            Ok((ws_stream, response)) => {
+                session.set_response(response);
                 session.set_status(Connect);
                 let (mut tx, rx) = ws_stream.split();
                 let copy_session = session.clone();
@@ -48,7 +54,19 @@ impl WebSocketSender {
                         if copy_session.get_status() != Connect {
                             break;
                         }
-                        copy_session.add_message(WebSocketMessage::Receive(Local::now(), message))
+                        match message {
+                            Message::Text(text) => copy_session.add_message(
+                                WebSocketMessage::Receive(Local::now(), MessageType::Text, text),
+                            ),
+                            Message::Binary(b) => {
+                                copy_session.add_message(WebSocketMessage::Receive(
+                                    Local::now(),
+                                    MessageType::Binary,
+                                    general_purpose::STANDARD.encode(b),
+                                ))
+                            }
+                            _ => {}
+                        }
                     }
                 });
                 loop {
@@ -69,22 +87,5 @@ impl WebSocketSender {
                 session.set_status(ConnectError(e.to_string()));
             }
         }
-    }
-}
-
-#[test]
-fn test_connect() {
-    let session = WebSocketSender::connect(Url::parse("ws://localhost:3012").unwrap());
-    let mut index = 1;
-    loop {
-        println!("{:?}", session.state.lock().unwrap());
-        sleep(Duration::from_secs(2));
-        if session.get_status() == Connect {
-            session.send_message(Message::Text("hello".to_string()));
-        }
-        if index > 5 {
-            session.disconnect();
-        }
-        index = index + 1;
     }
 }

@@ -8,9 +8,8 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
 use tokio_tungstenite::tungstenite::Message;
-use url::Url;
 
-use crate::data::http::{HttpRecord, Request, RequestSchema};
+use crate::data::http::{Header, HttpRecord, Request, RequestSchema, Response};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
@@ -61,10 +60,24 @@ impl WebSocketRecord {
             self.history_send_messages.len()
         )
     }
+    pub fn connected(&self) -> bool {
+        match &self.session {
+            None => false,
+            Some(session) => match session.get_status() {
+                WebSocketStatus::Connect => true,
+                WebSocketStatus::Connecting => false,
+                WebSocketStatus::Disconnect => false,
+                WebSocketStatus::ConnectError(_) => false,
+                WebSocketStatus::SendError(_) => false,
+                WebSocketStatus::SendSuccess => true,
+            },
+        }
+    }
 }
 #[derive(Default, Clone, Debug)]
 pub struct SessionState {
     status: WebSocketStatus,
+    response: Response,
     messages: Messages,
     events: Vec<WebSocketStatus>,
 }
@@ -90,8 +103,8 @@ impl Deref for Messages {
 
 #[derive(Clone, Debug)]
 pub enum WebSocketMessage {
-    Send(DateTime<Local>, tokio_tungstenite::tungstenite::Message),
-    Receive(DateTime<Local>, tokio_tungstenite::tungstenite::Message),
+    Send(DateTime<Local>, MessageType, String),
+    Receive(DateTime<Local>, MessageType, String),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -113,32 +126,32 @@ impl Default for WebSocketStatus {
 #[derive(Clone, Debug)]
 pub struct WebSocketSession {
     pub state: Arc<Mutex<SessionState>>,
-    pub url: Url,
-    pub sender: Sender<tokio_tungstenite::tungstenite::Message>,
+    pub sender: Sender<Message>,
 }
 
 impl WebSocketSession {
+    pub fn get_messages(&self) -> Messages {
+        self.state.lock().unwrap().messages.clone()
+    }
     pub fn add_message(&self, message: WebSocketMessage) {
         self.state.lock().unwrap().messages.push(message.clone());
-        if let WebSocketMessage::Send(_, msg) = message {
-            self.sender.send(msg);
+        if let WebSocketMessage::Send(_, msg_type, text) = message {
+            match msg_type {
+                MessageType::Text => {
+                    self.sender.send(Message::Text(text));
+                }
+                MessageType::Binary => match general_purpose::STANDARD.decode(text) {
+                    Ok(b) => {
+                        self.sender.send(Message::Binary(b));
+                    }
+                    Err(e) => self.add_event(WebSocketStatus::SendError(e.to_string())),
+                },
+            }
         }
     }
     pub fn send_message(&self, msg_type: MessageType, msg: String) {
-        match msg_type {
-            MessageType::Text => {
-                self.add_message(WebSocketMessage::Send(Local::now(), Message::Text(msg)));
-                self.add_event(WebSocketStatus::SendSuccess)
-            }
-            MessageType::Binary => {
-                let decoded_data = general_purpose::STANDARD.decode(&msg);
-                match decoded_data {
-                    Ok(data) => self
-                        .add_message(WebSocketMessage::Send(Local::now(), Message::Binary(data))),
-                    Err(e) => self.add_event(WebSocketStatus::SendError(e.to_string())),
-                }
-            }
-        }
+        self.add_message(WebSocketMessage::Send(Local::now(), msg_type, msg));
+        self.add_event(WebSocketStatus::SendSuccess)
     }
 
     pub fn disconnect(&self) {
@@ -150,6 +163,33 @@ impl WebSocketSession {
     pub fn set_status(&self, status: WebSocketStatus) {
         self.state.lock().unwrap().status = status.clone();
         self.add_event(status.clone())
+    }
+    pub fn get_response(&self) -> Response {
+        self.state.lock().unwrap().response.clone()
+    }
+    pub fn set_response(
+        &self,
+        response: tokio_tungstenite::tungstenite::handshake::client::Response,
+    ) {
+        let http_response = Response {
+            body: Arc::new(Default::default()),
+            headers: response
+                .headers()
+                .iter()
+                .map(|(name, value)| Header {
+                    key: name.to_string(),
+                    value: value.to_str().unwrap_or_default().to_string(),
+                    desc: "".to_string(),
+                    enable: true,
+                    lock_with: Default::default(),
+                })
+                .collect(),
+            status: response.status().as_u16(),
+            status_text: "".to_string(),
+            elapsed_time: 0,
+            logger: Default::default(),
+        };
+        self.state.lock().unwrap().response = http_response;
     }
 
     pub fn next_event(&self) -> Option<WebSocketStatus> {

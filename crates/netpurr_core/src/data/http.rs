@@ -8,6 +8,11 @@ use base64::Engine;
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};
+use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+use tokio_tungstenite::tungstenite::error::UrlError;
+use tokio_tungstenite::tungstenite::handshake::client::generate_key;
+use tokio_tungstenite::tungstenite::http::Uri;
+use tokio_tungstenite::tungstenite::Error;
 
 use crate::data::auth::Auth;
 use crate::data::environment::EnvironmentItemValue;
@@ -75,6 +80,39 @@ pub struct Request {
     pub headers: Vec<Header>,
     pub body: HttpBody,
     pub auth: Auth,
+}
+
+impl IntoClientRequest for Request {
+    fn into_client_request(
+        self,
+    ) -> tokio_tungstenite::tungstenite::Result<
+        tokio_tungstenite::tungstenite::handshake::client::Request,
+    > {
+        let uri = self.raw_url.as_str().parse::<Uri>()?;
+        let authority = uri
+            .authority()
+            .ok_or(Error::Url(UrlError::NoHostName))?
+            .as_str();
+        let host = authority
+            .find('@')
+            .map(|idx| authority.split_at(idx + 1).1)
+            .unwrap_or_else(|| authority);
+
+        if host.is_empty() {
+            return Err(Error::Url(UrlError::EmptyHostName));
+        }
+
+        let req = tokio_tungstenite::tungstenite::handshake::client::Request::builder()
+            .method("GET")
+            .header("Host", host)
+            .header("Connection", "Upgrade")
+            .header("Upgrade", "websocket")
+            .header("Sec-WebSocket-Version", "13")
+            .header("Sec-WebSocket-Key", generate_key())
+            .uri(uri)
+            .body(())?;
+        Ok(req)
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Display, EnumString)]
