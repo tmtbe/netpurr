@@ -194,14 +194,16 @@ impl WebsocketEventPanel {
         {
             None => {}
             Some(session) => {
+                let available_width = ui.available_width();
                 let table = TableBuilder::new(ui)
                     .resizable(false)
                     .cell_layout(Layout::left_to_right(Align::Center))
                     .column(Column::exact(50.0))
-                    .column(Column::initial(400.0).range(300.0..=600.0))
+                    .column(Column::initial(available_width - 200.0).range(300.0..=1000.0))
                     .column(Column::remainder())
                     .max_scroll_height(100.0);
                 table
+                    .striped(true)
                     .header(20.0, |mut header| {
                         header.col(|ui| {
                             ui.strong("");
@@ -214,21 +216,21 @@ impl WebsocketEventPanel {
                         });
                     })
                     .body(|mut body| {
-                        for message in session.get_messages().iter().rev() {
+                        for (index, message) in session.get_messages().iter().rev().enumerate() {
                             let mut flag = "Send";
-                            let mut text = "";
+                            let mut text = "".to_string();
                             let mut time = "".to_string();
                             match message {
                                 WebSocketMessage::Send(d, msg_type, msg) => {
                                     flag = "Send";
-                                    text = msg;
+                                    text = msg.to_string();
                                     time = d
                                         .format_with_items(StrftimeItems::new("%H:%M:%S"))
                                         .to_string();
                                 }
                                 WebSocketMessage::Receive(d, msg_type, msg) => {
                                     flag = "Receive";
-                                    text = msg;
+                                    text = msg.to_string();
                                     time = d
                                         .format_with_items(StrftimeItems::new("%H:%M:%S"))
                                         .to_string();
@@ -239,7 +241,7 @@ impl WebsocketEventPanel {
                                     ui.label(flag);
                                 });
                                 row.col(|ui| {
-                                    ui.label(text);
+                                    ui.label(text.replace("\n", ""));
                                 });
                                 row.col(|ui| {
                                     ui.label(time);

@@ -1,7 +1,7 @@
 use egui_code_editor::{CodeEditor, ColorTheme};
 
 use crate::data::workspace_data::WorkspaceData;
-use crate::widgets::syntax::log_syntax;
+use crate::widgets::syntax::js_syntax;
 
 #[derive(Default)]
 pub struct ResponseLogPanel {}
@@ -37,7 +37,7 @@ impl ResponseLogPanel {
                         .id_source(format!("{}-{}", "log", index))
                         .with_rows(1)
                         .with_ui_fontsize(ui)
-                        .with_syntax(log_syntax())
+                        .with_syntax(js_syntax())
                         .with_numlines(false);
                     if ui.visuals().dark_mode {
                         code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)
