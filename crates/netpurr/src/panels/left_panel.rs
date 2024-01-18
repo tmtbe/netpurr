@@ -34,13 +34,6 @@ impl MyLeftPanel {
         workspace_data: &mut WorkspaceData,
     ) {
         ui.horizontal(|ui| {
-            ui.label("Filter:");
-            ui.add(egui::TextEdit::singleline(&mut self.filter).desired_width(120.0));
-            if ui.button("ｘ").clicked() {
-                self.filter.clear();
-            }
-        });
-        ui.horizontal(|ui| {
             ui.selectable_value(&mut self.open_panel, Panel::History, "History");
             ui.selectable_value(&mut self.open_panel, Panel::Collections, "Collections");
         });
