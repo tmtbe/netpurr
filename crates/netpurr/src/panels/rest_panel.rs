@@ -18,7 +18,7 @@ use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
-use crate::panels::{DataView, HORIZONTAL_GAP};
+use crate::panels::HORIZONTAL_GAP;
 use crate::utils;
 use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
@@ -230,8 +230,12 @@ impl RestPanel {
     ) {
         let envs = workspace_data.get_crt_envs(cursor.clone());
         workspace_data.must_get_mut_crt(cursor.clone(), |crt| {
+            let mut min_width = ui.available_width() - HORIZONTAL_GAP;
+            if min_width < HORIZONTAL_GAP {
+                min_width = HORIZONTAL_GAP
+            }
             egui::SidePanel::left("editor_left_panel")
-                .min_width(ui.available_width() - HORIZONTAL_GAP)
+                .min_width(min_width)
                 .show_separator_line(false)
                 .resizable(false)
                 .show_inside(ui, |ui| {

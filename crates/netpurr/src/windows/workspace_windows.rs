@@ -15,7 +15,7 @@ use crate::utils;
 #[derive(Default)]
 pub struct WorkspaceWindows {
     windows_open: bool,
-    current_workspace: String,
+    current_workspace: Option<String>,
     current_workspace_git_repo_name: String,
     current_workspace_git_repo: Option<PathBuf>,
     current_branch_list: Vec<String>,
@@ -59,7 +59,7 @@ impl Window for WorkspaceWindows {
         self.render_left_panel(ui, config_data);
         let option_workspace = config_data
             .workspaces()
-            .get(self.current_workspace.as_str());
+            .get(self.current_workspace.clone().unwrap_or_default().as_str());
         option_workspace.map(|workspace| {
             self.update(workspace, &operation);
             ui.horizontal(|ui| {
@@ -219,7 +219,7 @@ impl WorkspaceWindows {
                         if utils::select_value(
                             ui,
                             &mut self.current_workspace,
-                            name.to_string(),
+                            Some(name.to_string()),
                             name.to_string(),
                         )
                         .clicked()
@@ -308,7 +308,7 @@ impl WorkspaceWindows {
         }
     }
 
-    pub fn with_open(mut self, current_workspace: String) -> Self {
+    pub fn with_open(mut self, current_workspace: Option<String>) -> Self {
         self.windows_open = true;
         self.user_git_branch = "main".to_string();
         self.current_workspace = current_workspace;
@@ -316,7 +316,9 @@ impl WorkspaceWindows {
     }
 
     fn update(&mut self, workspace: &Workspace, operation: &Operation) {
-        if self.current_workspace_git_repo_name != self.current_workspace {
+        if self.current_workspace_git_repo_name
+            != self.current_workspace.clone().unwrap_or_default()
+        {
             if operation.git().if_enable_git(&workspace.path) {
                 self.current_workspace_git_repo = Some(workspace.path.clone());
             } else {

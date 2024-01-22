@@ -92,6 +92,7 @@ console.log(response)"#)
                             }
                         });
                     });
+                ui.separator();
                 ui.push_id("pre_request_script", |ui| {
                     egui::ScrollArea::vertical()
                         .min_scrolled_height(250.0)

@@ -1,8 +1,5 @@
 # Netpurr API Client
 
-Due to a repository name conflict, `Postcat` has been renamed to `NetPurr`. Choosing "Net" as the prefix signifies
-future support for more than one protocol.
-
 Netpurr is an open-source, cross-platform API client for REST (Support for other protocols will be gradually added).
 It is very compact and swift, coded in Rust.
 
@@ -41,7 +38,7 @@ And a lot more!
 The project is actively in development, with many features continuously being added. You can download the latest builds
 from the releases section.
 
-https://github.com/tmtbe/postcat/releases
+https://github.com/tmtbe/netpurr/releases
 
 There is currently no official 1.0 version. We will release version 1.0 once all foundational features are stable and
 ready.

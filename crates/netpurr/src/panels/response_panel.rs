@@ -16,10 +16,8 @@ use crate::panels::response_cookies_panel::ResponseCookiesPanel;
 use crate::panels::response_headers_panel::ResponseHeadersPanel;
 use crate::panels::response_log_panel::ResponseLogPanel;
 use crate::panels::test_result_panel::TestResultPanel;
-use crate::panels::DataView;
 use crate::utils;
 use crate::utils::HighlightValue;
-use crate::windows::cookies_windows::CookiesWindows;
 
 #[derive(Default)]
 pub struct ResponsePanel {
@@ -157,9 +155,6 @@ impl ResponsePanel {
             );
         });
         ui.horizontal(|ui| {
-            if ui.link("Cookies").clicked() {
-                operation.add_window(Box::new(CookiesWindows::default()));
-            };
             ui.link("Code");
         });
         ui.horizontal(|ui| {

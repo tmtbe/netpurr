@@ -41,7 +41,7 @@ impl Window for RequestCloseWindows {
         operation: Operation,
     ) {
         ui.label(format!("This tab `{}` has unsaved changes which will be lost if you choose to close it. Save these changes to avoid losing your work.", self.tab_name));
-        ui.add_space(VERTICAL_GAP * 2.0);
+        ui.add_space(VERTICAL_GAP);
         ui.horizontal(|ui| {
             if ui.button("Don't Save").clicked() {
                 workspace_data.close_crt(self.crt_id.clone());
@@ -86,7 +86,7 @@ impl RequestCloseWindows {
             .open(&mut windows_open)
             .show(ui.ctx(), |ui| {
                 ui.label(format!("This tab `{}` has unsaved changes which will be lost if you choose to close it. Save these changes to avoid losing your work.", self.tab_name));
-                ui.add_space(VERTICAL_GAP * 2.0);
+                ui.add_space(VERTICAL_GAP);
                 ui.horizontal(|ui| {
                     if ui.button("Don't Save").clicked() {
                         workspace_data.close_crt(self.crt_id.clone());

@@ -49,7 +49,7 @@ jobs:
 
       - name: Build Mac
         if: "${{ matrix.os == 'macos-latest' }}"
-        working-directory: ./crates/postcat
+        working-directory: ./crates/netpurr
         run: cargo bundle --release --target ${{ matrix.target }}
 
       - name: Build archive

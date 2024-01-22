@@ -1,6 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use egui::{Context, Event, Visuals};
+use egui::{Context, Event, Frame, Margin, Visuals};
 use log::info;
 use poll_promise::Promise;
 
@@ -8,18 +8,16 @@ use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::bottom_panel::BottomPanel;
-use crate::panels::central_panel::MyCentralPanel;
-use crate::panels::left_panel::MyLeftPanel;
-use crate::panels::right_panel::RightPanel;
+use crate::panels::selected_collection_panel::SelectedCollectionPanel;
+use crate::panels::selected_workspace_panel::SelectedWorkspacePanel;
 use crate::panels::top_panel::TopPanel;
-use crate::panels::DataView;
 
 pub struct App {
     workspace_data: WorkspaceData,
     operation: Operation,
     config_data: ConfigData,
-    left_panel: MyLeftPanel,
-    central_panel: MyCentralPanel,
+    selected_collection_panel: SelectedCollectionPanel,
+    selected_workspace_panel: SelectedWorkspacePanel,
     show_confirmation_dialog: bool,
     allowed_to_close: bool,
     current_workspace: String,
@@ -27,7 +25,6 @@ pub struct App {
     auto_save_time: u64,
     top_panel: TopPanel,
     bottom_panel: BottomPanel,
-    right_panel: RightPanel,
 }
 
 impl App {
@@ -39,12 +36,14 @@ impl App {
         });
         let mut workspace_data = WorkspaceData::default();
         let config_data = ConfigData::load();
-        workspace_data.load_all(config_data.select_workspace().to_string());
+        config_data.select_workspace().map(|workspace| {
+            workspace_data.load_all(workspace);
+        });
         let mut app = App {
             operation: Operation::new(workspace_data.get_cookies_manager()),
             config_data,
-            left_panel: Default::default(),
-            central_panel: Default::default(),
+            selected_collection_panel: Default::default(),
+            selected_workspace_panel: Default::default(),
             show_confirmation_dialog: false,
             allowed_to_close: false,
             current_workspace: "".to_string(),
@@ -53,12 +52,11 @@ impl App {
             auto_save_time: 0,
             top_panel: Default::default(),
             bottom_panel: Default::default(),
-            right_panel: Default::default(),
         };
         app
     }
 
-    pub fn configure_fonts(ctx: &egui::Context) -> Option<()> {
+    pub fn configure_fonts(ctx: &Context) -> Option<()> {
         let font_name = "NotoSansSC-Regular".to_string();
         let font_file_bytes = include_bytes!("./../font/NotoSansSC-Regular.ttf").to_vec();
 
@@ -156,6 +154,37 @@ impl eframe::App for App {
                 &mut self.config_data,
             )
         });
+
+        egui::CentralPanel::default()
+            .frame(Frame {
+                inner_margin: Margin::ZERO,
+                outer_margin: Margin::ZERO,
+                rounding: Default::default(),
+                shadow: Default::default(),
+                fill: Default::default(),
+                stroke: Default::default(),
+            })
+            .show(ctx, |ui| {
+                if self.config_data.select_collection().is_some()
+                    && self.config_data.select_workspace().is_some()
+                {
+                    ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
+                        self.selected_collection_panel.set_and_render(
+                            ui,
+                            &self.operation,
+                            &mut self.workspace_data,
+                            &mut self.config_data,
+                        );
+                    });
+                } else {
+                    self.selected_workspace_panel.set_and_render(
+                        ui,
+                        &self.operation,
+                        &mut self.workspace_data,
+                        &mut self.config_data,
+                    );
+                }
+            });
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             self.bottom_panel.render(
                 ui,
@@ -163,24 +192,6 @@ impl eframe::App for App {
                 self.operation.clone(),
                 &mut self.config_data,
             )
-        });
-        egui::SidePanel::left("left_panel").show(ctx, |ui| {
-            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
-                self.left_panel
-                    .set_and_render(ui, &self.operation, &mut self.workspace_data);
-            });
-        });
-        egui::SidePanel::right("right_panel").show(ctx, |ui| {
-            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
-                self.right_panel
-                    .set_and_render(ui, &self.operation, &mut self.workspace_data);
-            });
-        });
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.add_enabled_ui(!self.operation.get_ui_lock(), |ui| {
-                self.central_panel
-                    .set_and_render(ui, &self.operation, &mut self.workspace_data);
-            });
         });
 
         self.auto_save(ctx);

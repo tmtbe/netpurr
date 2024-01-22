@@ -1,7 +1,3 @@
-use eframe::emath::Align;
-use egui::{Checkbox, Layout, TextEdit, Widget};
-use egui_extras::{Column, TableBuilder};
-
 use crate::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
@@ -16,57 +12,20 @@ impl ResponseHeadersPanel {
     ) {
         let mut crt = workspace_data.must_get_crt(crt_id.clone());
         ui.label("Headers");
-        ui.push_id("response_headers_table", |ui| {
-            let table = TableBuilder::new(ui)
-                .resizable(false)
-                .cell_layout(Layout::left_to_right(Align::Center))
-                .column(Column::auto())
-                .column(Column::exact(20.0))
-                .column(Column::initial(200.0).range(40.0..=300.0))
-                .column(Column::remainder())
-                .min_scrolled_height(200.0);
-            table
-                .header(20.0, |mut header| {
-                    header.col(|ui| {
-                        ui.strong("");
-                    });
-                    header.col(|ui| {
-                        ui.strong("");
-                    });
-                    header.col(|ui| {
-                        ui.strong("KEY");
-                    });
-                    header.col(|ui| {
-                        ui.strong("VALUE");
-                    });
-                })
-                .body(|mut body| {
-                    crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                        for (_, header) in crt
-                            .record
-                            .must_get_mut_rest()
-                            .response
-                            .headers
-                            .iter_mut()
-                            .enumerate()
-                        {
-                            body.row(18.0, |mut row| {
-                                row.col(|ui| {
-                                    ui.add_enabled(false, Checkbox::new(&mut header.enable, ""));
-                                });
-                                row.col(|ui| {});
-                                row.col(|ui| {
-                                    ui.text_edit_singleline(&mut header.key.clone());
-                                });
-                                row.col(|ui| {
-                                    TextEdit::singleline(&mut header.value.clone())
-                                        .desired_width(f32::INFINITY)
-                                        .ui(ui);
-                                });
-                            });
-                        }
-                    });
-                });
-        });
+        egui::Grid::new("response_headers_grid")
+            .striped(true)
+            .min_col_width(100.0)
+            .max_col_width(ui.available_width())
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.strong("Key");
+                ui.strong("Value");
+                ui.end_row();
+                for header in crt.record.must_get_mut_rest().response.headers.iter() {
+                    ui.label(header.key.clone());
+                    ui.label(header.value.clone());
+                    ui.end_row();
+                }
+            });
     }
 }

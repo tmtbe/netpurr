@@ -5,6 +5,8 @@ use std::rc::Rc;
 
 use egui::{Align, Button, Checkbox, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter, EnumString};
 
 use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::collections::{Collection, CollectionFolder};
@@ -12,8 +14,6 @@ use netpurr_core::data::environment::{
     EnvironmentItem, EnvironmentItemValue, EnvironmentValueType,
 };
 use netpurr_core::data::http::Request;
-use strum::IntoEnumIterator;
-use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
@@ -22,7 +22,7 @@ use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
-use crate::panels::{DataView, VERTICAL_GAP};
+use crate::panels::VERTICAL_GAP;
 use crate::utils;
 use crate::utils::HighlightValue;
 

@@ -7,7 +7,7 @@ use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
-use crate::panels::{DataView, HORIZONTAL_GAP, VERTICAL_GAP};
+use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;

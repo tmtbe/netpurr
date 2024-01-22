@@ -20,7 +20,6 @@ use crate::panels::HORIZONTAL_GAP;
 use crate::utils;
 use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
-use crate::windows::cookies_windows::CookiesWindows;
 use crate::windows::save_crt_windows::SaveCRTWindows;
 
 #[derive(Default)]
@@ -360,9 +359,6 @@ impl WebSocketPanel {
             },
             |ui| {
                 ui.horizontal(|ui| {
-                    if ui.link("Cookies").clicked() {
-                        operation.add_window(Box::new(CookiesWindows::default()));
-                    };
                     ui.link("Code");
                 });
             },

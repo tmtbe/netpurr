@@ -5,7 +5,7 @@ involved.
 
 ## Using the issue tracker
 
-[GitHub Issues](https://github.com/tmtbe/postcat/issues) is the preferred channel
+[GitHub Issues](https://github.com/tmtbe/netpurr/issues) is the preferred channel
 for [bug reports](#bug-reports) and [features requests](#feature-requests).
 
 Please respect the following restrictions:

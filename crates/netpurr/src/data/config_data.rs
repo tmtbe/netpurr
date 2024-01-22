@@ -12,7 +12,8 @@ use crate::APP_NAME;
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ConfigData {
-    select_workspace: String,
+    select_workspace: Option<String>,
+    select_collection: Option<String>,
     #[serde(skip, default)]
     workspaces: BTreeMap<String, Workspace>,
 }
@@ -34,8 +35,9 @@ impl Default for ConfigData {
             },
         );
         ConfigData {
-            select_workspace: "default".to_string(),
-            workspaces: workspaces,
+            select_workspace: None,
+            select_collection: None,
+            workspaces,
         }
     }
 }
@@ -96,14 +98,29 @@ impl ConfigData {
             }
         }
     }
-    pub fn select_workspace(&self) -> &str {
-        &self.select_workspace
+    pub fn select_workspace(&self) -> Option<String> {
+        self.select_workspace.clone()
     }
-    pub fn set_select_workspace(&mut self, select_workspace: String) {
+    pub fn select_collection(&self) -> Option<String> {
+        self.select_collection.clone()
+    }
+    pub fn set_select_workspace(&mut self, select_workspace: Option<String>) {
         self.select_workspace = select_workspace;
         self.save();
     }
-
+    pub fn set_select_collection(&mut self, collection: Option<String>) {
+        self.select_collection = collection;
+        self.save();
+    }
+    pub fn set_select_workspace_collection(
+        &mut self,
+        select_workspace: Option<String>,
+        collection: Option<String>,
+    ) {
+        self.select_workspace = select_workspace;
+        self.select_collection = collection;
+        self.save();
+    }
     fn save(&self) -> Result<(), Error> {
         let json = serde_json::to_string(self)?;
         if let Some(home_dir) = dirs::home_dir() {

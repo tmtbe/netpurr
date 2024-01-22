@@ -56,7 +56,7 @@ impl Window for EnvironmentWindows {
 impl EnvironmentWindows {
     fn env_list(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
         ui.label("An environment is a set of variables that allow you to switch the context of your requests. Environments can be shared between multiple workspaces.");
-        ui.add_space(VERTICAL_GAP * 2.0);
+        ui.add_space(VERTICAL_GAP);
         ScrollArea::vertical().show(ui, |ui| {
             for (name, e) in workspace_data.get_env_configs().iter() {
                 if name == ENVIRONMENT_GLOBALS {
@@ -100,7 +100,7 @@ impl EnvironmentWindows {
                 .desired_width(f32::INFINITY)
                 .ui(ui);
         }
-        ui.add_space(VERTICAL_GAP * 2.0);
+        ui.add_space(VERTICAL_GAP);
         let mut delete_index = None;
         ui.push_id("environment_table", |ui| {
             let table = TableBuilder::new(ui)

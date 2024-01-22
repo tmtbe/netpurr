@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-cd ./crates/postcat
+cd ./crates/netpurr
 cargo bundle --release

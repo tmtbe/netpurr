@@ -10,8 +10,9 @@ impl ResponseCookiesPanel {
         ui.label("Cookies");
         egui::Grid::new("response_cookies_grid")
             .striped(true)
-            .min_col_width(10.0)
-            .max_col_width(100.0)
+            .min_col_width(50.0)
+            .max_col_width(ui.available_width() / 4.0)
+            .num_columns(7)
             .show(ui, |ui| {
                 ui.strong("Name");
                 ui.strong("Value");

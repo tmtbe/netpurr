@@ -18,7 +18,6 @@ use crate::operation::operation::Operation;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
 use crate::panels::response_headers_panel::ResponseHeadersPanel;
 use crate::panels::response_log_panel::ResponseLogPanel;
-use crate::panels::DataView;
 use crate::utils;
 use crate::utils::HighlightValue;
 

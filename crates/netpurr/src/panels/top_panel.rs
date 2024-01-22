@@ -23,22 +23,22 @@ impl TopPanel {
     ) {
         ui.add_enabled_ui(!operation.get_ui_lock(), |ui| {
             // The top panel is often a good place for a menu bar:
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("New...").clicked() {}
-                    if ui.button("Import...").clicked() {
-                        operation.add_window(Box::new(ImportWindows::default()))
-                    }
-                    if ui.button("Exit").clicked() {
-                        ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
-                    }
-                });
-                ui.menu_button("View", |ui| {
-                    if ui.button("Zoom In").clicked() {}
-                    if ui.button("Zoom Out").clicked() {}
-                });
-                egui::widgets::global_dark_light_mode_buttons(ui);
-            });
+            // egui::menu::bar(ui, |ui| {
+            //     ui.menu_button("File", |ui| {
+            //         if ui.button("New...").clicked() {}
+            //         if ui.button("Import...").clicked() {
+            //             operation.add_window(Box::new(ImportWindows::default()))
+            //         }
+            //         if ui.button("Exit").clicked() {
+            //             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+            //         }
+            //     });
+            //     ui.menu_button("View", |ui| {
+            //         if ui.button("Zoom In").clicked() {}
+            //         if ui.button("Zoom Out").clicked() {}
+            //     });
+            //     egui::widgets::global_dark_light_mode_buttons(ui);
+            // });
             ui.add_space(HORIZONTAL_GAP);
             egui::ScrollArea::vertical().show(ui, |ui| {
                 ui.horizontal(|ui| {

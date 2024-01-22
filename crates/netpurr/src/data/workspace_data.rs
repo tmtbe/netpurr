@@ -35,6 +35,10 @@ impl WorkspaceData {
         self.collections.borrow().data.get(collection_name).cloned()
     }
 
+    pub fn get_collection_by_name(&self, name: String) -> Option<Collection> {
+        self.collections.borrow().data.get(name.as_str()).cloned()
+    }
+
     pub fn get_folder_with_path(
         &self,
         path: String,
