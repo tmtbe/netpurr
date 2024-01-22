@@ -208,11 +208,11 @@ impl WorkspaceData {
         self.cookies_manager.borrow().get_domain_cookies(domain)
     }
     pub fn remove_cookie_domain(&self, domain: String) {
-        self.cookies_manager.borrow_mut().remove_domain(domain)
+        self.cookies_manager.borrow().remove_domain(domain)
     }
     pub fn remove_cookie_domain_path_name(&mut self, domain: String, path: String, name: String) {
         self.cookies_manager
-            .borrow_mut()
+            .borrow()
             .remove_domain_path_name(domain, path, name)
     }
 

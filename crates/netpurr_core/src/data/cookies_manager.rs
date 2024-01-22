@@ -184,7 +184,7 @@ impl CookiesManager {
         result
     }
 
-    pub fn remove_domain(&mut self, mut domain: String) {
+    pub fn remove_domain(&self, mut domain: String) {
         match self.cookie_store.lock() {
             Ok(mut store) => {
                 store.remove_domain(domain.as_str());
@@ -193,7 +193,7 @@ impl CookiesManager {
             Err(_) => {}
         }
     }
-    pub fn remove_domain_path_name(&mut self, mut domain: String, path: String, name: String) {
+    pub fn remove_domain_path_name(&self, mut domain: String, path: String, name: String) {
         match self.cookie_store.lock() {
             Ok(mut store) => {
                 store.remove(domain.as_str(), path.as_str(), name.as_str());

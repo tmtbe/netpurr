@@ -266,3 +266,10 @@ pub fn selectable_check<Value: PartialEq>(
     }
     response
 }
+
+pub fn add_right_space(ui: &mut Ui, space: f32) {
+    let space = ui.available_width() - space;
+    if space > 0.0 {
+        ui.add_space(space)
+    }
+}

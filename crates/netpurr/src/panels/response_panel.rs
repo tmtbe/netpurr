@@ -19,6 +19,7 @@ use crate::panels::test_result_panel::TestResultPanel;
 use crate::panels::DataView;
 use crate::utils;
 use crate::utils::HighlightValue;
+use crate::windows::cookies_windows::CookiesWindows;
 
 #[derive(Default)]
 pub struct ResponsePanel {
@@ -126,61 +127,59 @@ impl ResponsePanel {
         data: &CentralRequestItem,
         cookies: BTreeMap<String, Cookie>,
     ) {
-        utils::left_right_panel(
-            ui,
-            "response".to_string(),
-            |ui| {
-                ui.horizontal(|ui| {
-                    for response_panel_enum in ResponsePanelEnum::iter() {
-                        ui.selectable_value(
-                            &mut self.open_panel_enum,
-                            response_panel_enum.clone(),
-                            utils::build_with_count_ui_header(
-                                response_panel_enum.to_string(),
-                                ResponsePanel::get_count(
-                                    &data.record.must_get_rest().response,
-                                    &cookies,
-                                    &data.test_result,
-                                    response_panel_enum,
-                                ),
-                                ui,
-                            ),
-                        );
-                    }
-                });
-            },
-            |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Status:");
-                    ui.label(
-                        RichText::new(data.record.must_get_rest().response.status.to_string())
-                            .color(ui.visuals().warn_fg_color)
-                            .strong(),
-                    );
+        ui.horizontal(|ui| {
+            ui.label("Status:");
+            ui.label(
+                RichText::new(data.record.must_get_rest().response.status.to_string())
+                    .color(ui.visuals().warn_fg_color)
+                    .strong(),
+            );
 
-                    ui.label("Time:");
-                    ui.label(
-                        RichText::new(
-                            data.record
-                                .must_get_rest()
-                                .response
-                                .elapsed_time
-                                .to_string()
-                                + "ms",
-                        )
-                        .color(ui.visuals().warn_fg_color)
-                        .strong(),
-                    );
+            ui.label("Time:");
+            ui.label(
+                RichText::new(
+                    data.record
+                        .must_get_rest()
+                        .response
+                        .elapsed_time
+                        .to_string()
+                        + "ms",
+                )
+                .color(ui.visuals().warn_fg_color)
+                .strong(),
+            );
 
-                    ui.label("Size:");
-                    ui.label(
-                        RichText::new(data.record.must_get_rest().response.body.get_byte_size())
-                            .color(ui.visuals().warn_fg_color)
-                            .strong(),
-                    );
-                });
-            },
-        );
+            ui.label("Size:");
+            ui.label(
+                RichText::new(data.record.must_get_rest().response.body.get_byte_size())
+                    .color(ui.visuals().warn_fg_color)
+                    .strong(),
+            );
+        });
+        ui.horizontal(|ui| {
+            if ui.link("Cookies").clicked() {
+                operation.add_window(Box::new(CookiesWindows::default()));
+            };
+            ui.link("Code");
+        });
+        ui.horizontal(|ui| {
+            for response_panel_enum in ResponsePanelEnum::iter() {
+                ui.selectable_value(
+                    &mut self.open_panel_enum,
+                    response_panel_enum.clone(),
+                    utils::build_with_count_ui_header(
+                        response_panel_enum.to_string(),
+                        ResponsePanel::get_count(
+                            &data.record.must_get_rest().response,
+                            &cookies,
+                            &data.test_result,
+                            response_panel_enum,
+                        ),
+                        ui,
+                    ),
+                );
+            }
+        });
         ui.separator();
         match self.open_panel_enum {
             ResponsePanelEnum::Body => {

@@ -23,7 +23,7 @@ fn main() -> eframe::Result<()> {
             .with_icon(Arc::new(
                 from_png_bytes(&include_bytes!("../icon/icon128.png")[..]).expect("png get error"),
             ))
-            .with_inner_size([1000.0, 500.0])
+            .with_inner_size([1500.0, 600.0])
             .with_min_inner_size([800.0, 400.0]),
         ..Default::default()
     };

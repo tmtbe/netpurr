@@ -2,6 +2,7 @@ use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 
 pub mod auth_panel;
+pub mod bottom_panel;
 pub mod central_panel;
 pub mod collections_panel;
 pub mod history_panel;
@@ -18,8 +19,10 @@ pub mod response_headers_panel;
 pub mod response_log_panel;
 pub mod response_panel;
 pub mod rest_panel;
+pub mod right_panel;
 pub mod test_result_panel;
 pub mod test_script_panel;
+pub mod top_panel;
 pub mod websocket_content_panel;
 pub mod websocket_event_panel;
 pub mod websocket_panel;

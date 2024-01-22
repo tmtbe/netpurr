@@ -1,9 +1,5 @@
 use std::collections::BTreeMap;
 
-use eframe::emath::Align;
-use egui::{Layout, TextEdit, Widget};
-use egui_extras::{Column, TableBuilder};
-
 use netpurr_core::data::cookies_manager::Cookie;
 
 #[derive(Default)]
@@ -12,71 +8,29 @@ pub struct ResponseCookiesPanel {}
 impl ResponseCookiesPanel {
     pub fn set_and_render(&mut self, ui: &mut egui::Ui, cookies: &BTreeMap<String, Cookie>) {
         ui.label("Cookies");
-        ui.push_id("response_cookies_table", |ui| {
-            let table = TableBuilder::new(ui)
-                .resizable(false)
-                .cell_layout(Layout::left_to_right(Align::Center))
-                .column(Column::initial(200.0).range(100.0..=300.0))
-                .column(Column::initial(200.0).range(100.0..=300.0))
-                .column(Column::initial(200.0).range(100.0..=300.0))
-                .column(Column::initial(50.0).range(50.0..=100.0))
-                .column(Column::initial(100.0).range(50.0..=100.0))
-                .column(Column::initial(50.0).range(50.0..=100.0))
-                .column(Column::remainder())
-                .min_scrolled_height(200.0);
-            table
-                .header(20.0, |mut header| {
-                    header.col(|ui| {
-                        ui.strong("Name");
-                    });
-                    header.col(|ui| {
-                        ui.strong("Value");
-                    });
-                    header.col(|ui| {
-                        ui.strong("Domain");
-                    });
-                    header.col(|ui| {
-                        ui.strong("Path");
-                    });
-                    header.col(|ui| {
-                        ui.strong("Expires");
-                    });
-                    header.col(|ui| {
-                        ui.strong("HttpOnly");
-                    });
-                    header.col(|ui| {
-                        ui.strong("Secure");
-                    });
-                })
-                .body(|mut body| {
-                    for (_, cookie) in cookies {
-                        body.row(18.0, |mut row| {
-                            row.col(|ui| {
-                                ui.text_edit_singleline(&mut cookie.name.clone());
-                            });
-                            row.col(|ui| {
-                                ui.text_edit_singleline(&mut cookie.value.clone());
-                            });
-                            row.col(|ui| {
-                                ui.text_edit_singleline(&mut cookie.domain.clone());
-                            });
-                            row.col(|ui| {
-                                ui.text_edit_singleline(&mut cookie.path.clone());
-                            });
-                            row.col(|ui| {
-                                ui.text_edit_singleline(&mut cookie.expires.clone());
-                            });
-                            row.col(|ui| {
-                                ui.text_edit_singleline(&mut cookie.http_only.to_string());
-                            });
-                            row.col(|ui| {
-                                TextEdit::singleline(&mut cookie.secure.to_string())
-                                    .desired_width(f32::INFINITY)
-                                    .ui(ui);
-                            });
-                        });
-                    }
-                });
-        });
+        egui::Grid::new("response_cookies_grid")
+            .striped(true)
+            .min_col_width(10.0)
+            .max_col_width(100.0)
+            .show(ui, |ui| {
+                ui.strong("Name");
+                ui.strong("Value");
+                ui.strong("Domain");
+                ui.strong("Path");
+                ui.strong("Expires");
+                ui.strong("HttpOnly");
+                ui.strong("Secure");
+                ui.end_row();
+                for (_, cookie) in cookies {
+                    ui.label(cookie.name.clone());
+                    ui.label(cookie.value.clone());
+                    ui.label(cookie.domain.clone());
+                    ui.label(cookie.path.clone());
+                    ui.label(cookie.expires.clone());
+                    ui.label(cookie.http_only.to_string());
+                    ui.label(cookie.secure.to_string());
+                    ui.end_row();
+                }
+            });
     }
 }

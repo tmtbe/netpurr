@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
 
 use poll_promise::Promise;
 use reqwest::blocking::Client;
 
+use reqwest_cookie_store::CookieStoreMutex;
 use rest::RestSender;
 
-use crate::data::cookies_manager::CookiesManager;
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::Request;
 use crate::data::logger::Logger;
@@ -26,11 +27,11 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn new(cookies_manager: CookiesManager) -> Self {
+    pub fn new(cookie_store: Arc<CookieStoreMutex>) -> Self {
         Runner {
             script_runtime: Default::default(),
             client: Client::builder()
-                .cookie_provider(cookies_manager.cookie_store.clone())
+                .cookie_provider(cookie_store)
                 .trust_dns(true)
                 .tcp_nodelay(true)
                 .timeout(Duration::from_secs(60))

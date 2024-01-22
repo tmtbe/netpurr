@@ -17,13 +17,11 @@ use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
-use crate::panels::response_panel::ResponsePanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::{DataView, HORIZONTAL_GAP};
 use crate::utils;
 use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
-use crate::windows::cookies_windows::CookiesWindows;
 use crate::windows::save_crt_windows::SaveCRTWindows;
 
 #[derive(Default)]
@@ -33,7 +31,6 @@ pub struct RestPanel {
     auth_panel: AuthPanel,
     request_headers_panel: RequestHeadersPanel,
     request_body_panel: RequestBodyPanel,
-    response_panel: ResponsePanel,
     request_pre_script_panel: RequestPreScriptPanel,
     test_script_panel: TestScriptPanel,
     send_promise:
@@ -81,10 +78,9 @@ impl RestPanel {
             ui.separator();
         });
         self.send_promise(ui, workspace_data, operation, crt_id.clone());
-        self.render_request_open_panel(ui, operation, workspace_data, crt_id.clone());
-        ui.separator();
-        self.response_panel
-            .set_and_render(ui, operation, workspace_data, crt_id.clone());
+        egui::ScrollArea::horizontal().show(ui, |ui| {
+            self.render_request_open_panel(ui, operation, workspace_data, crt_id.clone());
+        });
     }
     fn get_count(
         hr: &HttpRecord,
@@ -290,7 +286,7 @@ impl RestPanel {
         match self.open_request_panel_enum {
             RequestPanelEnum::Params => {
                 self.request_params_panel
-                    .set_and_render(ui, workspace_data, crt_id.clone())
+                    .set_and_render(ui, workspace_data, crt_id.clone());
             }
             RequestPanelEnum::Authorization => {
                 let mut parent_auth = None;
@@ -311,7 +307,7 @@ impl RestPanel {
             }
             RequestPanelEnum::Headers => {
                 self.request_headers_panel
-                    .set_and_render(ui, workspace_data, crt_id.clone())
+                    .set_and_render(ui, workspace_data, crt_id.clone());
             }
             RequestPanelEnum::Body => self.request_body_panel.set_and_render(
                 ui,
@@ -414,32 +410,20 @@ impl RestPanel {
     ) {
         let mut crt = workspace_data.must_get_crt(crt_id.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(crt_id.clone());
-        utils::left_right_panel(
-            ui,
-            "rest_middle_select_label".to_string(),
-            |ui| {
-                ui.horizontal(|ui| {
-                    for x in RequestPanelEnum::iter() {
-                        ui.selectable_value(
-                            &mut self.open_request_panel_enum,
-                            x.clone(),
-                            utils::build_with_count_ui_header(
-                                x.to_string(),
-                                RestPanel::get_count(crt.record.must_get_rest(), x, &parent_auth),
-                                ui,
-                            ),
-                        );
-                    }
-                });
-            },
-            |ui| {
-                ui.horizontal(|ui| {
-                    if ui.link("Cookies").clicked() {
-                        operation.add_window(Box::new(CookiesWindows::default()));
-                    };
-                    ui.link("Code");
-                });
-            },
-        );
+        egui::scroll_area::ScrollArea::horizontal().show(ui, |ui| {
+            ui.horizontal(|ui| {
+                for x in RequestPanelEnum::iter() {
+                    ui.selectable_value(
+                        &mut self.open_request_panel_enum,
+                        x.clone(),
+                        utils::build_with_count_ui_header(
+                            x.to_string(),
+                            RestPanel::get_count(crt.record.must_get_rest(), x, &parent_auth),
+                            ui,
+                        ),
+                    );
+                }
+            });
+        });
     }
 }

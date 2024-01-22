@@ -52,7 +52,7 @@ impl Operation {
     pub fn new(cookies_manager: CookiesManager) -> Self {
         Operation {
             lock_ui: Default::default(),
-            runner: Runner::new(cookies_manager),
+            runner: Runner::new(cookies_manager.cookie_store.clone()),
             modal_flag: Rc::new(RefCell::new(ModalFlag::default())),
             toasts: Rc::new(RefCell::new(
                 Toasts::default()
