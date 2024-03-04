@@ -9,6 +9,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 use crate::data::config_data::ConfigData;
 use crate::data::export::{Export, ExportType};
 use crate::data::workspace_data::WorkspaceData;
+use crate::import::openapi::OpenApi;
 use crate::import::postman::Postman;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
@@ -72,7 +73,7 @@ impl Window for ImportWindows {
                     ui.label("Drag and drop Netpurr data or any of the formats below");
                 });
                 ui.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
-                    ui.label("Postman");
+                    ui.label("Postman / OpenAPI");
                     ui.label("OR");
                     if ui.button("Upload Files").clicked() {
                         if let Some(path) = rfd::FileDialog::new().pick_file() {
@@ -164,10 +165,24 @@ impl ImportWindows {
     }
 
     fn import_postman(content: String, workspace_data: &mut WorkspaceData, operation: &Operation) {
-        let postman_result: Result<Postman, serde_json::Error> =
-            serde_json::from_str(content.as_str());
+        let postman_result = Postman::try_import(content.clone());
         match postman_result {
             Ok(postman) => match postman.to_collection() {
+                Ok(collection) => {
+                    let new_name = workspace_data.import_collection(collection);
+                    operation
+                        .add_success_toast(format!("Import collections `{}` success.", new_name));
+                }
+                Err(_) => Self::import_openapi(content, workspace_data, operation),
+            },
+            Err(_) => Self::import_openapi(content, workspace_data, operation),
+        }
+    }
+
+    fn import_openapi(content: String, workspace_data: &mut WorkspaceData, operation: &Operation) {
+        let openapi_result = OpenApi::try_import(content.clone());
+        match openapi_result {
+            Ok(openapi) => match openapi.to_collection() {
                 Ok(collection) => {
                     let new_name = workspace_data.import_collection(collection);
                     operation

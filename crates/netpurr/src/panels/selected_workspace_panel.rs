@@ -39,7 +39,10 @@ impl SelectedWorkspacePanel {
                         operation,
                     );
                     ui.add_space(HORIZONTAL_GAP * 4.0);
-                    for name in workspace_data.get_collection_names().iter() {
+                    let mut collection_names: Vec<String> =
+                        workspace_data.get_collection_names().into_iter().collect();
+                    collection_names.sort();
+                    for name in collection_names {
                         MatrixLabel::new(MatrixLabelType::Collection(name.to_string())).render(
                             ui,
                             workspace_data,
@@ -79,6 +82,10 @@ impl SelectedWorkspacePanel {
                             });
                             let workspaces = config_data.workspaces().clone();
                             for (name, _) in workspaces.iter() {
+                                if self.current_workspace.is_none() {
+                                    self.current_workspace = Some(name.clone());
+                                    config_data.set_select_workspace(Some(name.clone()));
+                                }
                                 if utils::select_value(
                                     ui,
                                     &mut self.current_workspace,
@@ -95,6 +102,9 @@ impl SelectedWorkspacePanel {
                 });
             });
         egui::CentralPanel::default().show_inside(ui, |ui| {
+            if self.selected_type.is_none() {
+                self.selected_type = Some("Collections".to_string())
+            }
             utils::select_value(
                 ui,
                 &mut self.selected_type,

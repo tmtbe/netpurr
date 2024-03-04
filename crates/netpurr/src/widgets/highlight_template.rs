@@ -2,12 +2,12 @@ use std::collections::BTreeMap;
 
 use eframe::emath::pos2;
 use egui::ahash::HashSet;
-use egui::text::{CCursor, CCursorRange};
-use egui::text_edit::{CursorRange, TextEditState};
+use egui::text::{CCursor, CCursorRange, CursorRange};
+use egui::text_edit::TextEditState;
 use egui::{Context, Id, Pos2, Response, RichText, TextBuffer, TextEdit, Ui, Widget};
+use serde::{Deserialize, Serialize};
 
 use netpurr_core::data::environment::EnvironmentItemValue;
-use serde::{Deserialize, Serialize};
 
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
@@ -198,7 +198,7 @@ impl Widget for HighlightTemplate<'_> {
             };
             hts_state.store(ui.ctx(), response.id);
         });
-        if let Some(value) = self.popup(ui, output.text_draw_pos.clone(), response.clone()) {
+        if let Some(value) = self.popup(ui, output.galley_pos.clone(), response.clone()) {
             return value;
         }
         response

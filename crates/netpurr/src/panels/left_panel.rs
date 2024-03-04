@@ -11,6 +11,7 @@ use crate::panels::history_panel::HistoryPanel;
 use crate::panels::VERTICAL_GAP;
 use crate::windows::cookies_windows::CookiesWindows;
 use crate::windows::environment_windows::EnvironmentWindows;
+use crate::windows::new_collection_windows::NewCollectionWindows;
 
 #[derive(PartialEq, Eq)]
 enum Panel {
@@ -20,7 +21,7 @@ enum Panel {
 
 impl Default for Panel {
     fn default() -> Self {
-        Self::History
+        Self::Collection
     }
 }
 
@@ -42,6 +43,8 @@ impl MyLeftPanel {
         workspace_data: &mut WorkspaceData,
         config_data: &mut ConfigData,
     ) {
+        let collection = workspace_data
+            .get_collection_by_name(config_data.select_collection().unwrap_or_default());
         egui::TopBottomPanel::top("left_top_panel")
             .resizable(false)
             .show_inside(ui, |ui| {
@@ -50,7 +53,14 @@ impl MyLeftPanel {
                         config_data.set_select_collection(None);
                     }
                     ui.separator();
-                    ui.strong(config_data.select_collection().unwrap_or_default());
+                    if ui
+                        .link(config_data.select_collection().unwrap_or_default())
+                        .clicked()
+                    {
+                        operation.add_window(Box::new(
+                            NewCollectionWindows::default().with_open_collection(collection),
+                        ));
+                    }
                 });
                 ui.separator();
                 egui::ComboBox::from_id_source("environment")
@@ -97,8 +107,8 @@ impl MyLeftPanel {
             });
         egui::CentralPanel::default().show_inside(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.selectable_value(&mut self.open_panel, Panel::History, "History");
                 ui.selectable_value(&mut self.open_panel, Panel::Collection, "Collection");
+                ui.selectable_value(&mut self.open_panel, Panel::History, "History");
             });
             ScrollArea::vertical().show(ui, |ui| match self.open_panel {
                 Panel::History => {

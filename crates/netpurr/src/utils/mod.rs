@@ -44,8 +44,8 @@ pub fn build_rest_ui_header(record: Record, max_char: Option<usize>, ui: &Ui) ->
             None => {}
             Some(size) => {
                 if new_name.len() > size {
-                    let len = min(new_name.len() - 1, size);
-                    new_name = new_name.as_str()[0..len].to_string() + "...";
+                    let len = min(new_name.chars().count() - 1, size);
+                    new_name = new_name.chars().take(len).collect::<String>() + "...";
                 }
             }
         }

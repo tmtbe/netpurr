@@ -8,6 +8,7 @@ pub fn js_syntax() -> Syntax {
         case_sensitive: true,
         comment: "//",
         comment_multiline: ["/*", "*/"],
+        hyperlinks: Default::default(),
         keywords: BTreeSet::from([
             // ES3 Keywords
             "break",
@@ -96,6 +97,7 @@ pub fn log_syntax() -> Syntax {
         case_sensitive: false,
         comment: "//",
         comment_multiline: ["/*", "*/"],
+        hyperlinks: Default::default(),
         keywords: BTreeSet::from(["log", "Info", "Warn", "Error"]),
         types: BTreeSet::from([]),
         special: BTreeSet::from([]),
