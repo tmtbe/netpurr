@@ -43,6 +43,7 @@ impl Default for WebSocketRecord {
                 status: Default::default(),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
+                operation_id: None,
             },
             select_message_type: Default::default(),
             retain_content: "".to_string(),

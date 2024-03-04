@@ -38,6 +38,7 @@ impl Postman {
                 envs: EnvironmentConfig {
                     items: self.variable.iter().map(|v| v.to()).collect(),
                 },
+                openapi: None,
                 folder: Rc::new(RefCell::new(CollectionFolder {
                     name: self.info.name.clone(),
                     parent_path: ".".to_string(),

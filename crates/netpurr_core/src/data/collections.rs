@@ -1,3 +1,4 @@
+use openapiv3::OpenAPI;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -257,6 +258,7 @@ impl Collections {
 #[serde(default)]
 pub struct Collection {
     pub envs: EnvironmentConfig,
+    pub openapi: Option<OpenAPI>,
     pub folder: Rc<RefCell<CollectionFolder>>,
 }
 
@@ -264,6 +266,7 @@ impl Default for Collection {
     fn default() -> Self {
         Collection {
             envs: Default::default(),
+            openapi: None,
             folder: Rc::new(RefCell::new(CollectionFolder {
                 name: "".to_string(),
                 parent_path: "".to_string(),

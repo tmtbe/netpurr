@@ -29,6 +29,7 @@ pub struct HttpRecord {
     pub status: ResponseStatus,
     pub pre_request_script: String,
     pub test_script: String,
+    pub operation_id: Option<String>,
 }
 
 impl HttpRecord {

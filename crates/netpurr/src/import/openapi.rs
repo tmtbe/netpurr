@@ -4,14 +4,18 @@ use std::rc::Rc;
 use std::string::ToString;
 
 use anyhow::anyhow;
-use openapiv3::{OpenAPI, Operation, Parameter, Tag};
+use openapiv3::{
+    MediaType, OpenAPI, Operation, Parameter, ReferenceOr, RequestBody, Schema, SchemaKind,
+    StringFormat, Tag, Type, VariantOrUnknownOrEmpty,
+};
 use regex::Regex;
 
 use netpurr_core::data::auth::Auth;
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::environment::{EnvironmentConfig, EnvironmentItem};
 use netpurr_core::data::http::{
-    Header, HttpBody, HttpRecord, Method, QueryParam, Request, RequestSchema,
+    BodyRawType, BodyType, Header, HttpBody, HttpRecord, Method, MultipartData, MultipartDataType,
+    QueryParam, Request, RequestSchema,
 };
 use netpurr_core::data::record::Record;
 
@@ -73,6 +77,7 @@ impl OpenApi {
                     value_type: Default::default(),
                 }],
             },
+            openapi: Some(self.source.clone()),
             folder: Rc::new(RefCell::new(CollectionFolder {
                 name: self.source.info.title.to_string(),
                 parent_path: ".".to_string(),
@@ -164,6 +169,7 @@ impl OpenApi {
                 Record::Rest(HttpRecord {
                     name: op.operation.summary.clone().unwrap_or_default(),
                     desc: op.operation.description.clone().unwrap_or_default(),
+                    operation_id: op.operation.operation_id.clone(),
                     request: Request {
                         method: op.method.clone(),
                         schema: schema.clone(),
@@ -208,7 +214,7 @@ impl OpenApi {
                                 enable: true,
                             })
                             .collect(),
-                        body: HttpBody::default(),
+                        body: Self::gen_http_body(op.operation.request_body.clone()),
                         auth: Auth::default(),
                     },
                     ..Default::default()
@@ -222,6 +228,87 @@ impl OpenApi {
             result.insert(http_record.name(), record_clone);
         }
         result
+    }
+
+    fn gen_http_body(option: Option<ReferenceOr<RequestBody>>) -> HttpBody {
+        let mut body = HttpBody::default();
+        match option {
+            None => body,
+            Some(rr) => match rr.as_item() {
+                None => body,
+                Some(r) => {
+                    for (name, mt) in r.content.iter() {
+                        match name.to_lowercase().as_str() {
+                            "application/json" => {
+                                body.body_type = BodyType::RAW;
+                                body.body_raw_type = BodyRawType::JSON
+                            }
+                            "multipart/form-data" => {
+                                body.body_type = BodyType::FROM_DATA;
+                                match mt.schema.clone() {
+                                    None => {}
+                                    Some(rs) => match rs.as_item() {
+                                        None => {}
+                                        Some(s) => match s.schema_kind.clone() {
+                                            SchemaKind::Type(t) => match t {
+                                                Type::Object(o) => {
+                                                    for (name, rs) in o.properties.iter() {
+                                                        match rs.as_item() {
+                                                            None => {}
+                                                            Some(s) => {
+                                                                match s.schema_kind.clone() {
+                                                                    SchemaKind::Type(t) => match t {
+                                                                        Type::String(s) => {
+                                                                            match s.format {
+                                                                            VariantOrUnknownOrEmpty::Item(sf) => {
+                                                                                match sf {
+                                                                                    StringFormat::Binary => {
+                                                                                        body.body_form_data.push(MultipartData {
+                                                                                            data_type: MultipartDataType::FILE,
+                                                                                            key: name.clone(),
+                                                                                            value: "".to_string(),
+                                                                                            desc: "".to_string(),
+                                                                                            lock_with: Default::default(),
+                                                                                            enable: false,
+                                                                                        })
+                                                                                    },
+                                                                                    _=>{
+                                                                                        body.body_form_data.push(MultipartData {
+                                                                                            data_type: MultipartDataType::TEXT,
+                                                                                            key: name.clone(),
+                                                                                            value: "".to_string(),
+                                                                                            desc: "".to_string(),
+                                                                                            lock_with: Default::default(),
+                                                                                            enable: false,
+                                                                                        })
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                          _ => {}
+                                                                        }
+                                                                        }
+                                                                        _ => {}
+                                                                    },
+                                                                    _ => {}
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                _ => {}
+                                            },
+                                            _ => {}
+                                        },
+                                    },
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    return body;
+                }
+            },
+        }
     }
 
     fn gen_raw_path(op: &OpenApiOperation) -> String {
