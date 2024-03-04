@@ -4,11 +4,15 @@ use std::rc::Rc;
 use std::string::ToString;
 
 use anyhow::anyhow;
+use base64::engine::general_purpose;
+use base64::Engine;
+use openapiv3::Type::Object;
 use openapiv3::{
-    MediaType, OpenAPI, Operation, Parameter, ReferenceOr, RequestBody, Schema, SchemaKind,
-    StringFormat, Tag, Type, VariantOrUnknownOrEmpty,
+    Components, MediaType, ObjectType, OpenAPI, Operation, Parameter, ReferenceOr, RequestBody,
+    Schema, SchemaKind, StringFormat, Tag, Type, VariantOrUnknownOrEmpty,
 };
 use regex::Regex;
+use serde_json::{json, Value};
 
 use netpurr_core::data::auth::Auth;
 use netpurr_core::data::collections::{Collection, CollectionFolder};
@@ -84,11 +88,8 @@ impl OpenApi {
                 desc: self.source.info.description.clone().unwrap_or_default(),
                 auth: Default::default(),
                 is_root: true,
-                requests: Self::gen_requests(
-                    tag_map.get(DEFAULT_TAG).unwrap(),
-                    RequestSchema::HTTP,
-                ),
-                folders: Self::gen_folders(tag_map, self.source.tags.clone()),
+                requests: self.gen_requests(tag_map.get(DEFAULT_TAG).unwrap(), RequestSchema::HTTP),
+                folders: self.gen_folders(tag_map, self.source.tags.clone()),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
             })),
@@ -124,6 +125,7 @@ impl OpenApi {
         }
     }
     pub fn gen_folders(
+        &self,
         tag_map: HashMap<String, Vec<OpenApiOperation>>,
         tags: Vec<Tag>,
     ) -> BTreeMap<String, Rc<RefCell<CollectionFolder>>> {
@@ -147,7 +149,7 @@ impl OpenApi {
                     .unwrap_or_default(),
                 auth: Default::default(),
                 is_root: false,
-                requests: Self::gen_requests(records, RequestSchema::HTTP),
+                requests: self.gen_requests(records, RequestSchema::HTTP),
                 folders: Default::default(),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
@@ -160,6 +162,7 @@ impl OpenApi {
         result
     }
     pub fn gen_requests(
+        &self,
         operations: &Vec<OpenApiOperation>,
         schema: RequestSchema,
     ) -> BTreeMap<String, Record> {
@@ -214,7 +217,7 @@ impl OpenApi {
                                 enable: true,
                             })
                             .collect(),
-                        body: Self::gen_http_body(op.operation.request_body.clone()),
+                        body: self.gen_http_body(op.operation.request_body.clone()),
                         auth: Auth::default(),
                     },
                     ..Default::default()
@@ -230,7 +233,7 @@ impl OpenApi {
         result
     }
 
-    fn gen_http_body(option: Option<ReferenceOr<RequestBody>>) -> HttpBody {
+    fn gen_http_body(&self, option: Option<ReferenceOr<RequestBody>>) -> HttpBody {
         let mut body = HttpBody::default();
         match option {
             None => body,
@@ -241,72 +244,155 @@ impl OpenApi {
                         match name.to_lowercase().as_str() {
                             "application/json" => {
                                 body.body_type = BodyType::RAW;
-                                body.body_raw_type = BodyRawType::JSON
+                                body.body_raw_type = BodyRawType::JSON;
+                                match mt.schema.clone() {
+                                    None => {}
+                                    Some(rs) => {
+                                        let json = self.gen_schema(self.get_schema(&rs));
+                                        match json {
+                                            None => {}
+                                            Some(s) => {
+                                                body.body_str =
+                                                    serde_json::to_string_pretty(&s).unwrap();
+                                                body.base64 = general_purpose::STANDARD
+                                                    .encode(body.body_str.clone())
+                                                    .to_string()
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             "multipart/form-data" => {
                                 body.body_type = BodyType::FROM_DATA;
-                                match mt.schema.clone() {
-                                    None => {}
-                                    Some(rs) => match rs.as_item() {
-                                        None => {}
-                                        Some(s) => match s.schema_kind.clone() {
-                                            SchemaKind::Type(t) => match t {
-                                                Type::Object(o) => {
-                                                    for (name, rs) in o.properties.iter() {
-                                                        match rs.as_item() {
-                                                            None => {}
-                                                            Some(s) => {
-                                                                match s.schema_kind.clone() {
-                                                                    SchemaKind::Type(t) => match t {
-                                                                        Type::String(s) => {
-                                                                            match s.format {
-                                                                            VariantOrUnknownOrEmpty::Item(sf) => {
-                                                                                match sf {
-                                                                                    StringFormat::Binary => {
-                                                                                        body.body_form_data.push(MultipartData {
-                                                                                            data_type: MultipartDataType::FILE,
-                                                                                            key: name.clone(),
-                                                                                            value: "".to_string(),
-                                                                                            desc: "".to_string(),
-                                                                                            lock_with: Default::default(),
-                                                                                            enable: false,
-                                                                                        })
-                                                                                    },
-                                                                                    _=>{
-                                                                                        body.body_form_data.push(MultipartData {
-                                                                                            data_type: MultipartDataType::TEXT,
-                                                                                            key: name.clone(),
-                                                                                            value: "".to_string(),
-                                                                                            desc: "".to_string(),
-                                                                                            lock_with: Default::default(),
-                                                                                            enable: false,
-                                                                                        })
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                          _ => {}
-                                                                        }
-                                                                        }
-                                                                        _ => {}
-                                                                    },
-                                                                    _ => {}
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                _ => {}
-                                            },
-                                            _ => {}
-                                        },
-                                    },
-                                }
+                                Self::gen_multipart_body(&mut body, mt);
                             }
                             _ => {}
                         }
                     }
                     return body;
                 }
+            },
+        }
+    }
+    fn get_schema(&self, rs: &ReferenceOr<Schema>) -> Schema {
+        return match rs {
+            ReferenceOr::Reference { reference } => self.get_schema_with_ref(reference.clone()),
+            ReferenceOr::Item(s) => s.clone(),
+        };
+    }
+    fn get_schema_box(&self, rs: &ReferenceOr<Box<Schema>>) -> Schema {
+        return match rs {
+            ReferenceOr::Reference { reference } => self.get_schema_with_ref(reference.clone()),
+            ReferenceOr::Item(s) => *s.clone(),
+        };
+    }
+
+    fn get_schema_with_ref(&self, ref_name: String) -> Schema {
+        let default = Schema {
+            schema_data: Default::default(),
+            schema_kind: openapiv3::SchemaKind::Type(Object(ObjectType::default())),
+        };
+        return match self.source.components.clone() {
+            None => default,
+            Some(c) => {
+                let s_name = ref_name.trim_start_matches("#/components/schemas/");
+                let find = c.schemas.get(s_name);
+                match find {
+                    None => default,
+                    Some(rs) => self.get_schema(rs),
+                }
+            }
+        };
+    }
+    fn gen_schema(&self, s: Schema) -> Option<Value> {
+        return match s.schema_kind.clone() {
+            SchemaKind::Type(t) => match t {
+                Type::Object(ot) => {
+                    let mut json_tree = json!({});
+                    for (name, rs) in ot.properties.iter() {
+                        let json_child = self.gen_schema(self.get_schema_box(rs));
+                        match json_child {
+                            None => {}
+                            Some(child) => {
+                                json_tree
+                                    .as_object_mut()
+                                    .unwrap()
+                                    .insert(name.clone(), child);
+                            }
+                        }
+                    }
+                    Some(json_tree)
+                }
+                Type::Array(at) => {
+                    let mut json_tree = json!([]);
+                    match at.items {
+                        None => {}
+                        Some(rs) => {
+                            let json_child = self.gen_schema(self.get_schema_box(&rs));
+                            match json_child {
+                                None => {}
+                                Some(child) => json_tree.as_array_mut().unwrap().push(child),
+                            }
+                        }
+                    }
+                    Some(json_tree)
+                }
+                Type::String(_) => Some(json!("string")),
+                Type::Number(_) => Some(json!(10000)),
+                Type::Integer(_) => Some(json!(10)),
+                Type::Boolean(_) => Some(json!(true)),
+            },
+            _ => None,
+        };
+    }
+
+    fn gen_multipart_body(body: &mut HttpBody, mt: &MediaType) {
+        match mt.schema.clone() {
+            None => {}
+            Some(rs) => match rs.as_item() {
+                None => {}
+                Some(s) => match s.schema_kind.clone() {
+                    SchemaKind::Type(t) => match t {
+                        Type::Object(o) => {
+                            for (name, rs) in o.properties.iter() {
+                                match rs.as_item() {
+                                    None => {}
+                                    Some(s) => match s.schema_kind.clone() {
+                                        SchemaKind::Type(t) => match t {
+                                            Type::String(s) => match s.format {
+                                                VariantOrUnknownOrEmpty::Item(sf) => match sf {
+                                                    StringFormat::Binary => {
+                                                        body.body_form_data.push(MultipartData {
+                                                            data_type: MultipartDataType::FILE,
+                                                            key: name.clone(),
+                                                            value: "".to_string(),
+                                                            desc: "".to_string(),
+                                                            lock_with: Default::default(),
+                                                            enable: false,
+                                                        })
+                                                    }
+                                                    _ => body.body_form_data.push(MultipartData {
+                                                        data_type: MultipartDataType::TEXT,
+                                                        key: name.clone(),
+                                                        value: "".to_string(),
+                                                        desc: "".to_string(),
+                                                        lock_with: Default::default(),
+                                                        enable: false,
+                                                    }),
+                                                },
+                                                _ => {}
+                                            },
+                                            _ => {}
+                                        },
+                                        _ => {}
+                                    },
+                                }
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                },
             },
         }
     }
