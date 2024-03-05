@@ -8,6 +8,7 @@ With Netpurr you can:
 * **Debug APIs** using the most popular protocols and formats.
 * **Test APIs** using `JavaScript`.
 * **Build CI/CD** pipelines using the native `Netpurr` CLI for linting and testing.(Coming soon)
+* **Support OpenAPI and Postman import** .
 * **Design APIs** using the native OpenAPI editor and visual preview.(Planned support)
 * **Mock APIs** (Planned support)
 * **Collaborate with others** using the `git` to share your projects.
@@ -31,7 +32,7 @@ And a lot more!
 * Real-time rendering of environment variables.
 * Introduced `deno-core` as the JavaScript runtime, full support for ES6.
 
-![view.png](pics%2Fview.png)
+![view.png](pics%2Fimg.png)
 
 ## Get started
 

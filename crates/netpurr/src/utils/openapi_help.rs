@@ -9,7 +9,7 @@ pub struct OpenApiHelp {
 }
 
 impl OpenApiHelp {
-    pub fn get_operation(self, operation_id: String) -> Option<Operation> {
+    pub fn get_operation(&self, operation_id: String) -> Option<Operation> {
         for (_, path_item) in self.openapi.paths.iter() {
             if let Some(item) = path_item.as_item() {
                 let mut ops: Vec<Option<openapiv3::Operation>> = vec![];
@@ -34,8 +34,8 @@ impl OpenApiHelp {
         }
         return None;
     }
-    pub fn gen_openapi_schema(self, operation_id: String) -> Option<Value> {
-        if let Some(options) = self.get_operation(operation_id) {
+    pub fn gen_openapi_schema(&self, operation_id: String) -> Option<Value> {
+        if let Some(options) = self.get_operation(operation_id.clone()) {
             if let Some(op_id) = options.operation_id.clone() {
                 if op_id == operation_id {
                     if let Some(request_body) = options.request_body.clone() {
