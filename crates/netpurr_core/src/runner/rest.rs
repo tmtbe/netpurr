@@ -204,10 +204,11 @@ impl RestSender {
     }
 
     fn build_base_url(
-        base_url: String,
+        mut base_url: String,
         path_variables: Vec<PathVariables>,
         envs: &BTreeMap<String, EnvironmentItemValue>,
     ) -> String {
+        base_url = crate::utils::replace_variable(base_url, envs.clone());
         let build_path_variables: Vec<PathVariables> = path_variables
             .iter()
             .map(|p| PathVariables {
