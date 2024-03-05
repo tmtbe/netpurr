@@ -1,20 +1,15 @@
-use egui::{Align, Button, Layout, Ui};
-use egui_json_tree::{DefaultExpand, JsonTree};
 use openapiv3::Type::Object;
-use openapiv3::{ObjectType, OpenAPI, ReferenceOr, RequestBody, Schema, SchemaKind, Type};
+use openapiv3::{
+    ObjectType, OpenAPI, Operation, ReferenceOr, RequestBody, Schema, SchemaKind, Type,
+};
 use serde_json::{json, Value};
-
-use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::WorkspaceData;
-use crate::operation::operation::Operation;
-use crate::operation::windows::{Window, WindowSetting};
 
 pub struct OpenApiHelp {
     pub openapi: OpenAPI,
 }
 
 impl OpenApiHelp {
-    pub fn gen_openapi_schema(self, operation_id: String) -> Option<Value> {
+    pub fn get_operation(self, operation_id: String) -> Option<Operation> {
         for (_, path_item) in self.openapi.paths.iter() {
             if let Some(item) = path_item.as_item() {
                 let mut ops: Vec<Option<openapiv3::Operation>> = vec![];
@@ -30,17 +25,26 @@ impl OpenApiHelp {
                     if let Some(options) = op {
                         if let Some(op_id) = options.operation_id.clone() {
                             if op_id == operation_id {
-                                if let Some(request_body) = options.request_body.clone() {
-                                    match request_body {
-                                        ReferenceOr::Reference { reference } => {}
-                                        ReferenceOr::Item(rb) => {
-                                            if let Some(mt) = rb.content.get("application/json") {
-                                                if let Some(schema) = &mt.schema {
-                                                    return self
-                                                        .gen_schema(self.get_schema(schema));
-                                                }
-                                            }
-                                        }
+                                return Some(options.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return None;
+    }
+    pub fn gen_openapi_schema(self, operation_id: String) -> Option<Value> {
+        if let Some(options) = self.get_operation(operation_id) {
+            if let Some(op_id) = options.operation_id.clone() {
+                if op_id == operation_id {
+                    if let Some(request_body) = options.request_body.clone() {
+                        match request_body {
+                            ReferenceOr::Reference { reference } => {}
+                            ReferenceOr::Item(rb) => {
+                                if let Some(mt) = rb.content.get("application/json") {
+                                    if let Some(schema) = &mt.schema {
+                                        return self.gen_schema(self.get_schema(schema));
                                     }
                                 }
                             }
@@ -52,7 +56,7 @@ impl OpenApiHelp {
         return None;
     }
 
-    pub(crate) fn get_schema(&self, rs: &ReferenceOr<Schema>) -> Schema {
+    pub fn get_schema(&self, rs: &ReferenceOr<Schema>) -> Schema {
         return match rs {
             ReferenceOr::Reference { reference } => self.get_schema_with_ref(reference.clone()),
             ReferenceOr::Item(s) => s.clone(),
