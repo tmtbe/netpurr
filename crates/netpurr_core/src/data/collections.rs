@@ -297,6 +297,7 @@ impl Collection {
     fn to_save_data(&self) -> SaveCollection {
         SaveCollection {
             envs: self.envs.clone(),
+            openapi: self.openapi.clone(),
         }
     }
     pub fn build_envs(&self) -> BTreeMap<String, EnvironmentItemValue> {
@@ -335,6 +336,7 @@ impl Collection {
                         let collection: Option<Collection> = persistence.load(file_path);
                         collection.map(|c| {
                             self.envs = c.envs;
+                            self.openapi = c.openapi;
                             let mut folder = CollectionFolder::default();
                             folder.load(persistence, dir_path.join(folder_name));
                             self.folder = Rc::new(RefCell::new(folder));
@@ -451,13 +453,14 @@ impl CollectionFolder {
     }
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SaveCollection {
     pub envs: EnvironmentConfig,
+    pub openapi: Option<OpenAPI>,
 }
 
-#[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SaveCollectionFolder {
     pub desc: String,

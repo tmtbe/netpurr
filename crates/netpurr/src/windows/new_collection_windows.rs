@@ -5,6 +5,8 @@ use std::rc::Rc;
 
 use egui::{Align, Button, Checkbox, Layout, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
+use egui_json_tree::{DefaultExpand, JsonTree};
+use serde_json::Value;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
@@ -40,6 +42,7 @@ pub struct NewCollectionWindows {
     auth_panel: AuthPanel,
     request_pre_script_panel: RequestPreScriptPanel,
     test_script_panel: TestScriptPanel,
+    search_input: String,
 }
 
 #[derive(Clone, EnumString, EnumIter, PartialEq, Display)]
@@ -49,6 +52,7 @@ enum NewCollectionContentType {
     Variables,
     PreRequestScript,
     Tests,
+    OpenAPI,
 }
 
 impl Default for NewCollectionContentType {
@@ -152,6 +156,13 @@ impl Window for NewCollectionWindows {
                     self.test_script_panel
                         .set_and_render(ui, script, "collection".to_string())
             }
+            NewCollectionContentType::OpenAPI => {
+                egui::ScrollArea::vertical()
+                    .max_height(400.0)
+                    .show(ui, |ui| {
+                        self.build_openapi(ui, &operation);
+                    });
+            }
         }
         self.bottom_panel(workspace_data, ui);
     }
@@ -194,6 +205,7 @@ impl NewCollectionWindows {
                     HighlightValue::None
                 }
             }
+            NewCollectionContentType::OpenAPI => HighlightValue::None,
         }
     }
     pub fn with_open_collection(mut self, collection: Option<Collection>) -> Self {
@@ -242,6 +254,89 @@ impl NewCollectionWindows {
         self.parent_folder = Some(parent_folder.clone());
         self.new_collection_content_type = NewCollectionContentType::Description;
         self
+    }
+    fn build_openapi(&mut self, ui: &mut Ui, operation: &Operation) {
+        ui.horizontal(|ui| {
+            ui.add_space(VERTICAL_GAP);
+            ui.vertical(|ui| {
+                if let Some(openapi) = self.new_collection.openapi.clone() {
+                    let openapi_str = serde_json::to_string(&openapi).unwrap();
+                    match serde_json::from_str::<Value>(openapi_str.as_str()) {
+                        Ok(value) => {
+                            ui.label("Search:");
+                            let (text_edit_response, clear_button_response, reset_button_response) =
+                                ui.horizontal(|ui| {
+                                    let text_edit_response =
+                                        ui.text_edit_singleline(&mut self.search_input);
+                                    let clear_button_response = ui.button("Clear");
+                                    let reset_button_response = ui.button("Reset expanded");
+                                    (
+                                        text_edit_response,
+                                        clear_button_response,
+                                        reset_button_response,
+                                    )
+                                })
+                                .inner;
+
+                            let response = JsonTree::new(
+                                "json_tree_".to_string() + self.window_setting().id(),
+                                &value,
+                            )
+                            .default_expand(DefaultExpand::SearchResults(&self.search_input))
+                            .response_callback(|response, pointer| {
+                                response.context_menu(|ui| {
+                                    ui.with_layout(Layout::top_down_justified(Align::LEFT), |ui| {
+                                        ui.set_width(150.0);
+                                        if !pointer.is_empty()
+                                            && ui
+                                                .add(Button::new("Copy property path").frame(false))
+                                                .clicked()
+                                        {
+                                            operation.add_success_toast("Copy path success.");
+                                            ui.output_mut(|o| o.copied_text = pointer.clone());
+                                            ui.close_menu();
+                                        }
+
+                                        if ui
+                                            .add(Button::new("Copy contents").frame(false))
+                                            .clicked()
+                                        {
+                                            if let Some(val) = value.pointer(pointer) {
+                                                if let Ok(pretty_str) =
+                                                    serde_json::to_string_pretty(val)
+                                                {
+                                                    ui.output_mut(|o| o.copied_text = pretty_str);
+                                                    operation.add_success_toast(
+                                                        "Copy contents success.",
+                                                    );
+                                                }
+                                            }
+                                            ui.close_menu();
+                                        }
+                                    });
+                                });
+                            })
+                            .show(ui);
+                            if text_edit_response.changed() {
+                                response.reset_expanded(ui);
+                            }
+
+                            if clear_button_response.clicked() {
+                                self.search_input.clear();
+                                response.reset_expanded(ui);
+                            }
+
+                            if reset_button_response.clicked() {
+                                response.reset_expanded(ui);
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                } else {
+                    ui.label("No openapi data");
+                }
+            });
+        });
     }
 
     fn build_variables(&mut self, ui: &mut Ui) {
