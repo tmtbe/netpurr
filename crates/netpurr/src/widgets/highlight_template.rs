@@ -106,7 +106,7 @@ impl HighlightTemplate<'_> {
                                                     let mut tes =
                                                         TextEditState::load(ui.ctx(), response.id)
                                                             .unwrap();
-                                                    tes.set_ccursor_range(Some(CCursorRange {
+                                                    tes.cursor.set_char_range(Some(CCursorRange {
                                                         primary: CCursor {
                                                             index: self.content.as_str().len(),
                                                             prefer_next_row: false,
