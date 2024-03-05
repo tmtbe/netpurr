@@ -1,5 +1,7 @@
 use egui::{Ui, Widget};
+use serde_json::Value;
 use strum::IntoEnumIterator;
+use uuid::Uuid;
 
 use netpurr_core::data::http::{BodyRawType, BodyType};
 
@@ -9,8 +11,10 @@ use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
-use crate::utils::HighlightValue;
+use crate::utils::openapi_help::OpenApiHelp;
+use crate::utils::{openapi_help, HighlightValue};
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
+use crate::windows::view_json_windows::ViewJsonWindows;
 
 #[derive(Default)]
 pub struct RequestBodyPanel {
@@ -41,31 +45,84 @@ impl RequestBodyPanel {
                 });
             }
         });
-        if crt.record.must_get_rest().request.body.body_type == BodyType::RAW {
-            egui::ComboBox::from_id_source("body_raw_type")
-                .selected_text(
-                    crt.record
-                        .must_get_rest()
-                        .request
-                        .body
-                        .body_raw_type
-                        .clone()
-                        .to_string(),
-                )
-                .show_ui(ui, |ui| {
-                    ui.style_mut().wrap = Some(false);
-                    ui.set_min_width(60.0);
-                    for body_raw_type in BodyRawType::iter() {
-                        crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                            ui.selectable_value(
-                                &mut crt.record.must_get_mut_rest().request.body.body_raw_type,
-                                body_raw_type.clone(),
-                                body_raw_type.to_string(),
-                            );
-                        });
+        ui.horizontal(|ui| {
+            if crt.record.must_get_rest().request.body.body_type == BodyType::RAW {
+                egui::ComboBox::from_id_source("body_raw_type")
+                    .selected_text(
+                        crt.record
+                            .must_get_rest()
+                            .request
+                            .body
+                            .body_raw_type
+                            .clone()
+                            .to_string(),
+                    )
+                    .show_ui(ui, |ui| {
+                        ui.style_mut().wrap = Some(false);
+                        ui.set_min_width(60.0);
+                        for body_raw_type in BodyRawType::iter() {
+                            crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                                ui.selectable_value(
+                                    &mut crt.record.must_get_mut_rest().request.body.body_raw_type,
+                                    body_raw_type.clone(),
+                                    body_raw_type.to_string(),
+                                );
+                            });
+                        }
+                    });
+                if crt.record.must_get_rest().request.body.body_raw_type == BodyRawType::JSON {
+                    if ui.button("Pretty").clicked() {
+                        let json = crt.record.must_get_rest().request.body.body_str.clone();
+                        let value = serde_json::from_str::<Value>(&json);
+                        match value {
+                            Ok(v) => {
+                                let pretty_json = serde_json::to_string_pretty(&v);
+                                match pretty_json {
+                                    Ok(pretty_json_str) => {
+                                        crt = workspace_data.must_get_mut_crt(
+                                            crt_id.clone(),
+                                            |crt| {
+                                                crt.record
+                                                    .must_get_mut_rest()
+                                                    .request
+                                                    .body
+                                                    .body_str = pretty_json_str;
+                                            },
+                                        );
+                                    }
+                                    Err(_) => {}
+                                }
+                            }
+                            Err(_) => {}
+                        }
                     }
-                });
-        }
+                }
+                if let Some(operation_id) = crt.record.must_get_rest().operation_id.clone() {
+                    if ui.button("Generate Schema").clicked() {
+                        if let Some(collection) =
+                            workspace_data.get_collection(crt.collection_path.clone())
+                        {
+                            if let Some(openapi) = collection.openapi {
+                                let openapi_help = OpenApiHelp { openapi };
+                                let schema_value = openapi_help.gen_openapi_schema(operation_id);
+                                match schema_value {
+                                    None => {}
+                                    Some(value) => {
+                                        operation.add_success_toast("Generate schema success");
+                                        operation.add_window(Box::new(
+                                            ViewJsonWindows::default().with_json(
+                                                serde_json::to_string(&value).unwrap(),
+                                                Uuid::new_v4().to_string(),
+                                            ),
+                                        ))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
         ui.add_space(VERTICAL_GAP);
         ui.push_id("request_body_select_type", |ui| {
             match crt.record.must_get_rest().request.body.body_type {

@@ -14,6 +14,7 @@ use openapiv3::{
 use regex::Regex;
 use serde_json::{json, Value};
 
+use crate::utils::openapi_help::OpenApiHelp;
 use netpurr_core::data::auth::Auth;
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::environment::{EnvironmentConfig, EnvironmentItem};
@@ -26,7 +27,7 @@ use netpurr_core::data::record::Record;
 const DEFAULT_TAG: &str = "_Default";
 
 pub struct OpenApi {
-    source: OpenAPI,
+    openapi_help: OpenApiHelp,
 }
 
 pub struct OpenApiOperation {
@@ -38,15 +39,17 @@ pub struct OpenApiOperation {
 impl OpenApi {
     pub fn try_import(json: String) -> serde_json::Result<OpenApi> {
         let openapi: OpenAPI = serde_json::from_str(json.as_str())?;
-        return Ok(OpenApi { source: openapi });
+        return Ok(OpenApi {
+            openapi_help: OpenApiHelp { openapi },
+        });
     }
     pub fn to_collection(&self) -> anyhow::Result<Collection> {
-        if self.source.info.title.is_empty() {
+        if self.openapi_help.openapi.info.title.is_empty() {
             return Err(anyhow!("not postman"));
         }
         let mut tag_map: HashMap<String, Vec<OpenApiOperation>> = HashMap::new();
         tag_map.insert(DEFAULT_TAG.to_string(), vec![]);
-        for (path, ref_path_item) in self.source.paths.iter() {
+        for (path, ref_path_item) in self.openapi_help.openapi.paths.iter() {
             if let Some(path_item) = ref_path_item.as_item() {
                 if let Some(get) = path_item.get.clone() {
                     Self::group_operation(&mut tag_map, path.clone(), Method::GET, get);
@@ -81,15 +84,21 @@ impl OpenApi {
                     value_type: Default::default(),
                 }],
             },
-            openapi: Some(self.source.clone()),
+            openapi: Some(self.openapi_help.openapi.clone()),
             folder: Rc::new(RefCell::new(CollectionFolder {
-                name: self.source.info.title.to_string(),
+                name: self.openapi_help.openapi.info.title.to_string(),
                 parent_path: ".".to_string(),
-                desc: self.source.info.description.clone().unwrap_or_default(),
+                desc: self
+                    .openapi_help
+                    .openapi
+                    .info
+                    .description
+                    .clone()
+                    .unwrap_or_default(),
                 auth: Default::default(),
                 is_root: true,
                 requests: self.gen_requests(tag_map.get(DEFAULT_TAG).unwrap(), RequestSchema::HTTP),
-                folders: self.gen_folders(tag_map, self.source.tags.clone()),
+                folders: self.gen_folders(tag_map, self.openapi_help.openapi.tags.clone()),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
             })),
@@ -248,7 +257,9 @@ impl OpenApi {
                                 match mt.schema.clone() {
                                     None => {}
                                     Some(rs) => {
-                                        let json = self.gen_schema(self.get_schema(&rs));
+                                        let json = self
+                                            .openapi_help
+                                            .gen_schema(self.openapi_help.get_schema(&rs));
                                         match json {
                                             None => {}
                                             Some(s) => {
@@ -273,77 +284,6 @@ impl OpenApi {
                 }
             },
         }
-    }
-    fn get_schema(&self, rs: &ReferenceOr<Schema>) -> Schema {
-        return match rs {
-            ReferenceOr::Reference { reference } => self.get_schema_with_ref(reference.clone()),
-            ReferenceOr::Item(s) => s.clone(),
-        };
-    }
-    fn get_schema_box(&self, rs: &ReferenceOr<Box<Schema>>) -> Schema {
-        return match rs {
-            ReferenceOr::Reference { reference } => self.get_schema_with_ref(reference.clone()),
-            ReferenceOr::Item(s) => *s.clone(),
-        };
-    }
-
-    fn get_schema_with_ref(&self, ref_name: String) -> Schema {
-        let default = Schema {
-            schema_data: Default::default(),
-            schema_kind: openapiv3::SchemaKind::Type(Object(ObjectType::default())),
-        };
-        return match self.source.components.clone() {
-            None => default,
-            Some(c) => {
-                let s_name = ref_name.trim_start_matches("#/components/schemas/");
-                let find = c.schemas.get(s_name);
-                match find {
-                    None => default,
-                    Some(rs) => self.get_schema(rs),
-                }
-            }
-        };
-    }
-    fn gen_schema(&self, s: Schema) -> Option<Value> {
-        return match s.schema_kind.clone() {
-            SchemaKind::Type(t) => match t {
-                Type::Object(ot) => {
-                    let mut json_tree = json!({});
-                    for (name, rs) in ot.properties.iter() {
-                        let json_child = self.gen_schema(self.get_schema_box(rs));
-                        match json_child {
-                            None => {}
-                            Some(child) => {
-                                json_tree
-                                    .as_object_mut()
-                                    .unwrap()
-                                    .insert(name.clone(), child);
-                            }
-                        }
-                    }
-                    Some(json_tree)
-                }
-                Type::Array(at) => {
-                    let mut json_tree = json!([]);
-                    match at.items {
-                        None => {}
-                        Some(rs) => {
-                            let json_child = self.gen_schema(self.get_schema_box(&rs));
-                            match json_child {
-                                None => {}
-                                Some(child) => json_tree.as_array_mut().unwrap().push(child),
-                            }
-                        }
-                    }
-                    Some(json_tree)
-                }
-                Type::String(_) => Some(json!("string")),
-                Type::Number(_) => Some(json!(10000)),
-                Type::Integer(_) => Some(json!(10)),
-                Type::Boolean(_) => Some(json!(true)),
-            },
-            _ => None,
-        };
     }
 
     fn gen_multipart_body(body: &mut HttpBody, mt: &MediaType) {

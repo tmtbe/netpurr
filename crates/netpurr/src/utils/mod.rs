@@ -13,6 +13,8 @@ use netpurr_core::data::record::Record;
 
 use crate::panels::HORIZONTAL_GAP;
 
+pub mod openapi_help;
+
 pub fn build_rest_ui_header(record: Record, max_char: Option<usize>, ui: &Ui) -> LayoutJob {
     let mut lb = LayoutJob {
         text: Default::default(),

@@ -55,51 +55,64 @@ impl Window for ViewJsonWindows {
                         (text_edit_response, clear_button_response)
                     })
                     .inner;
-                let response = JsonTree::new(
-                    "json_tree_".to_string() + self.window_setting().id(),
-                    &value,
-                )
-                .default_expand(DefaultExpand::SearchResults(&self.search_input))
-                .response_callback(|response, pointer| {
-                    response.context_menu(|ui| {
-                        ui.with_layout(Layout::top_down_justified(Align::LEFT), |ui| {
-                            ui.set_width(150.0);
-                            if !pointer.is_empty()
-                                && ui
-                                    .add(Button::new("Copy property path").frame(false))
-                                    .clicked()
-                            {
-                                operation.add_success_toast("Copy path success.");
-                                ui.output_mut(|o| o.copied_text = pointer.clone());
-                                ui.close_menu();
-                            }
-
-                            if ui.add(Button::new("Copy contents").frame(false)).clicked() {
-                                if let Some(val) = value.pointer(pointer) {
-                                    if let Ok(pretty_str) = serde_json::to_string_pretty(val) {
-                                        ui.output_mut(|o| o.copied_text = pretty_str);
-                                        operation.add_success_toast("Copy contents success.");
+                egui::ScrollArea::vertical()
+                    .max_height(600.0)
+                    .show(ui, |ui| {
+                        let response = JsonTree::new(
+                            "json_tree_".to_string() + self.window_setting().id(),
+                            &value,
+                        )
+                        .default_expand(DefaultExpand::SearchResults(&self.search_input))
+                        .response_callback(|response, pointer| {
+                            response.context_menu(|ui| {
+                                ui.with_layout(Layout::top_down_justified(Align::LEFT), |ui| {
+                                    ui.set_width(150.0);
+                                    if !pointer.is_empty()
+                                        && ui
+                                            .add(Button::new("Copy property path").frame(false))
+                                            .clicked()
+                                    {
+                                        operation.add_success_toast("Copy path success.");
+                                        ui.output_mut(|o| o.copied_text = pointer.clone());
+                                        ui.close_menu();
                                     }
-                                }
-                                ui.close_menu();
+
+                                    if ui.add(Button::new("Copy contents").frame(false)).clicked() {
+                                        if let Some(val) = value.pointer(pointer) {
+                                            if let Ok(pretty_str) =
+                                                serde_json::to_string_pretty(val)
+                                            {
+                                                ui.output_mut(|o| o.copied_text = pretty_str);
+                                                operation
+                                                    .add_success_toast("Copy contents success.");
+                                            }
+                                        }
+                                        ui.close_menu();
+                                    }
+                                });
+                            });
+                        })
+                        .show(ui);
+
+                        if text_edit_response.changed() {
+                            response.reset_expanded(ui);
+                        }
+
+                        if clear_button_response.clicked() {
+                            self.search_input.clear();
+                            response.reset_expanded(ui);
+                        }
+
+                        ui.horizontal(|ui| {
+                            if ui.button("Reset expanded").clicked() {
+                                response.reset_expanded(ui);
+                            }
+                            if ui.button("Copy json").clicked() {
+                                ui.output_mut(|o| o.copied_text = self.json.clone());
+                                operation.add_success_toast("Copy json success.");
                             }
                         });
                     });
-                })
-                .show(ui);
-
-                if text_edit_response.changed() {
-                    response.reset_expanded(ui);
-                }
-
-                if clear_button_response.clicked() {
-                    self.search_input.clear();
-                    response.reset_expanded(ui);
-                }
-
-                if ui.button("Reset expanded").clicked() {
-                    response.reset_expanded(ui);
-                }
             }
             Err(_) => {
                 ui.label("Error Json Format");
