@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 
-use egui::{Direction, Layout, Sense, Ui, Vec2};
+use egui::{Direction, Label, Layout, RichText, Sense, Ui, Vec2, Widget};
 
 use crate::data::config_data::ConfigData;
 use crate::data::export::{Export, ExportType};
@@ -46,7 +46,9 @@ impl MatrixLabel {
                             ui.add_space(VERTICAL_GAP);
                             ui.horizontal(|ui| {
                                 ui.add_space(HORIZONTAL_GAP);
-                                ui.strong("Collection");
+                                Label::new(RichText::from("Collection").strong())
+                                    .selectable(false)
+                                    .ui(ui);
                                 utils::add_right_space(ui, 25.0);
                                 ui.menu_button("...", |ui| {
                                     self.more_button(
@@ -59,7 +61,9 @@ impl MatrixLabel {
                             });
                             ui.horizontal(|ui| {
                                 ui.add_space(HORIZONTAL_GAP);
-                                ui.heading(collection_name.clone());
+                                Label::new(RichText::from(collection_name.clone()).heading())
+                                    .selectable(false)
+                                    .ui(ui);
                             });
                         });
                         if response.clicked() {
@@ -70,7 +74,9 @@ impl MatrixLabel {
                         content_ui.with_layout(
                             Layout::centered_and_justified(Direction::TopDown),
                             |ui| {
-                                ui.heading("+");
+                                Label::new(RichText::from("+").heading())
+                                    .selectable(false)
+                                    .ui(ui);
                             },
                         );
                         if response.clicked() {

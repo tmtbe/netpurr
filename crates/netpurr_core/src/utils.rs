@@ -18,7 +18,9 @@ pub fn replace_variable(content: String, envs: BTreeMap<String, EnvironmentItemV
                 let key = find_match
                     .as_str()
                     .trim_start_matches("{{")
-                    .trim_end_matches("}}");
+                    .trim_end_matches("}}")
+                    .trim_start()
+                    .trim_end();
                 let v = envs.get(key);
                 match v {
                     None => result.replace_range(find_match.range(), "{UNKNOWN}"),
