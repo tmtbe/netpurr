@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use std::collections::{BTreeMap, HashMap};
 use std::fs::File;
 use std::io;
@@ -9,6 +10,8 @@ use std::time::Instant;
 use reqwest::blocking::{multipart, Client};
 use reqwest::header::CONTENT_TYPE;
 use reqwest::Method;
+use tokio_tungstenite::tungstenite::http::Uri;
+use url::Url;
 
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http;
@@ -24,7 +27,7 @@ impl RestSender {
     pub fn reqwest_block_send(
         request: http::Request,
         client: Client,
-    ) -> reqwest::Result<(http::Request, http::Response)> {
+    ) -> anyhow::Result<(http::Request, http::Response)> {
         let reqwest_request = Self::build_reqwest_request(request.clone())?;
         let mut new_request = request.clone();
         for (hn, hv) in reqwest_request.headers().iter() {
@@ -64,10 +67,11 @@ impl RestSender {
 
     pub fn build_reqwest_request(
         request: http::Request,
-    ) -> reqwest::Result<reqwest::blocking::Request> {
+    ) -> anyhow::Result<reqwest::blocking::Request> {
         let client = Client::new();
         let method = Method::from_str(request.method.to_string().to_uppercase().as_str())
             .unwrap_or_default();
+        let _ = Uri::try_from(request.get_url_with_schema())?;
         let mut builder = client.request(method, request.get_url_with_schema());
         for header in request.headers.iter().filter(|h| h.enable) {
             builder = builder.header(header.key.clone(), header.value.clone());
@@ -141,7 +145,10 @@ impl RestSender {
                 builder = builder.body(inner);
             }
         }
-        builder.build()
+        match builder.build() {
+            Ok(r) => Ok(r),
+            Err(e) => Err(anyhow!(e)),
+        }
     }
 
     pub(crate) fn build_request(
