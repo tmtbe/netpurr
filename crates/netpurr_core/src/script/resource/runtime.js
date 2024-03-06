@@ -5,6 +5,10 @@
         return args.map((arg) => JSON.stringify(arg)).join(" ");
     }
 
+    globalThis.sleep = async function (time) {
+        await core.ops.op_sleep(time);
+    }
+
     globalThis.fetch = async function (request) {
         let response = await core.ops.op_http_fetch(request);
         try {
@@ -51,7 +55,11 @@
             return core.ops.op_set_shared(key, json_value)
         },
         get_shared: (key) => {
-            let json_value = core.ops.op_get_shared(key)
+            let json_value = core.ops.op_get_shared(key);
+            return JSON.parse(json_value)
+        },
+        wait_shared: async (key) => {
+            let json_value = await core.ops.op_wait_shared(key)
             return JSON.parse(json_value)
         },
         resp: () => {

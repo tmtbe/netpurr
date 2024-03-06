@@ -73,8 +73,14 @@ impl RequestPreScriptPanel {
                             if ui.link("Get a shared").clicked() {
                                 script = script.clone().add("\nnetpurr.get_shared(\"shared_key\");");
                             }
+                            if ui.link("Wait a shared").clicked() {
+                                script = script.clone().add("\nawait netpurr.wait_shared(\"shared_key\");");
+                            }
                             if ui.link("Set a shared").clicked() {
                                 script = script.clone().add("\nnetpurr.set_shared(\"shared_key\",\"shared_value\");");
+                            }
+                            if ui.link("Sleep").clicked() {
+                                script = script.clone().add("\nawait sleep(1000);");
                             }
                             if ui.link("Fetch a http request").clicked() {
                                 script = script.clone().add(

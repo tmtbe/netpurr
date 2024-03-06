@@ -161,6 +161,7 @@ impl WebsocketEventPanel {
             },
         );
         ui.separator();
+        let crt = workspace_data.must_get_crt(crt_id.clone());
         match self.open_panel_enum {
             ResponsePanelEnum::Event => {
                 self.render_event(ui, workspace_data, operation, crt_id);
@@ -170,11 +171,11 @@ impl WebsocketEventPanel {
             }
             ResponsePanelEnum::Headers => {
                 self.response_headers_panel
-                    .set_and_render(ui, workspace_data, crt_id);
+                    .set_and_render(ui, &crt.record.must_get_rest().response);
             }
             ResponsePanelEnum::Logs => {
                 self.response_log_panel
-                    .set_and_render(ui, workspace_data, crt_id);
+                    .set_and_render(ui, &crt.record.must_get_rest().response);
             }
         }
     }

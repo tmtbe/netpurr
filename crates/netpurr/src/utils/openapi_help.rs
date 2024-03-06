@@ -1,9 +1,8 @@
 use openapiv3::{
-    Header, ObjectType, OpenAPI, Operation, Parameter, ParameterData, ParameterSchemaOrContent,
-    ReferenceOr, RequestBody, Response, Schema, SchemaKind, Type,
+    Header, OpenAPI, Operation, Parameter, ReferenceOr, RequestBody, Response, Schema, SchemaKind,
+    Type,
 };
 use serde_json::{json, Value};
-use strum_macros::Display;
 
 pub struct OpenApiHelp {
     pub openapi: OpenAPI,

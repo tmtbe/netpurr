@@ -7,8 +7,8 @@ use strum_macros::{Display, EnumIter, EnumString};
 use netpurr_core::data::cookies_manager::Cookie;
 use netpurr_core::data::http::{Response, ResponseStatus};
 use netpurr_core::data::test::{TestResult, TestStatus};
+use netpurr_core::runner::TestRunResult;
 
-use crate::data::central_request_data::CentralRequestItem;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
@@ -45,7 +45,7 @@ impl Default for ResponsePanelEnum {
 }
 
 impl ResponsePanel {
-    pub fn set_and_render(
+    pub fn render_with_crt(
         &mut self,
         ui: &mut Ui,
         operation: &Operation,
@@ -70,7 +70,13 @@ impl ResponsePanel {
             }
 
             ResponseStatus::Ready => {
-                self.build_ready_panel(operation, workspace_data, crt_id, ui, &crt, cookies);
+                self.build_ready_panel(
+                    operation,
+                    ui,
+                    &crt.record.must_get_rest().response,
+                    &crt.test_result,
+                    cookies,
+                );
             }
             ResponseStatus::Error => {
                 ui.centered_and_justified(|ui| {
@@ -79,6 +85,25 @@ impl ResponsePanel {
             }
         }
     }
+
+    pub fn render_with_test(
+        &mut self,
+        ui: &mut Ui,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        test_run_result: &TestRunResult,
+    ) {
+        let cookies = workspace_data.get_url_cookies(test_run_result.request.get_url_with_schema());
+
+        self.build_ready_panel(
+            operation,
+            ui,
+            &test_run_result.response,
+            &test_run_result.test_result,
+            cookies,
+        );
+    }
+
     fn get_count(
         response: &Response,
         cookies: &BTreeMap<String, Cookie>,
@@ -119,37 +144,29 @@ impl ResponsePanel {
     fn build_ready_panel(
         &mut self,
         operation: &Operation,
-        workspace_data: &mut WorkspaceData,
-        crt_id: String,
         ui: &mut Ui,
-        data: &CentralRequestItem,
+        response: &Response,
+        test_result: &TestResult,
         cookies: BTreeMap<String, Cookie>,
     ) {
         ui.horizontal(|ui| {
             ui.label("Status:");
             ui.label(
-                RichText::new(data.record.must_get_rest().response.status.to_string())
+                RichText::new(response.status.to_string())
                     .color(ui.visuals().warn_fg_color)
                     .strong(),
             );
 
             ui.label("Time:");
             ui.label(
-                RichText::new(
-                    data.record
-                        .must_get_rest()
-                        .response
-                        .elapsed_time
-                        .to_string()
-                        + "ms",
-                )
-                .color(ui.visuals().warn_fg_color)
-                .strong(),
+                RichText::new(response.elapsed_time.to_string() + "ms")
+                    .color(ui.visuals().warn_fg_color)
+                    .strong(),
             );
 
             ui.label("Size:");
             ui.label(
-                RichText::new(data.record.must_get_rest().response.body.get_byte_size())
+                RichText::new(response.body.get_byte_size())
                     .color(ui.visuals().warn_fg_color)
                     .strong(),
             );
@@ -165,9 +182,9 @@ impl ResponsePanel {
                     utils::build_with_count_ui_header(
                         response_panel_enum.to_string(),
                         ResponsePanel::get_count(
-                            &data.record.must_get_rest().response,
+                            response,
                             &cookies,
-                            &data.test_result,
+                            test_result,
                             response_panel_enum,
                         ),
                         ui,
@@ -179,22 +196,19 @@ impl ResponsePanel {
         match self.open_panel_enum {
             ResponsePanelEnum::Body => {
                 self.response_body_panel
-                    .set_and_render(ui, workspace_data, operation, crt_id);
+                    .set_and_render(ui, operation, response);
             }
             ResponsePanelEnum::Cookies => {
                 self.response_cookies_panel.set_and_render(ui, &cookies);
             }
             ResponsePanelEnum::Headers => {
-                self.response_headers_panel
-                    .set_and_render(ui, workspace_data, crt_id);
+                self.response_headers_panel.set_and_render(ui, response);
             }
             ResponsePanelEnum::Logs => {
-                self.response_log_panel
-                    .set_and_render(ui, workspace_data, crt_id);
+                self.response_log_panel.set_and_render(ui, response);
             }
             ResponsePanelEnum::TestResult => {
-                self.test_result_panel
-                    .set_and_render(ui, workspace_data, crt_id);
+                self.test_result_panel.set_and_render(ui, test_result);
             }
         }
     }

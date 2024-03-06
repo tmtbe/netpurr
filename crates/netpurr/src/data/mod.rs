@@ -4,7 +4,6 @@ use std::str::FromStr;
 
 use base64::Engine;
 use egui::TextBuffer;
-
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 

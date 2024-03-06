@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use chrono::NaiveDate;
 use log::error;
+use strum_macros::{Display, EnumIter};
 use uuid::Uuid;
 
 use netpurr_core::data::auth::{Auth, AuthType};
@@ -11,6 +12,7 @@ use netpurr_core::data::collections::{Collection, CollectionFolder, Collections}
 use netpurr_core::data::cookies_manager::{Cookie, CookiesManager};
 use netpurr_core::data::environment::{Environment, EnvironmentConfig, EnvironmentItemValue};
 use netpurr_core::data::record::Record;
+use netpurr_core::runner::TestRunResult;
 use netpurr_core::script::ScriptScope;
 
 use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
@@ -25,6 +27,21 @@ pub struct WorkspaceData {
     history_data_list: RefCell<HistoryDataList>,
     environment: RefCell<Environment>,
     collections: RefCell<Collections>,
+    pub selected_test_group_path: Option<String>,
+    pub selected_test_run_result: Option<TestRunResult>,
+    pub editor_model: EditorModel,
+}
+
+#[derive(Display, PartialEq, EnumIter, Clone, Debug)]
+pub enum EditorModel {
+    Request,
+    Test,
+    Design,
+}
+impl Default for EditorModel {
+    fn default() -> Self {
+        EditorModel::Request
+    }
 }
 
 //collections
@@ -319,6 +336,15 @@ impl WorkspaceData {
         }
         (pre_request_script_scopes, test_script_scopes)
     }
+    pub fn get_parent_scripts(
+        &self,
+        collection_path: String,
+    ) -> (Vec<ScriptScope>, Vec<ScriptScope>) {
+        return self
+            .collections
+            .borrow()
+            .get_path_scripts(collection_path.clone());
+    }
 
     pub fn get_crt_select_id(&self) -> Option<String> {
         self.central_request_data_list.borrow().select_id.clone()
@@ -425,6 +451,8 @@ impl WorkspaceData {
 impl WorkspaceData {
     pub fn load_all(&mut self, workspace: String) {
         self.workspace_name = workspace.clone();
+        self.editor_model = EditorModel::Request;
+        self.selected_test_group_path = None;
         self.central_request_data_list
             .borrow_mut()
             .load_all(workspace.clone());

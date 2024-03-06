@@ -3,11 +3,11 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use egui::{Ui, Widget};
+use strum::IntoEnumIterator;
 
 use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::environment::EnvironmentItemValue;
-use strum::IntoEnumIterator;
 
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;

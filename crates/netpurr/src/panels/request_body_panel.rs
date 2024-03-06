@@ -12,7 +12,7 @@ use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 use crate::utils::openapi_help::OpenApiHelp;
-use crate::utils::{openapi_help, HighlightValue};
+use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 use crate::windows::view_json_windows::ViewJsonWindows;
 
@@ -140,7 +140,7 @@ impl RequestBodyPanel {
                 BodyType::RAW => {
                     ui.push_id("request_body", |ui| {
                         egui::ScrollArea::vertical()
-                            .max_height(ui.available_height() - 25.0)
+                            .max_height(ui.available_height() - 30.0)
                             .show(ui, |ui| {
                                 crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                                     HighlightTemplateSinglelineBuilder::default()

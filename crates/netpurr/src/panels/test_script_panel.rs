@@ -46,8 +46,14 @@ assert("test",response.json.cookies.freeform);
                             if ui.link("Get a shared").clicked() {
                                 script = script.clone().add("\nnetpurr.get_shared(\"shared_key\");");
                             }
+                            if ui.link("Wait a shared").clicked() {
+                                script = script.clone().add("\nawait netpurr.wait_shared(\"shared_key\");");
+                            }
                             if ui.link("Set a shared").clicked() {
                                 script = script.clone().add("\nnetpurr.set_shared(\"shared_key\",\"shared_value\");");
+                            }
+                            if ui.link("Sleep").clicked() {
+                                script = script.clone().add("\nawait sleep(1000);");
                             }
                             if ui.link("Get response").clicked() {
                                 script = script.clone().add("\nlet response = netpurr.resp();\nconsole.log(response)");
@@ -55,24 +61,27 @@ assert("test",response.json.cookies.freeform);
                         });
                     });
                 ui.separator();
-                ui.push_id("test_script", |ui| {
-                    egui::ScrollArea::vertical()
-                        .min_scrolled_height(250.0)
-                        .show(ui, |ui| {
-                            let mut code_editor = CodeEditor::default()
-                                .id_source("test_code_editor")
-                                .with_rows(12)
-                                .with_ui_fontsize(ui)
-                                .with_syntax(js_syntax())
-                                .with_numlines(true);
-                            if ui.visuals().dark_mode {
-                                code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)
-                            } else {
-                                code_editor = code_editor.with_theme(ColorTheme::GRUVBOX_LIGHT)
-                            }
-                            code_editor.show(ui, &mut script);
-                        });
+                ui.vertical(|ui|{
+                    ui.push_id(id+"_test_script", |ui| {
+                        egui::ScrollArea::vertical()
+                            .min_scrolled_height(250.0)
+                            .show(ui, |ui| {
+                                let mut code_editor = CodeEditor::default()
+                                    .id_source("test_code_editor")
+                                    .with_rows(12)
+                                    .with_ui_fontsize(ui)
+                                    .with_syntax(js_syntax())
+                                    .with_numlines(true);
+                                if ui.visuals().dark_mode {
+                                    code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)
+                                } else {
+                                    code_editor = code_editor.with_theme(ColorTheme::GRUVBOX_LIGHT)
+                                }
+                                code_editor.show(ui, &mut script);
+                            });
+                    });
                 });
+
             });
 
         });

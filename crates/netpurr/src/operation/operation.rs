@@ -1,17 +1,20 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use egui::{emath, WidgetText};
 use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
+use netpurr_core::data::collections::CollectionFolder;
 use poll_promise::Promise;
 
 use netpurr_core::data::cookies_manager::CookiesManager;
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::Request;
 use netpurr_core::data::websocket::WebSocketSession;
-use netpurr_core::data::{http, test};
-use netpurr_core::runner::Runner;
+use netpurr_core::runner::{
+    RunRequestInfo, Runner, TestGroupRunResults, TestRunError, TestRunResult,
+};
 use netpurr_core::script::{Context, ScriptScope};
 
 use crate::data::config_data::ConfigData;
@@ -64,15 +67,32 @@ impl Operation {
             git: Default::default(),
         }
     }
-    pub fn send_rest_with_script(
+    pub fn send_rest_with_script_promise(
         &self,
-        request: http::Request,
+        run_request_info: RunRequestInfo,
+    ) -> Promise<Result<TestRunResult, TestRunError>> {
+        self.runner.send_rest_with_script_promise(run_request_info)
+    }
+
+    pub fn run_test_group_promise(
+        &self,
         envs: BTreeMap<String, EnvironmentItemValue>,
-        pre_request_scripts: Vec<ScriptScope>,
-        test_scripts: Vec<ScriptScope>,
-    ) -> Promise<Result<(http::Request, http::Response, test::TestResult), String>> {
-        self.runner
-            .send_rest_with_script(request, envs, pre_request_scripts, test_scripts)
+        pre_request_parent_script_scopes: Vec<ScriptScope>,
+        test_parent_script_scopes: Vec<ScriptScope>,
+        test_group_run_result: Arc<Mutex<TestGroupRunResults>>,
+        collection_name: String,
+        collection_path: String,
+        folder: Rc<RefCell<CollectionFolder>>,
+    ) -> Promise<()> {
+        self.runner.run_test_group_promise(
+            envs,
+            pre_request_parent_script_scopes,
+            test_parent_script_scopes,
+            test_group_run_result,
+            collection_name,
+            collection_path,
+            folder,
+        )
     }
 
     pub fn connect_websocket_with_script(
@@ -82,12 +102,14 @@ impl Operation {
         pre_request_scripts: Vec<ScriptScope>,
         test_scripts: Vec<ScriptScope>,
     ) -> WebSocketSession {
-        self.runner.connect_websocket_with_script(
-            http_request,
+        self.runner.connect_websocket_with_script(RunRequestInfo {
+            collection_path: None,
+            request_name: "".to_string(),
+            request: http_request,
             envs,
             pre_request_scripts,
             test_scripts,
-        )
+        })
     }
 
     pub fn run_script(

@@ -2,25 +2,18 @@ use eframe::epaint::FontFamily;
 use egui::text::LayoutJob;
 use egui::{Color32, FontId, TextFormat};
 
-use netpurr_core::data::test::TestStatus;
+use netpurr_core::data::test::{TestResult, TestStatus};
 
-use crate::data::workspace_data::WorkspaceData;
 use crate::panels::HORIZONTAL_GAP;
 
 #[derive(Default)]
 pub struct TestResultPanel {}
 
 impl TestResultPanel {
-    pub fn set_and_render(
-        &mut self,
-        ui: &mut egui::Ui,
-        workspace_data: &mut WorkspaceData,
-        crt_id: String,
-    ) {
-        let crt = workspace_data.must_get_crt(crt_id.clone());
+    pub fn set_and_render(&mut self, ui: &mut egui::Ui, test_result: &TestResult) {
         ui.push_id("test_info", |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for test_info in crt.test_result.test_info_list.iter() {
+                for test_info in test_result.test_info_list.iter() {
                     ui.horizontal(|ui| {
                         ui.add_space(HORIZONTAL_GAP * 2.0);
                         ui.label(Self::build_status_job(test_info.status.clone()));

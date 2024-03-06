@@ -1,13 +1,14 @@
 use eframe::emath::Align;
-use egui::{Label, Layout, ScrollArea, Sense, Widget};
+use egui::{Label, Layout, ScrollArea, Sense, Ui, Widget};
 
 use netpurr_core::data::environment::ENVIRONMENT_GLOBALS;
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::WorkspaceData;
+use crate::data::workspace_data::{EditorModel, WorkspaceData};
 use crate::operation::operation::Operation;
 use crate::panels::collection_panel::CollectionPanel;
 use crate::panels::history_panel::HistoryPanel;
+use crate::panels::test_group_panel::TestGroupPanel;
 use crate::panels::VERTICAL_GAP;
 use crate::windows::cookies_windows::CookiesWindows;
 use crate::windows::environment_windows::EnvironmentWindows;
@@ -29,6 +30,7 @@ impl Default for Panel {
 pub struct MyLeftPanel {
     history_panel: HistoryPanel,
     collection_panel: CollectionPanel,
+    test_group_panel: TestGroupPanel,
     open_panel: Panel,
     filter: String,
     environment: String,
@@ -49,7 +51,7 @@ impl MyLeftPanel {
             .resizable(false)
             .show_inside(ui, |ui| {
                 ui.horizontal(|ui| {
-                    if Label::new("<").sense(Sense::click()).ui(ui).clicked() {
+                    if Label::new("◀").sense(Sense::click()).ui(ui).clicked() {
                         config_data.set_select_collection(None);
                     }
                     ui.separator();
@@ -105,24 +107,15 @@ impl MyLeftPanel {
 
                 ui.add_space(VERTICAL_GAP / 8.0);
             });
-        egui::CentralPanel::default().show_inside(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.selectable_value(&mut self.open_panel, Panel::Collection, "Collection");
-                ui.selectable_value(&mut self.open_panel, Panel::History, "History");
-            });
-            ScrollArea::vertical().show(ui, |ui| match self.open_panel {
-                Panel::History => {
-                    self.history_panel.set_and_render(ui, workspace_data);
-                }
-                Panel::Collection => {
-                    self.collection_panel.set_and_render(
-                        ui,
-                        operation,
-                        workspace_data,
-                        config_data.select_collection().unwrap_or_default(),
-                    );
-                }
-            });
+        egui::CentralPanel::default().show_inside(ui, |ui| match workspace_data.editor_model {
+            EditorModel::Request => {
+                self.render_request_panel(operation, workspace_data, config_data, ui);
+            }
+            EditorModel::Test => {
+                self.test_group_panel
+                    .render(operation, workspace_data, config_data, ui);
+            }
+            EditorModel::Design => {}
         });
 
         if self.environment == NO_ENVIRONMENT {
@@ -130,5 +123,31 @@ impl MyLeftPanel {
         } else {
             workspace_data.set_env_select(Some(self.environment.to_string()));
         }
+    }
+
+    fn render_request_panel(
+        &mut self,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        config_data: &mut ConfigData,
+        ui: &mut Ui,
+    ) {
+        ui.horizontal(|ui| {
+            ui.selectable_value(&mut self.open_panel, Panel::Collection, "Collection");
+            ui.selectable_value(&mut self.open_panel, Panel::History, "History");
+        });
+        ScrollArea::vertical().show(ui, |ui| match self.open_panel {
+            Panel::History => {
+                self.history_panel.set_and_render(ui, workspace_data);
+            }
+            Panel::Collection => {
+                self.collection_panel.set_and_render(
+                    ui,
+                    operation,
+                    workspace_data,
+                    config_data.select_collection().unwrap_or_default(),
+                );
+            }
+        });
     }
 }

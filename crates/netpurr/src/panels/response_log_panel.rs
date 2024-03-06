@@ -1,19 +1,14 @@
 use egui_code_editor::{CodeEditor, ColorTheme};
 
-use crate::data::workspace_data::WorkspaceData;
+use netpurr_core::data::http::Response;
+
 use crate::widgets::syntax::js_syntax;
 
 #[derive(Default)]
 pub struct ResponseLogPanel {}
 
 impl ResponseLogPanel {
-    pub fn set_and_render(
-        &mut self,
-        ui: &mut egui::Ui,
-        workspace_data: &mut WorkspaceData,
-        crt_id: String,
-    ) {
-        let crt = workspace_data.must_get_crt(crt_id.clone());
+    pub fn set_and_render(&mut self, ui: &mut egui::Ui, response: &Response) {
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
             let mut layout_job =
@@ -23,15 +18,7 @@ impl ResponseLogPanel {
         };
         ui.push_id("log_info", |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for (index, log) in crt
-                    .record
-                    .must_get_rest()
-                    .response
-                    .logger
-                    .logs
-                    .iter()
-                    .enumerate()
-                {
+                for (index, log) in response.logger.logs.iter().enumerate() {
                     let mut content = format!("> {}", log.show());
                     let mut code_editor = CodeEditor::default()
                         .id_source(format!("{}-{}", "log", index))

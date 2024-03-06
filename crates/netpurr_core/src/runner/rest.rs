@@ -1,17 +1,17 @@
 use anyhow::anyhow;
+use reqwest::header::CONTENT_TYPE;
+use reqwest::multipart::Part;
+use reqwest::Method;
+use reqwest::{multipart, Body, Client};
 use std::collections::{BTreeMap, HashMap};
-use std::fs::File;
 use std::io;
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Instant;
-
-use reqwest::blocking::{multipart, Client};
-use reqwest::header::CONTENT_TYPE;
-use reqwest::Method;
+use tokio::fs::File;
 use tokio_tungstenite::tungstenite::http::Uri;
-use url::Url;
+use tokio_util::codec::{BytesCodec, FramedRead};
 
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http;
@@ -24,11 +24,11 @@ use crate::data::logger::Logger;
 pub struct RestSender {}
 
 impl RestSender {
-    pub fn reqwest_block_send(
+    pub async fn reqwest_async_send(
         request: http::Request,
         client: Client,
     ) -> anyhow::Result<(http::Request, http::Response)> {
-        let reqwest_request = Self::build_reqwest_request(request.clone())?;
+        let reqwest_request = Self::build_reqwest_request(request.clone()).await?;
         let mut new_request = request.clone();
         for (hn, hv) in reqwest_request.headers().iter() {
             if new_request
@@ -50,7 +50,7 @@ impl RestSender {
             }
         }
         let start_time = Instant::now();
-        let reqwest_response = client.execute(reqwest_request)?;
+        let reqwest_response = client.execute(reqwest_request).await?;
         let total_time = start_time.elapsed();
         Ok((
             new_request,
@@ -61,14 +61,12 @@ impl RestSender {
                 status_text: reqwest_response.status().to_string(),
                 elapsed_time: total_time.as_millis(),
                 logger: Logger::default(),
-                body: Arc::new(HttpBody::new(reqwest_response.bytes()?.to_vec())),
+                body: Arc::new(HttpBody::new(reqwest_response.bytes().await?.to_vec())),
             },
         ))
     }
 
-    pub fn build_reqwest_request(
-        request: http::Request,
-    ) -> anyhow::Result<reqwest::blocking::Request> {
+    pub async fn build_reqwest_request(request: http::Request) -> anyhow::Result<reqwest::Request> {
         let client = Client::new();
         let method = Method::from_str(request.method.to_string().to_uppercase().as_str())
             .unwrap_or_default();
@@ -91,9 +89,24 @@ impl RestSender {
                 for md in request.body.body_form_data.iter().filter(|md| md.enable) {
                     match md.data_type {
                         MultipartDataType::FILE => {
-                            form = form
-                                .file(md.key.clone(), Path::new(md.value.as_str()).to_path_buf())
+                            let path = Path::new(md.value.as_str());
+                            let content_type = mime_guess::from_path(path);
+                            // read file body stream
+                            let file = File::open(path).await?;
+                            let stream = FramedRead::new(file, BytesCodec::new());
+                            let file_body = Body::wrap_stream(stream);
+                            //make form part of file
+                            let fname = path
+                                .file_name()
                                 .unwrap()
+                                .to_os_string()
+                                .into_string()
+                                .ok()
+                                .unwrap();
+                            let some_file = Part::stream(file_body).file_name(fname).mime_str(
+                                content_type.first_or_octet_stream().to_string().as_str(),
+                            )?;
+                            form = form.part(md.key.clone(), some_file);
                         }
                         MultipartDataType::TEXT => {
                             form = form.text(md.key.clone(), md.value.clone());
@@ -138,12 +151,10 @@ impl RestSender {
                     CONTENT_TYPE,
                     content_type.first_or_octet_stream().to_string(),
                 );
-                let file_name = path.file_name().and_then(|filename| filename.to_str());
-                let mut file =
-                    File::open(path).expect(format!("open {:?} error", file_name).as_str());
-                let mut inner: Vec<u8> = vec![];
-                io::copy(&mut file, &mut inner).expect("add_stream io copy error");
-                builder = builder.body(inner);
+                let file = File::open(path).await?;
+                let stream = FramedRead::new(file, BytesCodec::new());
+                let body = Body::wrap_stream(stream);
+                builder = builder.body(body);
             }
         }
         match builder.build() {

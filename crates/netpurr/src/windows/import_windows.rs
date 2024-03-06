@@ -7,7 +7,6 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::config_data::ConfigData;
-use crate::data::export;
 use crate::data::export::{Export, ExportType};
 use crate::data::workspace_data::WorkspaceData;
 use crate::import::openapi::OpenApi;

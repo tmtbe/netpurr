@@ -275,3 +275,10 @@ pub fn add_right_space(ui: &mut Ui, space: f32) {
         ui.add_space(space)
     }
 }
+
+pub fn add_left_space(ui: &mut Ui, space: f32) {
+    let space = space;
+    if space > 0.0 {
+        ui.add_space(space)
+    }
+}

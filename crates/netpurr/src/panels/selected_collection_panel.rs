@@ -4,11 +4,14 @@ use egui::{FontSelection, Label, RichText, Style, Ui, Widget};
 use netpurr_core::data::record::Record;
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::WorkspaceData;
+use crate::data::workspace_data::{EditorModel, WorkspaceData};
 use crate::operation::operation::Operation;
 use crate::panels::left_panel::MyLeftPanel;
+use crate::panels::openapi_editor_panel::OpenApiEditorPanel;
+use crate::panels::openapi_show_request_panel::OpenApiShowRequestPanel;
 use crate::panels::response_panel::ResponsePanel;
 use crate::panels::rest_panel::RestPanel;
+use crate::panels::test_editor_panel::TestEditorPanel;
 use crate::panels::websocket_panel::WebSocketPanel;
 use crate::utils;
 use crate::windows::request_close_windows::RequestCloseWindows;
@@ -20,6 +23,9 @@ pub struct SelectedCollectionPanel {
     web_socket_panel: WebSocketPanel,
     response_panel: ResponsePanel,
     select_crt_id: Option<String>,
+    openapi_panel: OpenApiShowRequestPanel,
+    openapi_editor_panel: OpenApiEditorPanel,
+    test_editor_panel: TestEditorPanel,
 }
 
 #[derive(PartialEq, Eq, Clone)]
@@ -50,54 +56,48 @@ impl SelectedCollectionPanel {
                 });
             });
         egui::SidePanel::right("selected_collection_right_response")
+            .min_width(ui.available_width() / 4.0)
             .max_width(ui.available_width() / 2.0)
             .show_inside(ui, |ui| {
                 ui.add_enabled_ui(!operation.get_ui_lock(), |ui| {
-                    match &workspace_data.get_crt_select_id() {
-                        None => {}
-                        Some(crt_id) => {
-                            self.response_panel.set_and_render(
-                                ui,
-                                operation,
-                                workspace_data,
-                                crt_id.clone(),
-                            );
+                    match workspace_data.editor_model {
+                        EditorModel::Request => {
+                            self.render_request_response_panel(operation, workspace_data, ui);
+                        }
+                        EditorModel::Test => {
+                            self.render_test_response_panel(operation, workspace_data, ui);
+                        }
+                        EditorModel::Design => {
+                            workspace_data
+                                .get_collection_by_name(
+                                    config_data.select_collection().unwrap_or_default(),
+                                )
+                                .map(|c| {
+                                    egui::scroll_area::ScrollArea::vertical()
+                                        .max_height(ui.available_height() - 30.0)
+                                        .show(ui, |ui| {
+                                            self.openapi_panel.render(
+                                                ui,
+                                                workspace_data,
+                                                operation,
+                                                c,
+                                            )
+                                        });
+                                });
                         }
                     }
                 });
             });
-        egui::CentralPanel::default().show_inside(ui, |ui| {
-            ui.vertical(|ui| {
-                self.central_request_table(workspace_data, operation, ui);
-            });
-            ui.separator();
-            match &workspace_data.get_crt_select_id() {
-                Some(crt_id) => {
-                    // ui.horizontal(|ui| {
-                    //     ui.add_space(HORIZONTAL_GAP);
-                    //     self.render_name_label(workspace_data, crt_id.clone(), ui);
-                    // });
-                    // ui.separator();
-                    match workspace_data.must_get_crt(crt_id.clone()).record {
-                        Record::Rest(_) => {
-                            self.rest_panel.set_and_render(
-                                ui,
-                                operation,
-                                workspace_data,
-                                crt_id.clone(),
-                            );
-                        }
-                        Record::WebSocket(_) => {
-                            self.web_socket_panel.set_and_render(
-                                ui,
-                                operation,
-                                workspace_data,
-                                crt_id.clone(),
-                            );
-                        }
-                    }
-                }
-                _ => {}
+        egui::CentralPanel::default().show_inside(ui, |ui| match workspace_data.editor_model {
+            EditorModel::Request => {
+                self.render_request_panel(operation, workspace_data, ui);
+            }
+            EditorModel::Test => {
+                self.test_editor_panel.render(operation, workspace_data, ui);
+            }
+            EditorModel::Design => {
+                self.openapi_editor_panel
+                    .render(workspace_data, config_data, ui)
             }
         });
         workspace_data.get_env_select().map(|s| {
@@ -105,6 +105,80 @@ impl SelectedCollectionPanel {
                 workspace_data.set_env_select(None)
             }
         });
+    }
+
+    fn render_test_response_panel(
+        &mut self,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        ui: &mut Ui,
+    ) {
+        match &workspace_data.selected_test_run_result.clone() {
+            None => {}
+            Some(test_run_result) => {
+                self.response_panel.render_with_test(
+                    ui,
+                    operation,
+                    workspace_data,
+                    test_run_result,
+                );
+            }
+        }
+    }
+
+    fn render_request_response_panel(
+        &mut self,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        ui: &mut Ui,
+    ) {
+        match &workspace_data.get_crt_select_id() {
+            None => {}
+            Some(crt_id) => {
+                self.response_panel
+                    .render_with_crt(ui, operation, workspace_data, crt_id.clone());
+            }
+        }
+    }
+
+    fn render_request_panel(
+        &mut self,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        ui: &mut Ui,
+    ) {
+        ui.vertical(|ui| {
+            self.central_request_table(workspace_data, operation, ui);
+        });
+        ui.separator();
+        match &workspace_data.get_crt_select_id() {
+            Some(crt_id) => {
+                // ui.horizontal(|ui| {
+                //     ui.add_space(HORIZONTAL_GAP);
+                //     self.render_name_label(workspace_data, crt_id.clone(), ui);
+                // });
+                // ui.separator();
+                match workspace_data.must_get_crt(crt_id.clone()).record {
+                    Record::Rest(_) => {
+                        self.rest_panel.set_and_render(
+                            ui,
+                            operation,
+                            workspace_data,
+                            crt_id.clone(),
+                        );
+                    }
+                    Record::WebSocket(_) => {
+                        self.web_socket_panel.set_and_render(
+                            ui,
+                            operation,
+                            workspace_data,
+                            crt_id.clone(),
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 
     fn central_request_table(

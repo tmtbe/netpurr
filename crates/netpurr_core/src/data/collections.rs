@@ -1,9 +1,10 @@
-use openapiv3::OpenAPI;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::sync::Arc;
 
+use openapiv3::OpenAPI;
 use serde::{Deserialize, Serialize};
 
 use crate::data::auth::{Auth, AuthType};
@@ -362,7 +363,25 @@ pub struct CollectionFolder {
     pub pre_request_script: String,
     pub test_script: String,
 }
-
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CollectionFolderOnlyRead {
+    pub name: String,
+    pub parent_path: String,
+    pub desc: String,
+    pub auth: Auth,
+    pub is_root: bool,
+    pub requests: BTreeMap<String, Record>,
+    pub folders: BTreeMap<String, CollectionFolderOnlyRead>,
+    pub pre_request_script: String,
+    pub test_script: String,
+}
+impl CollectionFolderOnlyRead {
+    pub fn from(folder: Rc<RefCell<CollectionFolder>>) -> Self {
+        let json = serde_json::to_string(&folder).unwrap();
+        serde_json::from_str(json.as_str()).unwrap()
+    }
+}
 impl CollectionFolder {
     pub fn duplicate(&self, new_name: String) -> Self {
         let json = serde_json::to_string(self).unwrap();

@@ -6,16 +6,12 @@ use std::string::ToString;
 use anyhow::anyhow;
 use base64::engine::general_purpose;
 use base64::Engine;
-use chrono::format::format;
-use openapiv3::Type::Object;
 use openapiv3::{
-    Components, MediaType, ObjectType, OpenAPI, Operation, Parameter, ReferenceOr, RequestBody,
-    Schema, SchemaKind, Server, StringFormat, Tag, Type, VariantOrUnknownOrEmpty,
+    MediaType, OpenAPI, Operation, Parameter, ReferenceOr, RequestBody, SchemaKind, Server,
+    StringFormat, Tag, Type, VariantOrUnknownOrEmpty,
 };
 use regex::Regex;
-use serde_json::{json, Value};
 
-use crate::utils::openapi_help::{GetItem, OpenApiHelp};
 use netpurr_core::data::auth::Auth;
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::environment::{EnvironmentConfig, EnvironmentItem};
@@ -24,6 +20,8 @@ use netpurr_core::data::http::{
     QueryParam, Request, RequestSchema,
 };
 use netpurr_core::data::record::Record;
+
+use crate::utils::openapi_help::{GetItem, OpenApiHelp};
 
 const DEFAULT_TAG: &str = "Default";
 
@@ -205,11 +203,9 @@ impl OpenApi {
             .iter()
             .map(|op| {
                 Record::Rest(HttpRecord {
-                    name: op.operation.summary.clone().unwrap_or(format!(
-                        "{} {}",
-                        op.method.clone(),
-                        op.path.clone()
-                    )),
+                    name: op.operation.summary.clone().unwrap_or(
+                        format!("{} {}", op.method.clone(), op.path.clone()).replace("/", "_"),
+                    ),
                     desc: op.operation.description.clone().unwrap_or_default(),
                     operation_id: op.operation.operation_id.clone(),
                     request: Request {

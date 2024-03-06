@@ -1,15 +1,23 @@
+use anyhow::Error;
+use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::ops::Deref;
 use std::path::Path;
 use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex, RwLock};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use deno_core::url::Url;
-use deno_core::PollEventLoopOptions;
 use deno_core::{op2, ExtensionBuilder, FsModuleLoader, ModuleCodeString, Op, OpState};
+use deno_core::{JsRuntime, PollEventLoopOptions};
+use log::{debug, info};
 use poll_promise::Promise;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
+use tokio::task;
+use tokio::time::sleep;
 
 use crate::data::environment::{EnvironmentItemValue, EnvironmentValueType};
 use crate::data::http;
@@ -26,9 +34,21 @@ pub struct Context {
     pub request: Request,
     pub response: JsResponse,
     pub envs: BTreeMap<String, EnvironmentItemValue>,
-    pub shared_map: BTreeMap<String, String>,
+    pub shared_map: SharedMap,
     pub logger: Logger,
     pub test_result: TestResult,
+}
+
+#[derive(Default, Clone)]
+pub struct SharedMap {
+    map: Arc<RwLock<BTreeMap<String, String>>>,
+}
+impl Deref for SharedMap {
+    type Target = Arc<RwLock<BTreeMap<String, String>>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.map
+    }
 }
 
 #[derive(Default, Clone)]
@@ -37,27 +57,28 @@ pub struct ScriptScope {
     pub scope: String,
 }
 impl ScriptRuntime {
-    pub fn run(
+    pub fn run_block(
         &self,
         scripts: Vec<ScriptScope>,
         context: Context,
     ) -> Promise<anyhow::Result<Context>> {
-        Promise::spawn_thread("script", || ScriptRuntime::run_block_many(scripts, context))
+        Promise::spawn_thread("script", || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            runtime.block_on(ScriptRuntime::run_async(scripts, context))
+        })
     }
 
-    pub fn run_block_many(
+    pub async fn run_async(
         scripts: Vec<ScriptScope>,
         mut context: Context,
     ) -> anyhow::Result<Context> {
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
         for script_scope in scripts.iter() {
             context.scope_name = script_scope.scope.clone();
-            let step_context = runtime.block_on(async {
-                ScriptRuntime::run_js(script_scope.script.clone(), context.clone()).await
-            })?;
+            let step_context =
+                ScriptRuntime::run_js(script_scope.script.clone(), context.clone()).await?;
             context.envs = step_context.envs.clone();
             context.request = step_context.request.clone();
             context.logger = step_context.logger.clone();
@@ -67,7 +88,7 @@ impl ScriptRuntime {
         Ok(context)
     }
 
-    async fn run_js(js: String, context: Context) -> anyhow::Result<Context> {
+    fn build_js_runtime() -> JsRuntime {
         let runjs_extension = ExtensionBuilder::default()
             .ops(vec![
                 op_set_env::DECL,
@@ -80,17 +101,22 @@ impl ScriptRuntime {
                 op_http_fetch::DECL,
                 op_get_shared::DECL,
                 op_set_shared::DECL,
+                op_wait_shared::DECL,
                 op_response::DECL,
                 op_open_test::DECL,
                 op_close_test::DECL,
                 op_append_assert::DECL,
+                op_sleep::DECL,
             ])
             .build();
-        let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
+        return JsRuntime::new(deno_core::RuntimeOptions {
             module_loader: Some(Rc::new(FsModuleLoader)),
             extensions: vec![runjs_extension],
             ..Default::default()
         });
+    }
+    async fn run_js(js: String, context: Context) -> anyhow::Result<Context> {
+        let mut js_runtime = Self::build_js_runtime();
         js_runtime.op_state().borrow_mut().put(context);
         let runtime_init_code = include_str!("resource/runtime.js");
         js_runtime
@@ -121,12 +147,58 @@ fn op_set_shared(state: &mut OpState, #[string] key: String, #[string] value: St
     match context {
         None => {}
         Some(c) => {
-            c.shared_map.insert(key.clone(), value.clone());
+            c.shared_map
+                .write()
+                .unwrap()
+                .insert(key.clone(), value.clone());
             c.logger.add_info(
                 c.scope_name.clone(),
                 format!("set shared: `{}` as `{}`", key, value),
             );
         }
+    }
+}
+#[op2(async)]
+async fn op_sleep(#[bigint] time: u64) -> anyhow::Result<()> {
+    sleep(Duration::from_millis(time)).await;
+    Ok(())
+}
+#[op2(async)]
+#[string]
+async fn op_wait_shared(
+    state: Rc<RefCell<OpState>>,
+    #[string] key: String,
+) -> anyhow::Result<String> {
+    let mut _state = state.borrow_mut();
+    let mut count = 0;
+    let context = _state.try_borrow_mut::<Context>();
+    match context {
+        None => {
+            return Err(Error::msg("context is none"));
+        }
+        Some(c) => loop {
+            let value = c.shared_map.read().unwrap().get(key.as_str()).cloned();
+            match value {
+                None => {
+                    sleep(Duration::from_millis(100)).await;
+                    count = count + 1;
+                    if count > 100 {
+                        c.logger.add_error(
+                            c.scope_name.clone(),
+                            format!("get shared `{}` failed", key),
+                        );
+                        return Err(Error::msg(format!("get shared value:{} time out", key)));
+                    }
+                }
+                Some(v) => {
+                    c.logger.add_info(
+                        c.scope_name.clone(),
+                        format!("get shared: `{}` as `{}`", key, v),
+                    );
+                    return Ok(v.clone());
+                }
+            }
+        },
     }
 }
 
@@ -136,13 +208,19 @@ fn op_get_shared(state: &mut OpState, #[string] key: String) -> String {
     let context = state.try_borrow_mut::<Context>();
     match context {
         None => "".to_string(),
-        Some(c) => match c.shared_map.get(key.as_str()).cloned() {
+        Some(c) => match c.shared_map.read().unwrap().get(key.as_str()).cloned() {
             None => {
                 c.logger
                     .add_error(c.scope_name.clone(), format!("get shared `{}` failed", key));
                 "\"\"".to_string()
             }
-            Some(v) => v.clone(),
+            Some(v) => {
+                c.logger.add_info(
+                    c.scope_name.clone(),
+                    format!("get shared: `{}` as `{}`", key, v),
+                );
+                v.clone()
+            }
         },
     }
 }

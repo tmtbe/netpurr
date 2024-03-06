@@ -7,7 +7,7 @@ use strum_macros::{Display, EnumIter, EnumString};
 use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::http::{BodyType, HttpRecord, LockWith, Method};
 use netpurr_core::data::test::TestStatus;
-use netpurr_core::data::{http, test};
+use netpurr_core::runner::{RunRequestInfo, TestRunError, TestRunResult};
 use netpurr_core::script::ScriptScope;
 
 use crate::data::workspace_data::WorkspaceData;
@@ -33,8 +33,7 @@ pub struct RestPanel {
     request_body_panel: RequestBodyPanel,
     request_pre_script_panel: RequestPreScriptPanel,
     test_script_panel: TestScriptPanel,
-    send_promise:
-        Option<Promise<Result<(http::Request, http::Response, test::TestResult), String>>>,
+    send_promise: Option<Promise<Result<TestRunResult, TestRunError>>>,
 }
 
 #[derive(Clone, EnumIter, EnumString, Display, PartialEq)]
@@ -185,12 +184,16 @@ impl RestPanel {
                                     script: crt.record.test_script(),
                                 });
                             }
-                            let send_response = operation.send_rest_with_script(
-                                crt.record.must_get_rest().request.clone(),
-                                envs.clone(),
-                                pre_request_parent_script_scopes,
-                                test_parent_script_scopes,
-                            );
+
+                            let send_response =
+                                operation.send_rest_with_script_promise(RunRequestInfo {
+                                    collection_path: crt.collection_path.clone(),
+                                    request_name: crt.get_tab_name(),
+                                    request: crt.record.must_get_rest().request.clone(),
+                                    envs: envs.clone(),
+                                    pre_request_scripts: pre_request_parent_script_scopes,
+                                    test_scripts: test_parent_script_scopes,
+                                });
                             self.send_promise = Some(send_response);
                             send_rest = Some(crt.record.clone());
                         }
@@ -363,8 +366,9 @@ impl RestPanel {
             if let Some(result) = promise.ready() {
                 workspace_data.save_cookies();
                 workspace_data.must_get_mut_crt(crt_id.clone(), |crt| match result {
-                    Ok((request, response, test_result)) => {
-                        request
+                    Ok(test_run_result) => {
+                        test_run_result
+                            .request
                             .headers
                             .iter()
                             .filter(|h| h.lock_with != LockWith::NoLock)
@@ -375,11 +379,11 @@ impl RestPanel {
                                     .headers
                                     .push(h.clone());
                             });
-                        crt.record.must_get_mut_rest().response = response.clone();
+                        crt.record.must_get_mut_rest().response = test_run_result.response.clone();
                         crt.record.must_get_mut_rest().ready();
                         operation.add_success_toast("Send request success");
-                        crt.test_result = test_result.clone();
-                        match test_result.status {
+                        crt.test_result = test_run_result.test_result.clone();
+                        match test_run_result.test_result.status {
                             TestStatus::None => {}
                             TestStatus::PASS => {
                                 operation.add_success_toast("Test success.");
@@ -391,8 +395,10 @@ impl RestPanel {
                     }
                     Err(e) => {
                         crt.record.must_get_mut_rest().error();
-                        operation
-                            .add_error_toast(format!("Send request failed: {}", e.to_string()));
+                        operation.add_error_toast(format!(
+                            "Send request failed: {}",
+                            e.error.to_string()
+                        ));
                     }
                 });
                 self.send_promise = None;

@@ -1,8 +1,8 @@
 use egui::{Image, TextBuffer};
+use uuid::Uuid;
 
-use netpurr_core::data::http::Response;
+use netpurr_core::data::http::{Header, Response};
 
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::windows::view_json_windows::ViewJsonWindows;
 
@@ -13,37 +13,31 @@ impl ResponseBodyPanel {
     pub fn set_and_render(
         &mut self,
         ui: &mut egui::Ui,
-        workspace_data: &mut WorkspaceData,
         operation: &Operation,
-        crt_id: String,
+        response: &Response,
     ) {
-        let crt = workspace_data.must_get_crt(crt_id.clone());
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
             let mut layout_job = egui_extras::syntax_highlighting::highlight(
                 ui.ctx(),
                 &theme,
                 string,
-                ResponseBodyPanel::get_language(&crt.record.must_get_rest().response).as_str(),
+                ResponseBodyPanel::get_language(response).as_str(),
             );
             layout_job.wrap.max_width = wrap_width;
             ui.fonts(|f| f.layout_job(layout_job))
         };
-        match crt.record.must_get_rest().get_response_content_type() {
+        match self.get_response_content_type(response) {
             None => {}
             Some(content_type) => {
                 if content_type.value.starts_with("image") {
                     let image = Image::from_bytes(
-                        crt.record
-                            .must_get_rest()
-                            .response
-                            .request
-                            .get_url_with_schema(),
-                        crt.record.must_get_rest().response.body.to_vec(),
+                        response.request.get_url_with_schema(),
+                        response.body.to_vec(),
                     );
                     ui.add(image);
                 } else {
-                    match String::from_utf8(crt.record.must_get_rest().response.body.to_vec()) {
+                    match String::from_utf8(response.body.to_vec()) {
                         Ok(s) => {
                             ui.horizontal(|ui| {
                                 let tooltip = "Click to copy the response body";
@@ -55,7 +49,7 @@ impl ResponseBodyPanel {
                                     if ui.button("View Json Tree").clicked() {
                                         operation.add_window(Box::new(
                                             ViewJsonWindows::default()
-                                                .with_json(s.clone(), crt_id.clone()),
+                                                .with_json(s.clone(), Uuid::new_v4().to_string()),
                                         ))
                                     }
                                 }
@@ -84,6 +78,13 @@ impl ResponseBodyPanel {
                 }
             }
         }
+    }
+    pub fn get_response_content_type(&self, response: &Response) -> Option<Header> {
+        response
+            .headers
+            .iter()
+            .find(|h| h.key.to_lowercase() == "content-type")
+            .cloned()
     }
     fn get_language(response: &Response) -> String {
         match response.headers.iter().find(|h| h.key == "content-type") {
