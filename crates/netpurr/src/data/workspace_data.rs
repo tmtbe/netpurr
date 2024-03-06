@@ -423,6 +423,7 @@ impl WorkspaceData {
 
 impl WorkspaceData {
     pub fn load_all(&mut self, workspace: String) {
+        self.workspace_name = workspace.clone();
         self.central_request_data_list
             .borrow_mut()
             .load_all(workspace.clone());

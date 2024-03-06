@@ -21,6 +21,9 @@ pub struct CentralRequestDataList {
 impl CentralRequestDataList {
     pub fn load_all(&mut self, workspace: String) {
         self.persistence.set_workspace(workspace);
+        self.data_list.clear();
+        self.select_id = None;
+        self.data_map.clear();
         let result: Option<CentralRequestDataListSaved> = self
             .persistence
             .load(Path::new("requests/data.json").to_path_buf());

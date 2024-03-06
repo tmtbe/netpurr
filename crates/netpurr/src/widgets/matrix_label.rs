@@ -123,6 +123,8 @@ impl MatrixLabel {
                 if utils::select_label(ui, "Export").clicked() {
                     ui.close_menu();
                     let export = Export {
+                        openapi: None,
+                        info: None,
                         export_type: ExportType::Collection,
                         collection: Some(collection.clone()),
                     };

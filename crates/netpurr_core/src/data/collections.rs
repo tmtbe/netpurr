@@ -20,6 +20,7 @@ pub struct Collections {
 
 impl Collections {
     pub fn load_all(&mut self, workspace: String) {
+        self.data.clear();
         self.persistence.set_workspace(workspace);
         for collection_file in self
             .persistence

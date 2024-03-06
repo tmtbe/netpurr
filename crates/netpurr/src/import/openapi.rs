@@ -9,7 +9,7 @@ use base64::Engine;
 use openapiv3::Type::Object;
 use openapiv3::{
     Components, MediaType, ObjectType, OpenAPI, Operation, Parameter, ReferenceOr, RequestBody,
-    Schema, SchemaKind, StringFormat, Tag, Type, VariantOrUnknownOrEmpty,
+    Schema, SchemaKind, Server, StringFormat, Tag, Type, VariantOrUnknownOrEmpty,
 };
 use regex::Regex;
 use serde_json::{json, Value};
@@ -37,11 +37,22 @@ pub struct OpenApiOperation {
 }
 
 impl OpenApi {
-    pub fn try_import(json: String) -> serde_json::Result<OpenApi> {
-        let openapi: OpenAPI = serde_json::from_str(json.as_str())?;
-        return Ok(OpenApi {
-            openapi_help: OpenApiHelp { openapi },
-        });
+    pub fn try_import(content: String) -> anyhow::Result<OpenApi> {
+        if content.starts_with("{") {
+            return match serde_json::from_str::<OpenAPI>(content.as_str()) {
+                Ok(openapi) => Ok(OpenApi {
+                    openapi_help: OpenApiHelp { openapi },
+                }),
+                Err(e) => Err(anyhow!(e)),
+            };
+        } else {
+            return match serde_yaml::from_str::<OpenAPI>(content.as_str()) {
+                Ok(openapi) => Ok(OpenApi {
+                    openapi_help: OpenApiHelp { openapi },
+                }),
+                Err(e) => Err(anyhow!(e)),
+            };
+        }
     }
     pub fn to_collection(&self) -> anyhow::Result<Collection> {
         if self.openapi_help.openapi.info.title.is_empty() {
@@ -74,12 +85,29 @@ impl OpenApi {
                 }
             }
         }
+        let server = self.openapi_help.openapi.servers.get(0);
+        let host = server
+            .unwrap_or(&Server {
+                url: "http://localhost:8080".to_string(),
+                description: None,
+                variables: None,
+                extensions: Default::default(),
+            })
+            .url
+            .clone();
+        let host_schema: Vec<&str> = host.split("://").collect();
+        let mut host_value = host.clone();
+        if host_schema.len() >= 2 {
+            host_value = host_schema[1].to_string();
+        }
+        let schema =
+            RequestSchema::try_from(host_schema[0].to_uppercase().as_str()).unwrap_or_default();
         let collection = Collection {
             envs: EnvironmentConfig {
                 items: vec![EnvironmentItem {
                     enable: true,
                     key: "server_host".to_string(),
-                    value: "localhost:8080".to_string(),
+                    value: host_value,
                     desc: "".to_string(),
                     value_type: Default::default(),
                 }],
@@ -97,7 +125,7 @@ impl OpenApi {
                     .unwrap_or_default(),
                 auth: Default::default(),
                 is_root: true,
-                requests: self.gen_requests(tag_map.get(DEFAULT_TAG).unwrap(), RequestSchema::HTTP),
+                requests: self.gen_requests(tag_map.get(DEFAULT_TAG).unwrap(), schema),
                 folders: self.gen_folders(tag_map, self.openapi_help.openapi.tags.clone()),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
@@ -153,7 +181,7 @@ impl OpenApi {
                 desc: openapi_tags
                     .get(name)
                     .cloned()
-                    .unwrap()
+                    .unwrap_or_default()
                     .description
                     .unwrap_or_default(),
                 auth: Default::default(),
@@ -185,7 +213,7 @@ impl OpenApi {
                     request: Request {
                         method: op.method.clone(),
                         schema: schema.clone(),
-                        raw_url: Self::gen_raw_path(op),
+                        raw_url: Self::gen_raw_path(op, schema.to_string().to_lowercase()),
                         base_url: "".to_string(),
                         path_variables: vec![],
                         params: op
@@ -337,8 +365,8 @@ impl OpenApi {
         }
     }
 
-    fn gen_raw_path(op: &OpenApiOperation) -> String {
-        let head = "http://{{ server_host }}";
+    fn gen_raw_path(op: &OpenApiOperation, protocol: String) -> String {
+        let head = protocol + "://{{server_host}}";
         let re = Regex::new(r"\{([^{}]+)}").unwrap();
         let replaced_path = re.replace_all(op.path.as_str(), ":$1");
         return format!("{}{}", head, replaced_path);

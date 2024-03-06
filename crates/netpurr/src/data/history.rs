@@ -18,6 +18,7 @@ pub struct HistoryDataList {
 
 impl HistoryDataList {
     pub fn load_all(&mut self, workspace: String) -> Result<(), Error> {
+        self.date_group.clear();
         self.persistence.set_workspace(workspace);
         for date_dir in self
             .persistence

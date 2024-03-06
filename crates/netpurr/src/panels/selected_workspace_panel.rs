@@ -85,6 +85,7 @@ impl SelectedWorkspacePanel {
                                 if self.current_workspace.is_none() {
                                     self.current_workspace = Some(name.clone());
                                     config_data.set_select_workspace(Some(name.clone()));
+                                    workspace_data.load_all(name.clone());
                                 }
                                 if utils::select_value(
                                     ui,

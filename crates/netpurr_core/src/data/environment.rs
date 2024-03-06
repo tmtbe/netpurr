@@ -115,6 +115,8 @@ impl Environment {
 
     pub fn load_all(&mut self, workspace: String) -> Result<(), Error> {
         self.persistence.set_workspace(workspace);
+        self.data.clear();
+        self.status = EnvironmentStatus::default();
         for key in self
             .persistence
             .load_list(Path::new("environment/data").to_path_buf())

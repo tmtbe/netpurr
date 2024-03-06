@@ -7,6 +7,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use crate::data::config_data::ConfigData;
+use crate::data::export;
 use crate::data::export::{Export, ExportType};
 use crate::data::workspace_data::WorkspaceData;
 use crate::import::openapi::OpenApi;
@@ -134,34 +135,59 @@ impl Window for ImportWindows {
 impl ImportWindows {
     fn process_raw(
         &mut self,
-        content: String,
+        mut content: String,
         workspace_data: &mut WorkspaceData,
         operation: &Operation,
     ) -> anyhow::Result<()> {
-        let export_result: Result<Export, serde_json::Error> =
-            serde_json::from_str(content.as_str());
-        match export_result {
-            Ok(export) => match export.export_type {
-                ExportType::Collection => {
-                    export.collection.map(|c| {
-                        let new_name = workspace_data.import_collection(c);
-                        operation.add_success_toast(format!(
-                            "Import collections `{}` success.",
-                            new_name
-                        ));
-                    });
+        content = content.trim_start().to_string();
+        if content.starts_with("{") {
+            let export_result = serde_json::from_str::<Export>(content.as_str());
+            match export_result {
+                Ok(export) => {
+                    Self::process_export(content, workspace_data, operation, export);
                 }
-                ExportType::Request => {}
-                ExportType::Environment => {}
-                ExportType::None => {
-                    Self::import_postman(content, workspace_data, operation);
+                Err(_) => {
+                    Self::import_final(content, operation);
                 }
-            },
-            Err(_) => {
-                Self::import_postman(content, workspace_data, operation);
+            }
+        } else {
+            let export_result = serde_yaml::from_str::<Export>(content.as_str());
+            match export_result {
+                Ok(export) => {
+                    Self::process_export(content, workspace_data, operation, export);
+                }
+                Err(_) => {
+                    Self::import_final(content, operation);
+                }
             }
         }
         Ok(())
+    }
+
+    fn process_export(
+        content: String,
+        workspace_data: &mut WorkspaceData,
+        operation: &Operation,
+        export: Export,
+    ) {
+        match export.export_type {
+            ExportType::Collection => {
+                export.collection.map(|c| {
+                    let new_name = workspace_data.import_collection(c);
+                    operation
+                        .add_success_toast(format!("Import collections `{}` success.", new_name));
+                });
+            }
+            ExportType::Request => {}
+            ExportType::Environment => {}
+            ExportType::None => {
+                if export.openapi.is_some() {
+                    Self::import_openapi(content, workspace_data, operation)
+                } else if export.info.is_some() {
+                    Self::import_postman(content, workspace_data, operation);
+                }
+            }
+        }
     }
 
     fn import_postman(content: String, workspace_data: &mut WorkspaceData, operation: &Operation) {
@@ -173,9 +199,9 @@ impl ImportWindows {
                     operation
                         .add_success_toast(format!("Import collections `{}` success.", new_name));
                 }
-                Err(_) => Self::import_openapi(content, workspace_data, operation),
+                Err(_) => Self::import_final(content, operation),
             },
-            Err(_) => Self::import_openapi(content, workspace_data, operation),
+            Err(_) => Self::import_final(content, operation),
         }
     }
 
