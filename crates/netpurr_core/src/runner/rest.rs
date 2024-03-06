@@ -55,6 +55,7 @@ impl RestSender {
         Ok((
             new_request,
             http::Response {
+                request: request.clone(),
                 headers: Header::new_from_map(reqwest_response.headers()),
                 status: reqwest_response.status().as_u16(),
                 status_text: reqwest_response.status().to_string(),

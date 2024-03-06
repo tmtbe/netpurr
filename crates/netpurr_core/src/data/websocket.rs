@@ -173,6 +173,7 @@ impl WebSocketSession {
         response: tokio_tungstenite::tungstenite::handshake::client::Response,
     ) {
         let http_response = Response {
+            request: Default::default(),
             body: Arc::new(Default::default()),
             headers: response
                 .headers()

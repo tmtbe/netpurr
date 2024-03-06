@@ -496,6 +496,8 @@ impl Header {
 #[derive(Default, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Response {
+    #[serde(skip)]
+    pub request: Request,
     pub body: Arc<HttpBody>,
     pub headers: Vec<Header>,
     pub status: u16,
