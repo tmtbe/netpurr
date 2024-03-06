@@ -6,6 +6,7 @@ use std::string::ToString;
 use anyhow::anyhow;
 use base64::engine::general_purpose;
 use base64::Engine;
+use chrono::format::format;
 use openapiv3::Type::Object;
 use openapiv3::{
     Components, MediaType, ObjectType, OpenAPI, Operation, Parameter, ReferenceOr, RequestBody,
@@ -207,7 +208,11 @@ impl OpenApi {
             .iter()
             .map(|op| {
                 Record::Rest(HttpRecord {
-                    name: op.operation.summary.clone().unwrap_or_default(),
+                    name: op.operation.summary.clone().unwrap_or(format!(
+                        "{} {}",
+                        op.method.clone(),
+                        op.path.clone()
+                    )),
                     desc: op.operation.description.clone().unwrap_or_default(),
                     operation_id: op.operation.operation_id.clone(),
                     request: Request {
