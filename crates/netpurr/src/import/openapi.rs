@@ -15,7 +15,7 @@ use openapiv3::{
 use regex::Regex;
 use serde_json::{json, Value};
 
-use crate::utils::openapi_help::OpenApiHelp;
+use crate::utils::openapi_help::{GetItem, OpenApiHelp};
 use netpurr_core::data::auth::Auth;
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::environment::{EnvironmentConfig, EnvironmentItem};
@@ -279,9 +279,8 @@ impl OpenApi {
         let mut body = HttpBody::default();
         match option {
             None => body,
-            Some(rr) => match rr.as_item() {
-                None => body,
-                Some(r) => {
+            Some(rr) => {
+                if let Some(r) = rr.get_item(&self.openapi_help.openapi) {
                     for (name, mt) in r.content.iter() {
                         match name.to_lowercase().as_str() {
                             "application/json" => {
@@ -290,17 +289,17 @@ impl OpenApi {
                                 match mt.schema.clone() {
                                     None => {}
                                     Some(rs) => {
-                                        let json = self
-                                            .openapi_help
-                                            .gen_schema(self.openapi_help.get_schema(&rs));
-                                        match json {
-                                            None => {}
-                                            Some(s) => {
-                                                body.body_str =
-                                                    serde_json::to_string_pretty(&s).unwrap();
-                                                body.base64 = general_purpose::STANDARD
-                                                    .encode(body.body_str.clone())
-                                                    .to_string()
+                                        if let Some(s) = rs.get_item(&self.openapi_help.openapi) {
+                                            let json = self.openapi_help.gen_schema(s);
+                                            match json {
+                                                None => {}
+                                                Some(s) => {
+                                                    body.body_str =
+                                                        serde_json::to_string_pretty(&s).unwrap();
+                                                    body.base64 = general_purpose::STANDARD
+                                                        .encode(body.body_str.clone())
+                                                        .to_string()
+                                                }
                                             }
                                         }
                                     }
@@ -313,9 +312,9 @@ impl OpenApi {
                             _ => {}
                         }
                     }
-                    return body;
                 }
-            },
+                return body;
+            }
         }
     }
 

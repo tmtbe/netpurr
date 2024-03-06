@@ -1,18 +1,148 @@
-use openapiv3::Type::Object;
 use openapiv3::{
-    ObjectType, OpenAPI, Operation, ReferenceOr, RequestBody, Schema, SchemaKind, Type,
+    Header, ObjectType, OpenAPI, Operation, Parameter, ParameterData, ParameterSchemaOrContent,
+    ReferenceOr, RequestBody, Response, Schema, SchemaKind, Type,
 };
 use serde_json::{json, Value};
+use strum_macros::Display;
 
 pub struct OpenApiHelp {
     pub openapi: OpenAPI,
 }
-
+pub trait GetItem<R> {
+    fn get_item(&self, openapi: &OpenAPI) -> Option<R>;
+}
+impl GetItem<Schema> for ReferenceOr<Schema> {
+    fn get_item(&self, openapi: &OpenAPI) -> Option<Schema> {
+        return match self {
+            ReferenceOr::Reference { reference } => {
+                OpenApiHelp::get_schema_with_ref(openapi, reference.clone())
+            }
+            ReferenceOr::Item(s) => Some(s.clone()),
+        };
+    }
+}
+impl GetItem<Schema> for ReferenceOr<Box<Schema>> {
+    fn get_item(&self, openapi: &OpenAPI) -> Option<Schema> {
+        return match self {
+            ReferenceOr::Reference { reference } => {
+                OpenApiHelp::get_schema_with_ref(openapi, reference.clone())
+            }
+            ReferenceOr::Item(s) => Some(*s.clone()),
+        };
+    }
+}
+impl GetItem<Parameter> for ReferenceOr<Parameter> {
+    fn get_item(&self, openapi: &OpenAPI) -> Option<Parameter> {
+        return match self {
+            ReferenceOr::Reference { reference } => {
+                OpenApiHelp::get_parameter_with_ref(openapi, reference.clone())
+            }
+            ReferenceOr::Item(s) => Some(s.clone()),
+        };
+    }
+}
+impl GetItem<Parameter> for ReferenceOr<Box<Parameter>> {
+    fn get_item(&self, openapi: &OpenAPI) -> Option<Parameter> {
+        return match self {
+            ReferenceOr::Reference { reference } => {
+                OpenApiHelp::get_parameter_with_ref(openapi, reference.clone())
+            }
+            ReferenceOr::Item(s) => Some(*s.clone()),
+        };
+    }
+}
+impl GetItem<RequestBody> for ReferenceOr<RequestBody> {
+    fn get_item(&self, openapi: &OpenAPI) -> Option<RequestBody> {
+        return match self {
+            ReferenceOr::Reference { reference } => {
+                OpenApiHelp::get_request_body_with_ref(openapi, reference.clone())
+            }
+            ReferenceOr::Item(s) => Some(s.clone()),
+        };
+    }
+}
+impl GetItem<RequestBody> for ReferenceOr<Box<RequestBody>> {
+    fn get_item(&self, openapi: &OpenAPI) -> Option<RequestBody> {
+        return match self {
+            ReferenceOr::Reference { reference } => {
+                OpenApiHelp::get_request_body_with_ref(openapi, reference.clone())
+            }
+            ReferenceOr::Item(s) => Some(*s.clone()),
+        };
+    }
+}
+impl OpenApiHelp {
+    fn get_schema_with_ref(openapi: &OpenAPI, ref_name: String) -> Option<Schema> {
+        return match openapi.components.clone() {
+            None => None,
+            Some(c) => {
+                let s_name = ref_name.trim_start_matches("#/components/schemas/");
+                let find = c.schemas.get(s_name);
+                match find {
+                    None => None,
+                    Some(rs) => rs.clone().into_item(),
+                }
+            }
+        };
+    }
+    fn get_response_with_ref(openapi: &OpenAPI, ref_name: String) -> Option<Response> {
+        return match openapi.components.clone() {
+            None => None,
+            Some(c) => {
+                let s_name = ref_name.trim_start_matches("#/components/responses/");
+                let find = c.responses.get(s_name);
+                match find {
+                    None => None,
+                    Some(rs) => rs.clone().into_item(),
+                }
+            }
+        };
+    }
+    fn get_parameter_with_ref(openapi: &OpenAPI, ref_name: String) -> Option<Parameter> {
+        return match openapi.components.clone() {
+            None => None,
+            Some(c) => {
+                let s_name = ref_name.trim_start_matches("#/components/Parameters/");
+                let find = c.parameters.get(s_name);
+                match find {
+                    None => None,
+                    Some(rs) => rs.clone().into_item(),
+                }
+            }
+        };
+    }
+    fn get_request_body_with_ref(openapi: &OpenAPI, ref_name: String) -> Option<RequestBody> {
+        return match openapi.components.clone() {
+            None => None,
+            Some(c) => {
+                let s_name = ref_name.trim_start_matches("#/components/request_bodies/");
+                let find = c.request_bodies.get(s_name);
+                match find {
+                    None => None,
+                    Some(rs) => rs.clone().into_item(),
+                }
+            }
+        };
+    }
+    fn get_header_with_ref(openapi: &OpenAPI, ref_name: String) -> Option<Header> {
+        return match openapi.components.clone() {
+            None => None,
+            Some(c) => {
+                let s_name = ref_name.trim_start_matches("#/components/headers/");
+                let find = c.headers.get(s_name);
+                match find {
+                    None => None,
+                    Some(rs) => rs.clone().into_item(),
+                }
+            }
+        };
+    }
+}
 impl OpenApiHelp {
     pub fn get_operation(&self, operation_id: String) -> Option<Operation> {
         for (_, path_item) in self.openapi.paths.iter() {
             if let Some(item) = path_item.as_item() {
-                let mut ops: Vec<Option<openapiv3::Operation>> = vec![];
+                let mut ops: Vec<Option<Operation>> = vec![];
                 ops.push(item.options.clone());
                 ops.push(item.get.clone());
                 ops.push(item.post.clone());
@@ -39,12 +169,11 @@ impl OpenApiHelp {
             if let Some(op_id) = options.operation_id.clone() {
                 if op_id == operation_id {
                     if let Some(request_body) = options.request_body.clone() {
-                        match request_body {
-                            ReferenceOr::Reference { reference } => {}
-                            ReferenceOr::Item(rb) => {
-                                if let Some(mt) = rb.content.get("application/json") {
-                                    if let Some(schema) = &mt.schema {
-                                        return self.gen_schema(self.get_schema(schema));
+                        if let Some(rb) = request_body.get_item(&self.openapi) {
+                            if let Some(mt) = rb.content.get("application/json") {
+                                if let Some(rs) = &mt.schema {
+                                    if let Some(s) = rs.get_item(&self.openapi) {
+                                        return self.gen_schema(s);
                                     }
                                 }
                             }
@@ -56,51 +185,22 @@ impl OpenApiHelp {
         return None;
     }
 
-    pub fn get_schema(&self, rs: &ReferenceOr<Schema>) -> Schema {
-        return match rs {
-            ReferenceOr::Reference { reference } => self.get_schema_with_ref(reference.clone()),
-            ReferenceOr::Item(s) => s.clone(),
-        };
-    }
-    fn get_schema_box(&self, rs: &ReferenceOr<Box<Schema>>) -> Schema {
-        return match rs {
-            ReferenceOr::Reference { reference } => self.get_schema_with_ref(reference.clone()),
-            ReferenceOr::Item(s) => *s.clone(),
-        };
-    }
-
-    fn get_schema_with_ref(&self, ref_name: String) -> Schema {
-        let default = Schema {
-            schema_data: Default::default(),
-            schema_kind: openapiv3::SchemaKind::Type(Object(ObjectType::default())),
-        };
-        return match self.openapi.components.clone() {
-            None => default,
-            Some(c) => {
-                let s_name = ref_name.trim_start_matches("#/components/schemas/");
-                let find = c.schemas.get(s_name);
-                match find {
-                    None => default,
-                    Some(rs) => self.get_schema(rs),
-                }
-            }
-        };
-    }
-
     pub fn gen_schema(&self, s: Schema) -> Option<Value> {
         return match s.schema_kind.clone() {
             SchemaKind::Type(t) => match t {
                 Type::Object(ot) => {
                     let mut json_tree = json!({});
                     for (name, rs) in ot.properties.iter() {
-                        let json_child = self.gen_schema(self.get_schema_box(rs));
-                        match json_child {
-                            None => {}
-                            Some(child) => {
-                                json_tree
-                                    .as_object_mut()
-                                    .unwrap()
-                                    .insert(name.clone(), child);
+                        if let Some(s) = rs.get_item(&self.openapi) {
+                            let json_child = self.gen_schema(s);
+                            match json_child {
+                                None => {}
+                                Some(child) => {
+                                    json_tree
+                                        .as_object_mut()
+                                        .unwrap()
+                                        .insert(name.clone(), child);
+                                }
                             }
                         }
                     }
@@ -111,10 +211,12 @@ impl OpenApiHelp {
                     match at.items {
                         None => {}
                         Some(rs) => {
-                            let json_child = self.gen_schema(self.get_schema_box(&rs));
-                            match json_child {
-                                None => {}
-                                Some(child) => json_tree.as_array_mut().unwrap().push(child),
+                            if let Some(s) = rs.get_item(&self.openapi) {
+                                let json_child = self.gen_schema(s);
+                                match json_child {
+                                    None => {}
+                                    Some(child) => json_tree.as_array_mut().unwrap().push(child),
+                                }
                             }
                         }
                     }
