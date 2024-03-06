@@ -25,10 +25,10 @@ use netpurr_core::data::http::{
 };
 use netpurr_core::data::record::Record;
 
-const DEFAULT_TAG: &str = "_Default";
+const DEFAULT_TAG: &str = "Default";
 
 pub struct OpenApi {
-    openapi_help: OpenApiHelp,
+    pub(crate) openapi_help: OpenApiHelp,
 }
 
 pub struct OpenApiOperation {
@@ -126,7 +126,7 @@ impl OpenApi {
                     .unwrap_or_default(),
                 auth: Default::default(),
                 is_root: true,
-                requests: self.gen_requests(tag_map.get(DEFAULT_TAG).unwrap(), schema),
+                requests: Default::default(),
                 folders: self.gen_folders(tag_map, self.openapi_help.openapi.tags.clone()),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
@@ -173,9 +173,6 @@ impl OpenApi {
         }
         let folders: Vec<CollectionFolder> = tag_map
             .iter()
-            .filter(|(name, _)| {
-                return name.as_str() != DEFAULT_TAG;
-            })
             .map(|(name, records)| CollectionFolder {
                 name: name.clone(),
                 parent_path: "".to_string(),

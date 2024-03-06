@@ -48,6 +48,18 @@ impl Environment {
                         );
                     }
                 });
+                collection.clone().map(|c| {
+                    for et in c.envs.items.iter().filter(|item| item.enable) {
+                        result.insert(
+                            et.key.clone(),
+                            EnvironmentItemValue {
+                                value: et.value.clone(),
+                                scope: c.folder.borrow().name.clone() + " Collection",
+                                value_type: et.value_type.clone(),
+                            },
+                        );
+                    }
+                });
                 for ef in EnvFunction::iter() {
                     result.insert(
                         "$".to_string() + ef.to_string().as_str(),
@@ -86,7 +98,7 @@ impl Environment {
                         );
                     }
                 });
-                collection.map(|c| {
+                collection.clone().map(|c| {
                     for et in c.envs.items.iter().filter(|item| item.enable) {
                         result.insert(
                             et.key.clone(),

@@ -248,6 +248,7 @@ impl WorkspaceData {
             .map(|crt| {
                 let (_, cf_option) = self.get_folder_with_path(collection_path.clone());
                 cf_option.map(|cf| {
+                    crt.collection_path = Some(collection_path.clone());
                     let mut record = crt.record.clone();
                     modify_record(&mut record);
                     new_name_option = Some(record.name());

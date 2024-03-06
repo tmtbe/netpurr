@@ -3,22 +3,26 @@ use std::collections::BTreeMap;
 use std::default::Default;
 use std::rc::Rc;
 
-use egui::{Align, Button, Checkbox, Layout, TextEdit, Ui, Widget};
+use egui::{Align, Button, Checkbox, CollapsingHeader, Layout, Response, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 use egui_json_tree::{DefaultExpand, JsonTree};
 use serde_json::Value;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
+use uuid::Uuid;
 
+use crate::data::central_request_data::CentralRequestItem;
 use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::environment::{
     EnvironmentItem, EnvironmentItemValue, EnvironmentValueType,
 };
 use netpurr_core::data::http::Request;
+use netpurr_core::data::record::Record;
 
 use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
+use crate::import::openapi::OpenApi;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::auth_panel::AuthPanel;
@@ -26,6 +30,7 @@ use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
+use crate::utils::openapi_help::OpenApiHelp;
 use crate::utils::HighlightValue;
 
 #[derive(Default)]
@@ -96,6 +101,9 @@ impl Window for NewCollectionWindows {
                 if x == NewCollectionContentType::Variables && self.parent_folder.is_some() {
                     continue;
                 }
+                if x == NewCollectionContentType::OpenAPI && self.parent_folder.is_some() {
+                    continue;
+                }
                 ui.selectable_value(
                     &mut self.new_collection_content_type,
                     x.clone(),
@@ -160,7 +168,7 @@ impl Window for NewCollectionWindows {
                 egui::ScrollArea::vertical()
                     .max_height(400.0)
                     .show(ui, |ui| {
-                        self.build_openapi(ui, &operation);
+                        self.build_openapi(ui, workspace_data, &operation);
                     });
             }
         }
@@ -255,88 +263,116 @@ impl NewCollectionWindows {
         self.new_collection_content_type = NewCollectionContentType::Description;
         self
     }
-    fn build_openapi(&mut self, ui: &mut Ui, operation: &Operation) {
-        ui.horizontal(|ui| {
-            ui.add_space(VERTICAL_GAP);
-            ui.vertical(|ui| {
-                if let Some(openapi) = self.new_collection.openapi.clone() {
-                    let openapi_str = serde_json::to_string(&openapi).unwrap();
-                    match serde_json::from_str::<Value>(openapi_str.as_str()) {
-                        Ok(value) => {
-                            ui.label("Search:");
-                            let (text_edit_response, clear_button_response, reset_button_response) =
-                                ui.horizontal(|ui| {
-                                    let text_edit_response =
-                                        ui.text_edit_singleline(&mut self.search_input);
-                                    let clear_button_response = ui.button("Clear");
-                                    let reset_button_response = ui.button("Reset expanded");
-                                    (
-                                        text_edit_response,
-                                        clear_button_response,
-                                        reset_button_response,
-                                    )
-                                })
-                                .inner;
-
-                            let response = JsonTree::new(
-                                "json_tree_".to_string() + self.window_setting().id(),
-                                &value,
-                            )
-                            .default_expand(DefaultExpand::SearchResults(&self.search_input))
-                            .response_callback(|response, pointer| {
-                                response.context_menu(|ui| {
-                                    ui.with_layout(Layout::top_down_justified(Align::LEFT), |ui| {
-                                        ui.set_width(150.0);
-                                        if !pointer.is_empty()
-                                            && ui
-                                                .add(Button::new("Copy property path").frame(false))
-                                                .clicked()
-                                        {
-                                            operation.add_success_toast("Copy path success.");
-                                            ui.output_mut(|o| o.copied_text = pointer.clone());
-                                            ui.close_menu();
-                                        }
-
-                                        if ui
-                                            .add(Button::new("Copy contents").frame(false))
-                                            .clicked()
-                                        {
-                                            if let Some(val) = value.pointer(pointer) {
-                                                if let Ok(pretty_str) =
-                                                    serde_json::to_string_pretty(val)
-                                                {
-                                                    ui.output_mut(|o| o.copied_text = pretty_str);
-                                                    operation.add_success_toast(
-                                                        "Copy contents success.",
-                                                    );
-                                                }
-                                            }
-                                            ui.close_menu();
-                                        }
-                                    });
-                                });
-                            })
-                            .show(ui);
-                            if text_edit_response.changed() {
-                                response.reset_expanded(ui);
-                            }
-
-                            if clear_button_response.clicked() {
-                                self.search_input.clear();
-                                response.reset_expanded(ui);
-                            }
-
-                            if reset_button_response.clicked() {
-                                response.reset_expanded(ui);
-                            }
-                        }
-                        Err(_) => {}
-                    }
-                } else {
-                    ui.label("No openapi data");
+    fn build_openapi(
+        &mut self,
+        ui: &mut Ui,
+        workspace_data: &mut WorkspaceData,
+        operation: &Operation,
+    ) {
+        if let Some(source_openapi) = self.new_collection.openapi.clone() {
+            let openapi = OpenApi {
+                openapi_help: OpenApiHelp {
+                    openapi: source_openapi,
+                },
+            };
+            if let Ok(collection) = openapi.to_collection() {
+                let folders = collection.folder.borrow().folders.clone();
+                for (cf_name, cf) in folders.iter() {
+                    self.set_openapi_folder(
+                        ui,
+                        operation,
+                        workspace_data,
+                        collection.clone(),
+                        collection.folder.clone(),
+                        cf.clone(),
+                        format!(
+                            "{}/{}",
+                            self.new_collection.folder.borrow().name,
+                            cf_name.clone()
+                        ),
+                    );
                 }
-            });
-        });
+            }
+        }
+    }
+    fn set_openapi_folder(
+        &self,
+        ui: &mut Ui,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        collection: Collection,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
+        folder: Rc<RefCell<CollectionFolder>>,
+        path: String,
+    ) {
+        let folder_name = folder.borrow().name.clone();
+        let response = CollapsingHeader::new(folder_name.clone())
+            .default_open(false)
+            .show(ui, |ui| {
+                let folders = folder.borrow().folders.clone();
+                for (name, cf) in folders.iter() {
+                    self.set_openapi_folder(
+                        ui,
+                        operation,
+                        workspace_data,
+                        collection.clone(),
+                        parent_folder.clone(),
+                        cf.clone(),
+                        format!("{}/{}", path, name),
+                    )
+                }
+                let requests = folder.borrow().requests.clone();
+                self.render_openapi_request(
+                    ui,
+                    operation,
+                    workspace_data,
+                    collection.folder.borrow().name.clone(),
+                    path.clone(),
+                    requests,
+                );
+            })
+            .header_response;
+    }
+
+    fn render_openapi_request(
+        &self,
+        ui: &mut Ui,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        collection_name: String,
+        path: String,
+        requests: BTreeMap<String, Record>,
+    ) {
+        for (_, record) in requests.iter() {
+            let lb = utils::build_rest_ui_header(record.clone(), None, ui);
+            let button = ui.button(lb);
+            if button.clicked() {
+                workspace_data.add_crt(CentralRequestItem {
+                    id: Uuid::new_v4().to_string(),
+                    collection_path: None,
+                    record: record.clone(),
+                    ..Default::default()
+                })
+            }
+            self.popup_openapi_request_item(
+                operation,
+                workspace_data,
+                collection_name.clone(),
+                button,
+                &record,
+                path.clone(),
+            )
+        }
+    }
+    fn popup_openapi_request_item(
+        &self,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        collection_name: String,
+        response: Response,
+        record: &Record,
+        path: String,
+    ) {
     }
 
     fn build_variables(&mut self, ui: &mut Ui) {
