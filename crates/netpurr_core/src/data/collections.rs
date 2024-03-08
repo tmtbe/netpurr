@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::Arc;
 
 use openapiv3::OpenAPI;
 use serde::{Deserialize, Serialize};

@@ -48,6 +48,7 @@ impl SelectedCollectionPanel {
         config_data: &mut ConfigData,
     ) {
         egui::SidePanel::left("selected_collection_left_panel")
+            .default_width(220.0)
             .resizable(false)
             .show_inside(ui, |ui| {
                 ui.add_enabled_ui(!operation.get_ui_lock(), |ui| {
@@ -90,7 +91,7 @@ impl SelectedCollectionPanel {
             });
         egui::CentralPanel::default().show_inside(ui, |ui| match workspace_data.editor_model {
             EditorModel::Request => {
-                self.render_request_panel(operation, workspace_data, ui);
+                self.render_request_panel(operation, config_data, workspace_data, ui);
             }
             EditorModel::Test => {
                 self.test_editor_panel.render(operation, workspace_data, ui);
@@ -144,6 +145,7 @@ impl SelectedCollectionPanel {
     fn render_request_panel(
         &mut self,
         operation: &Operation,
+        config_data: &mut ConfigData,
         workspace_data: &mut WorkspaceData,
         ui: &mut Ui,
     ) {
@@ -163,6 +165,7 @@ impl SelectedCollectionPanel {
                         self.rest_panel.set_and_render(
                             ui,
                             operation,
+                            config_data,
                             workspace_data,
                             crt_id.clone(),
                         );
@@ -171,6 +174,7 @@ impl SelectedCollectionPanel {
                         self.web_socket_panel.set_and_render(
                             ui,
                             operation,
+                            config_data,
                             workspace_data,
                             crt_id.clone(),
                         );

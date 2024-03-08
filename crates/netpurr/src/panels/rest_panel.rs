@@ -10,6 +10,7 @@ use netpurr_core::data::test::TestStatus;
 use netpurr_core::runner::{RunRequestInfo, TestRunError, TestRunResult};
 use netpurr_core::script::ScriptScope;
 
+use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
@@ -57,6 +58,7 @@ impl RestPanel {
         &mut self,
         ui: &mut Ui,
         operation: &Operation,
+        config_data: &mut ConfigData,
         workspace_data: &mut WorkspaceData,
         crt_id: String,
     ) {
@@ -69,7 +71,13 @@ impl RestPanel {
         });
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
-                self.render_editor_right_panel(operation, workspace_data, crt_id.clone(), ui);
+                self.render_editor_right_panel(
+                    operation,
+                    config_data,
+                    workspace_data,
+                    crt_id.clone(),
+                    ui,
+                );
                 self.render_editor_left_panel(workspace_data, crt_id.clone(), ui);
             });
             ui.separator();
@@ -142,6 +150,7 @@ impl RestPanel {
     fn render_editor_right_panel(
         &mut self,
         operation: &Operation,
+        config_data: &mut ConfigData,
         workspace_data: &mut WorkspaceData,
         crt_id: String,
         ui: &mut Ui,
@@ -201,9 +210,10 @@ impl RestPanel {
                     if ui.button("Save").clicked() {
                         match &crt.collection_path {
                             None => {
-                                operation.add_window(Box::new(
-                                    SaveCRTWindows::default().with(crt.id.clone()),
-                                ));
+                                operation.add_window(Box::new(SaveCRTWindows::default().with(
+                                    crt.id.clone(),
+                                    config_data.select_collection().clone(),
+                                )));
                             }
                             Some(collection_path) => {
                                 workspace_data.save_crt(
@@ -391,6 +401,7 @@ impl RestPanel {
                             TestStatus::FAIL => {
                                 operation.add_error_toast("Test failed.");
                             }
+                            TestStatus::Waiting => {}
                         }
                     }
                     Err(e) => {

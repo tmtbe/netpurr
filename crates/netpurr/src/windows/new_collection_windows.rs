@@ -20,7 +20,6 @@ use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::auth_panel::AuthPanel;
-use crate::panels::openapi_show_request_panel::OpenApiShowRequestPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::VERTICAL_GAP;
@@ -42,7 +41,6 @@ pub struct NewCollectionWindows {
     request_pre_script_panel: RequestPreScriptPanel,
     test_script_panel: TestScriptPanel,
     search_input: String,
-    openapi_panel: OpenApiShowRequestPanel,
 }
 
 #[derive(Clone, EnumString, EnumIter, PartialEq, Display)]
@@ -52,7 +50,6 @@ enum NewCollectionContentType {
     Variables,
     PreRequestScript,
     Tests,
-    OpenAPI,
 }
 
 impl Default for NewCollectionContentType {
@@ -94,9 +91,6 @@ impl Window for NewCollectionWindows {
         ui.horizontal(|ui| {
             for x in NewCollectionContentType::iter() {
                 if x == NewCollectionContentType::Variables && self.parent_folder.is_some() {
-                    continue;
-                }
-                if x == NewCollectionContentType::OpenAPI && self.parent_folder.is_some() {
                     continue;
                 }
                 ui.selectable_value(
@@ -159,18 +153,6 @@ impl Window for NewCollectionWindows {
                     self.test_script_panel
                         .set_and_render(ui, script, "collection".to_string())
             }
-            NewCollectionContentType::OpenAPI => {
-                egui::ScrollArea::vertical()
-                    .max_height(400.0)
-                    .show(ui, |ui| {
-                        self.openapi_panel.render(
-                            ui,
-                            workspace_data,
-                            &operation,
-                            self.new_collection.clone(),
-                        );
-                    });
-            }
         }
         self.bottom_panel(workspace_data, ui);
     }
@@ -213,7 +195,6 @@ impl NewCollectionWindows {
                     HighlightValue::None
                 }
             }
-            NewCollectionContentType::OpenAPI => HighlightValue::None,
         }
     }
     pub fn with_open_collection(mut self, collection: Option<Collection>) -> Self {

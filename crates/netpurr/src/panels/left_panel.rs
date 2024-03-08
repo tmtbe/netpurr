@@ -8,6 +8,7 @@ use crate::data::workspace_data::{EditorModel, WorkspaceData};
 use crate::operation::operation::Operation;
 use crate::panels::collection_panel::CollectionPanel;
 use crate::panels::history_panel::HistoryPanel;
+use crate::panels::openapi_show_request_panel::OpenApiShowRequestPanel;
 use crate::panels::test_group_panel::TestGroupPanel;
 use crate::panels::VERTICAL_GAP;
 use crate::windows::cookies_windows::CookiesWindows;
@@ -16,6 +17,7 @@ use crate::windows::new_collection_windows::NewCollectionWindows;
 
 #[derive(PartialEq, Eq)]
 enum Panel {
+    Template,
     History,
     Collection,
 }
@@ -29,6 +31,7 @@ impl Default for Panel {
 #[derive(Default)]
 pub struct MyLeftPanel {
     history_panel: HistoryPanel,
+    open_api_show_request_panel: OpenApiShowRequestPanel,
     collection_panel: CollectionPanel,
     test_group_panel: TestGroupPanel,
     open_panel: Panel,
@@ -134,11 +137,23 @@ impl MyLeftPanel {
     ) {
         ui.horizontal(|ui| {
             ui.selectable_value(&mut self.open_panel, Panel::Collection, "Collection");
+            ui.selectable_value(&mut self.open_panel, Panel::Template, "Template");
             ui.selectable_value(&mut self.open_panel, Panel::History, "History");
         });
         ScrollArea::vertical().show(ui, |ui| match self.open_panel {
-            Panel::History => {
-                self.history_panel.set_and_render(ui, workspace_data);
+            Panel::Template => {
+                config_data.select_collection().map(|collection_name| {
+                    workspace_data
+                        .get_collection_by_name(collection_name)
+                        .map(|collection| {
+                            self.open_api_show_request_panel.render(
+                                ui,
+                                workspace_data,
+                                operation,
+                                collection,
+                            )
+                        })
+                });
             }
             Panel::Collection => {
                 self.collection_panel.set_and_render(
@@ -147,6 +162,9 @@ impl MyLeftPanel {
                     workspace_data,
                     config_data.select_collection().unwrap_or_default(),
                 );
+            }
+            Panel::History => {
+                self.history_panel.set_and_render(ui, workspace_data);
             }
         });
     }

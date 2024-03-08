@@ -24,9 +24,17 @@ impl TestScriptPanel {
 console.log(response);
 netpurr.test("This is a test example",function(){
 // assert("expect", "actual");
-assert("test",response.json.cookies.freeform);
+   assert("test",response.json.cookies.freeform);
 });
                         "#)
+                            }
+                            if ui.link("Status is 200").clicked(){
+                                script = script.clone().add(r#"
+let response = netpurr.resp();
+netpurr.test("Response status is 200",function(){
+    assert(200,response.status);
+});
+                                "#)
                             }
                             if ui.link("Log info message").clicked() {
                                 script = script.clone().add("\nconsole.log(\"info1\",\"info2\");");

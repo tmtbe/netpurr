@@ -1,13 +1,13 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use egui::{emath, WidgetText};
 use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
-use netpurr_core::data::collections::CollectionFolder;
 use poll_promise::Promise;
 
+use netpurr_core::data::collections::CollectionFolder;
 use netpurr_core::data::cookies_manager::CookiesManager;
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::Request;
@@ -79,7 +79,7 @@ impl Operation {
         envs: BTreeMap<String, EnvironmentItemValue>,
         pre_request_parent_script_scopes: Vec<ScriptScope>,
         test_parent_script_scopes: Vec<ScriptScope>,
-        test_group_run_result: Arc<Mutex<TestGroupRunResults>>,
+        test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
         collection_name: String,
         collection_path: String,
         folder: Rc<RefCell<CollectionFolder>>,

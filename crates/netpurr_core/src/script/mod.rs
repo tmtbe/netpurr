@@ -1,22 +1,20 @@
-use anyhow::Error;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::path::Path;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex, RwLock};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::sync::{Arc, RwLock};
+use std::time::Duration;
 
+use anyhow::Error;
 use deno_core::url::Url;
 use deno_core::{op2, ExtensionBuilder, FsModuleLoader, ModuleCodeString, Op, OpState};
 use deno_core::{JsRuntime, PollEventLoopOptions};
-use log::{debug, info};
 use poll_promise::Promise;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
-use tokio::task;
 use tokio::time::sleep;
 
 use crate::data::environment::{EnvironmentItemValue, EnvironmentValueType};

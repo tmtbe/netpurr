@@ -209,6 +209,9 @@ impl ImportWindows {
         match openapi_result {
             Ok(openapi) => match openapi.to_collection() {
                 Ok(collection) => {
+                    // openapi导入不需要导入请求
+                    collection.folder.borrow_mut().requests.clear();
+                    collection.folder.borrow_mut().folders.clear();
                     let new_name = workspace_data.import_collection(collection);
                     operation
                         .add_success_toast(format!("Import collections `{}` success.", new_name));

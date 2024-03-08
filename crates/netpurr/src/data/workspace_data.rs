@@ -22,14 +22,14 @@ use crate::utils;
 #[derive(Default, Clone, Debug)]
 pub struct WorkspaceData {
     pub workspace_name: String,
+    pub editor_model: EditorModel,
+    pub selected_test_group_path: Option<String>,
+    pub selected_test_run_result: Option<TestRunResult>,
     cookies_manager: RefCell<CookiesManager>,
     central_request_data_list: RefCell<CentralRequestDataList>,
     history_data_list: RefCell<HistoryDataList>,
     environment: RefCell<Environment>,
     collections: RefCell<Collections>,
-    pub selected_test_group_path: Option<String>,
-    pub selected_test_run_result: Option<TestRunResult>,
-    pub editor_model: EditorModel,
 }
 
 #[derive(Display, PartialEq, EnumIter, Clone, Debug)]

@@ -67,12 +67,13 @@ impl Window for SaveCRTWindows {
 }
 
 impl SaveCRTWindows {
-    pub fn with(mut self, crt_id: String) -> Self {
+    pub fn with(mut self, crt_id: String, collection_path: Option<String>) -> Self {
         self.save_windows_open = true;
         self.crt_id = crt_id;
         self.add_folder = false;
         self.add_collection = false;
         self.add_name = "".to_string();
+        self.select_collection_path = collection_path;
         self
     }
 

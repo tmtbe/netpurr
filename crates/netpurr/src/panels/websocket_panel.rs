@@ -8,6 +8,7 @@ use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::http::HttpRecord;
 use netpurr_core::data::websocket::WebSocketStatus;
 
+use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
@@ -52,6 +53,7 @@ impl WebSocketPanel {
         &mut self,
         ui: &mut Ui,
         operation: &Operation,
+        config_data: &mut ConfigData,
         workspace_data: &mut WorkspaceData,
         crt_id: String,
     ) {
@@ -64,7 +66,13 @@ impl WebSocketPanel {
         });
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
-                self.render_editor_right_panel(operation, workspace_data, crt_id.clone(), ui);
+                self.render_editor_right_panel(
+                    operation,
+                    config_data,
+                    workspace_data,
+                    crt_id.clone(),
+                    ui,
+                );
                 self.render_editor_left_panel(workspace_data, crt_id.clone(), ui);
             });
             ui.separator();
@@ -109,6 +117,7 @@ impl WebSocketPanel {
     fn render_editor_right_panel(
         &mut self,
         operation: &Operation,
+        config_data: &mut ConfigData,
         workspace_data: &mut WorkspaceData,
         crt_id: String,
         ui: &mut Ui,
@@ -183,9 +192,10 @@ impl WebSocketPanel {
                     if ui.button("Save").clicked() {
                         match &crt.collection_path {
                             None => {
-                                operation.add_window(Box::new(
-                                    SaveCRTWindows::default().with(crt.id.clone()),
-                                ));
+                                operation.add_window(Box::new(SaveCRTWindows::default().with(
+                                    crt.id.clone(),
+                                    config_data.select_collection().clone(),
+                                )));
                             }
                             Some(collection_path) => {
                                 workspace_data.save_crt(
