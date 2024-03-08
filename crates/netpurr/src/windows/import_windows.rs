@@ -1,8 +1,11 @@
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use egui::{Direction, Layout, Ui};
+use netpurr_core::data::collections::{Collection, CollectionFolder};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
@@ -209,6 +212,9 @@ impl ImportWindows {
         match openapi_result {
             Ok(openapi) => match openapi.to_collection() {
                 Ok(collection) => {
+                    // openapi导入不需要导入请求
+                    collection.folder.borrow_mut().requests.clear();
+                    collection.folder.borrow_mut().folders.clear();
                     let new_name = workspace_data.import_collection(collection);
                     operation
                         .add_success_toast(format!("Import collections `{}` success.", new_name));

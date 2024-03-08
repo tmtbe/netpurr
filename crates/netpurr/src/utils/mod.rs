@@ -5,8 +5,8 @@ use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
 use egui::text::TextWrapping;
 use egui::{
-    Area, Color32, FontSelection, Frame, Id, InnerResponse, Key, Layout, Order, Response, RichText,
-    Style, TextBuffer, Ui, WidgetText,
+    Area, CollapsingHeader, CollapsingResponse, Color32, FontSelection, Frame, Id, InnerResponse,
+    Key, Layout, Order, Response, RichText, Style, TextBuffer, Ui, WidgetText,
 };
 
 use netpurr_core::data::record::Record;
@@ -281,4 +281,14 @@ pub fn add_left_space(ui: &mut Ui, space: f32) {
     if space > 0.0 {
         ui.add_space(space)
     }
+}
+
+pub fn open_collapsing<R>(
+    ui: &mut Ui,
+    heading: impl Into<WidgetText>,
+    add_contents: impl FnOnce(&mut Ui) -> R,
+) -> CollapsingResponse<R> {
+    CollapsingHeader::new(heading)
+        .default_open(true)
+        .show(ui, add_contents)
 }

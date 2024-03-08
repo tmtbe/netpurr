@@ -2,11 +2,11 @@ use async_recursion::async_recursion;
 use deno_core::futures::future::{join_all, BoxFuture};
 use deno_core::futures::FutureExt;
 use std::cell::RefCell;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::os::unix::raw::mode_t;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
 
 use poll_promise::Promise;
@@ -203,7 +203,7 @@ impl Runner {
         envs: BTreeMap<String, EnvironmentItemValue>,
         pre_request_parent_script_scopes: Vec<ScriptScope>,
         test_parent_script_scopes: Vec<ScriptScope>,
-        test_group_run_result: Arc<Mutex<TestGroupRunResults>>,
+        test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
         collection_name: String,
         collection_path: String,
         folder: Rc<RefCell<CollectionFolder>>,
@@ -237,7 +237,7 @@ impl Runner {
         envs: BTreeMap<String, EnvironmentItemValue>,
         pre_request_parent_script_scopes: Vec<ScriptScope>,
         test_parent_script_scopes: Vec<ScriptScope>,
-        test_group_run_result: Arc<Mutex<TestGroupRunResults>>,
+        test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
         collection_name: String,
         collection_path: String,
         folder: CollectionFolderOnlyRead,
@@ -290,7 +290,6 @@ impl Runner {
             let _client = client.clone();
             let _run_request_info = run_request_info.clone();
             let _shared_map = shared_map.clone();
-            let _test_group_run_result = test_group_run_result.clone();
             jobs.push(Self::send_rest_with_script_async(
                 _run_request_info,
                 _client,
@@ -298,21 +297,43 @@ impl Runner {
             ));
         }
         let results = join_all(jobs).await;
-        test_group_run_result.lock().unwrap().add_results(results);
+        test_group_run_result.write().unwrap().add_results(results);
     }
 }
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct TestGroupRunResults {
-    pub results: Vec<Result<TestRunResult, TestRunError>>,
+    pub results: HashMap<String, Result<TestRunResult, TestRunError>>,
 }
 
 impl TestGroupRunResults {
     pub fn add_result(&mut self, result: Result<TestRunResult, TestRunError>) {
-        self.results.push(result);
+        match &result {
+            Ok(r) => self.results.insert(
+                format!(
+                    "{}/{}",
+                    r.collection_path.clone().unwrap_or_default(),
+                    r.request_name
+                ),
+                result.clone(),
+            ),
+            Err(e) => self.results.insert(
+                format!(
+                    "{}/{}",
+                    e.collection_path.clone().unwrap_or_default(),
+                    e.request_name
+                ),
+                result.clone(),
+            ),
+        };
     }
     pub fn add_results(&mut self, results: Vec<Result<TestRunResult, TestRunError>>) {
         for result in results.iter() {
-            self.results.push(result.clone())
+            self.add_result(result.clone());
         }
+    }
+
+    pub fn find(&self, path: String, name: String) -> Option<Result<TestRunResult, TestRunError>> {
+        let key = format!("{}/{}", path, name);
+        return self.results.get(key.as_str()).cloned();
     }
 }
