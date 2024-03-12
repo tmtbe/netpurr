@@ -21,7 +21,7 @@ use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
-use crate::panels::test_script_panel::TestScriptPanel;
+use crate::panels::test_script_panel::{CrtOrFolder, TestScriptPanel};
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
 use crate::utils::HighlightValue;
@@ -148,10 +148,13 @@ impl Window for NewCollectionWindows {
                     );
             }
             NewCollectionContentType::Tests => {
-                let script = self.folder.borrow().test_script.clone();
-                self.folder.borrow_mut().test_script =
-                    self.test_script_panel
-                        .set_and_render(ui, script, "collection".to_string())
+                self.test_script_panel.set_and_render(
+                    ui,
+                    workspace_data,
+                    &operation,
+                    CrtOrFolder::Folder(self.folder.clone()),
+                    "collection".to_string(),
+                );
             }
         }
         self.bottom_panel(workspace_data, ui);

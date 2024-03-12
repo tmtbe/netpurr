@@ -18,7 +18,7 @@ use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
-use crate::panels::test_script_panel::TestScriptPanel;
+use crate::panels::test_script_panel::{CrtOrFolder, TestScriptPanel};
 use crate::panels::HORIZONTAL_GAP;
 use crate::utils;
 use crate::utils::HighlightValue;
@@ -202,6 +202,7 @@ impl RestPanel {
                                     envs: envs.clone(),
                                     pre_request_scripts: pre_request_parent_script_scopes,
                                     test_scripts: test_parent_script_scopes,
+                                    testcase: Default::default(),
                                 });
                             self.send_promise = Some(send_response);
                             send_rest = Some(crt.record.clone());
@@ -351,16 +352,13 @@ impl RestPanel {
                 }
             }
             RequestPanelEnum::Tests => {
-                let script = self.test_script_panel.set_and_render(
+                self.test_script_panel.set_and_render(
                     ui,
-                    crt.record.test_script(),
+                    workspace_data,
+                    &operation,
+                    CrtOrFolder::CRT(crt_id.clone()),
                     "rest".to_string(),
                 );
-                {
-                    crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                        crt.record.set_test_script(script);
-                    });
-                }
             }
         }
     }

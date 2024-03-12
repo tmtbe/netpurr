@@ -7,6 +7,7 @@ use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
+use crate::data::collections::Testcase;
 use anyhow::Error;
 use deno_core::url::Url;
 use deno_core::{op2, ExtensionBuilder, FsModuleLoader, ModuleCodeString, Op, OpState};
@@ -32,6 +33,7 @@ pub struct Context {
     pub request: Request,
     pub response: JsResponse,
     pub envs: BTreeMap<String, EnvironmentItemValue>,
+    pub testcase: Testcase,
     pub shared_map: SharedMap,
     pub logger: Logger,
     pub test_result: TestResult,
@@ -105,6 +107,7 @@ impl ScriptRuntime {
                 op_close_test::DECL,
                 op_append_assert::DECL,
                 op_sleep::DECL,
+                op_get_testcase::DECL,
             ])
             .build();
         return JsRuntime::new(deno_core::RuntimeOptions {
@@ -220,6 +223,16 @@ fn op_get_shared(state: &mut OpState, #[string] key: String) -> String {
                 v.clone()
             }
         },
+    }
+}
+
+#[op2]
+#[string]
+fn op_get_testcase(state: &mut OpState) -> anyhow::Result<String> {
+    let context = state.try_borrow_mut::<Context>();
+    match context {
+        None => Err(Error::msg("context is none")),
+        Some(c) => Ok(serde_json::to_string(&c.testcase.value).unwrap()),
     }
 }
 

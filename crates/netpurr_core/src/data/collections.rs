@@ -1,10 +1,11 @@
 use std::cell::RefCell;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use openapiv3::OpenAPI;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 
 use crate::data::auth::{Auth, AuthType};
 use crate::data::environment::{EnvironmentConfig, EnvironmentItemValue};
@@ -283,6 +284,7 @@ impl Default for Collection {
                 folders: Default::default(),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
+                testcases: Default::default(),
             })),
         }
     }
@@ -361,6 +363,28 @@ pub struct CollectionFolder {
     pub folders: BTreeMap<String, Rc<RefCell<CollectionFolder>>>,
     pub pre_request_script: String,
     pub test_script: String,
+    pub testcases: BTreeMap<String, Testcase>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(default)]
+pub struct Testcase {
+    pub name: String,
+    pub value: HashMap<String, Value>,
+}
+impl Default for Testcase {
+    fn default() -> Self {
+        Testcase {
+            name: "Default Testcase".to_string(),
+            value: Default::default(),
+        }
+    }
+}
+impl Testcase {
+    pub fn merge(&mut self, parent: &Testcase) {
+        for (key, value) in parent.value.iter() {
+            self.value.insert(key.clone(), value.clone());
+        }
+    }
 }
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
@@ -374,7 +398,26 @@ pub struct CollectionFolderOnlyRead {
     pub folders: BTreeMap<String, CollectionFolderOnlyRead>,
     pub pre_request_script: String,
     pub test_script: String,
+    pub testcases: BTreeMap<String, Testcase>,
 }
+#[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SaveCollection {
+    pub envs: EnvironmentConfig,
+    pub openapi: Option<OpenAPI>,
+}
+
+#[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SaveCollectionFolder {
+    pub desc: String,
+    pub auth: Auth,
+    pub is_root: bool,
+    pub pre_request_script: String,
+    pub test_script: String,
+    pub testcases: BTreeMap<String, Testcase>,
+}
+
 impl CollectionFolderOnlyRead {
     pub fn from(folder: Rc<RefCell<CollectionFolder>>) -> Self {
         let json = serde_json::to_string(&folder).unwrap();
@@ -395,6 +438,7 @@ impl CollectionFolder {
             is_root: self.is_root.clone(),
             pre_request_script: self.pre_request_script.clone(),
             test_script: self.test_script.clone(),
+            testcases: self.testcases.clone(),
         }
     }
     pub fn load(&mut self, persistence: Persistence, path: PathBuf) {
@@ -421,6 +465,7 @@ impl CollectionFolder {
             self.is_root = cf.is_root;
             self.pre_request_script = cf.pre_request_script;
             self.test_script = cf.test_script;
+            self.testcases = cf.testcases;
         });
         for item in persistence.load_list(path.clone()).iter() {
             if item.is_file() {
@@ -470,21 +515,4 @@ impl CollectionFolder {
     pub fn get_path(&self) -> String {
         self.parent_path.clone() + "/" + self.name.as_str()
     }
-}
-
-#[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
-#[serde(default)]
-pub struct SaveCollection {
-    pub envs: EnvironmentConfig,
-    pub openapi: Option<OpenAPI>,
-}
-
-#[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
-#[serde(default)]
-pub struct SaveCollectionFolder {
-    pub desc: String,
-    pub auth: Auth,
-    pub is_root: bool,
-    pub pre_request_script: String,
-    pub test_script: String,
 }

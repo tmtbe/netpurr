@@ -195,6 +195,7 @@ impl SaveCRTWindows {
                                         folders: Default::default(),
                                         pre_request_script: "".to_string(),
                                         test_script: "".to_string(),
+                                        testcases: Default::default(),
                                     })),
                                 );
                             }
@@ -228,6 +229,7 @@ impl SaveCRTWindows {
                             folders: BTreeMap::default(),
                             pre_request_script: "".to_string(),
                             test_script: "".to_string(),
+                            testcases: Default::default(),
                         })),
                         ..Default::default()
                     });

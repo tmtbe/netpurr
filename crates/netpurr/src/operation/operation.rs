@@ -109,6 +109,7 @@ impl Operation {
             envs,
             pre_request_scripts,
             test_scripts,
+            testcase: Default::default(),
         })
     }
 

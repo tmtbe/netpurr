@@ -15,6 +15,7 @@ use tokio_tungstenite::tungstenite::http::Uri;
 use tokio_tungstenite::tungstenite::Error;
 
 use crate::data::auth::Auth;
+use crate::data::collections::Testcase;
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::logger::Logger;
 
@@ -29,6 +30,7 @@ pub struct HttpRecord {
     pub status: ResponseStatus,
     pub pre_request_script: String,
     pub test_script: String,
+    pub testcases: BTreeMap<String, Testcase>,
     pub operation_id: Option<String>,
 }
 

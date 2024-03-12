@@ -1,15 +1,46 @@
+use std::cell::RefCell;
 use std::ops::Add;
+use std::rc::Rc;
 
+use crate::data::workspace::Workspace;
+use crate::data::workspace_data::WorkspaceData;
+use crate::operation::operation::Operation;
 use egui::Ui;
 use egui_code_editor::{CodeEditor, ColorTheme};
+use netpurr_core::data::collections::{CollectionFolder, Testcase};
 
 use crate::widgets::syntax::js_syntax;
+use crate::windows::manager_testcase_window::ManagerTestcaseWindows;
 
 #[derive(Default)]
 pub struct TestScriptPanel {}
 
+#[derive(Clone)]
+pub enum CrtOrFolder {
+    CRT(String),
+    Folder(Rc<RefCell<CollectionFolder>>),
+}
 impl TestScriptPanel {
-    pub fn set_and_render(&mut self, ui: &mut Ui, mut script: String, id: String) -> String {
+    pub fn set_and_render(
+        &mut self,
+        ui: &mut Ui,
+        workspace_data: &mut WorkspaceData,
+        operation: &Operation,
+        crt_or_folder: CrtOrFolder,
+        id: String,
+    ) {
+        let mut script = "".to_string();
+        match &crt_or_folder {
+            CrtOrFolder::CRT(crt_id) => {
+                script = workspace_data
+                    .must_get_crt(crt_id.clone())
+                    .record
+                    .test_script();
+            }
+            CrtOrFolder::Folder(folder) => {
+                script = folder.borrow().test_script.clone();
+            }
+        }
         ui.vertical(|ui| {
             ui.label("Test scripts are written in JavaScript, and are run after the response is received.");
             ui.separator();
@@ -18,6 +49,9 @@ impl TestScriptPanel {
                     .min_scrolled_height(250.0)
                     .show(ui, |ui| {
                         ui.vertical(|ui| {
+                            if ui.button("Manager Testcases").clicked(){
+                                operation.add_window(Box::new(ManagerTestcaseWindows::default().with_crt_or_folder(crt_or_folder.clone())))
+                            }
                             ui.strong("SNIPPETS");
                             if ui.link("Test Example").clicked() {
                                 script = script.clone().add(r#"let response = netpurr.resp();
@@ -89,10 +123,15 @@ netpurr.test("Response status is 200",function(){
                             });
                     });
                 });
-
             });
-
         });
-        script
+        match &crt_or_folder {
+            CrtOrFolder::CRT(crt_id) => {
+                workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
+                    crt.record.set_test_script(script);
+                });
+            }
+            CrtOrFolder::Folder(folder) => folder.borrow_mut().test_script = script,
+        }
     }
 }

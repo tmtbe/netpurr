@@ -49,6 +49,9 @@ impl RequestPreScriptPanel {
                     .show(ui, |ui| {
                         ui.vertical(|ui| {
                     ui.strong("SNIPPETS");
+                            if ui.link("Get testcase info").clicked() {
+                                script = script.clone().add("\nlet value = testcase().key;");
+                            }
                             if ui.link("Log info message").clicked() {
                                 script = script.clone().add("\nconsole.log(\"info1\",\"info2\");");
                             }

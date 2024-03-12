@@ -128,6 +128,7 @@ impl OpenApi {
                 folders: self.gen_folders(tag_map, self.openapi_help.openapi.tags.clone()),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
+                testcases: Default::default(),
             })),
         };
 
@@ -186,6 +187,7 @@ impl OpenApi {
                 folders: Default::default(),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
+                testcases: Default::default(),
             })
             .collect();
         let mut result = BTreeMap::default();

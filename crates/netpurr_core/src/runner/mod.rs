@@ -14,7 +14,7 @@ use reqwest::Client;
 use reqwest_cookie_store::CookieStoreMutex;
 use rest::RestSender;
 
-use crate::data::collections::{CollectionFolder, CollectionFolderOnlyRead};
+use crate::data::collections::{CollectionFolder, CollectionFolderOnlyRead, Testcase};
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::{Request, Response};
 use crate::data::logger::Logger;
@@ -40,6 +40,7 @@ pub struct RunRequestInfo {
     pub envs: BTreeMap<String, EnvironmentItemValue>,
     pub pre_request_scripts: Vec<ScriptScope>,
     pub test_scripts: Vec<ScriptScope>,
+    pub testcase: Testcase,
 }
 #[derive(Default, Clone, Debug)]
 pub struct TestRunResult {
@@ -48,11 +49,13 @@ pub struct TestRunResult {
     pub test_result: TestResult,
     pub collection_path: Option<String>,
     pub request_name: String,
+    pub case_name: String,
 }
 #[derive(Default, Clone, Debug)]
 pub struct TestRunError {
     pub collection_path: Option<String>,
     pub request_name: String,
+    pub case_name: String,
     pub error: String,
 }
 impl Runner {
@@ -92,6 +95,7 @@ impl Runner {
             scope_name: "".to_string(),
             request: run_request_info.request.clone(),
             envs: run_request_info.envs.clone(),
+            testcase: run_request_info.testcase.clone(),
             shared_map,
             ..Default::default()
         };
@@ -150,6 +154,7 @@ impl Runner {
                                     return Err(TestRunError {
                                         collection_path: run_request_info.collection_path.clone(),
                                         request_name: run_request_info.request_name,
+                                        case_name: run_request_info.testcase.name.clone(),
                                         error: e.to_string(),
                                     });
                                 }
@@ -161,11 +166,13 @@ impl Runner {
                             test_result,
                             collection_path: run_request_info.collection_path.clone(),
                             request_name: run_request_info.request_name.clone(),
+                            case_name: run_request_info.testcase.name.clone(),
                         })
                     }
                     Err(e) => Err(TestRunError {
                         collection_path: run_request_info.collection_path.clone(),
                         request_name: run_request_info.request_name,
+                        case_name: run_request_info.testcase.name.clone(),
                         error: e.to_string(),
                     }),
                 }
@@ -173,6 +180,7 @@ impl Runner {
             Err(e) => Err(TestRunError {
                 collection_path: run_request_info.collection_path.clone(),
                 request_name: run_request_info.request_name,
+                case_name: run_request_info.testcase.name.clone(),
                 error: e.to_string(),
             }),
         }
@@ -214,17 +222,25 @@ impl Runner {
                 .build()
                 .unwrap();
             runtime.block_on(async {
-                Self::run_test_group_async(
-                    client,
-                    envs,
-                    pre_request_parent_script_scopes,
-                    test_parent_script_scopes,
-                    test_group_run_result,
-                    collection_name,
-                    collection_path,
-                    folder_only_read,
-                )
-                .await
+                let mut testcases = folder_only_read.testcases.clone();
+                if testcases.is_empty() {
+                    let testcase = Testcase::default();
+                    testcases.insert(testcase.name.clone(), testcase);
+                }
+                for (name, testcase) in testcases.iter() {
+                    Self::run_test_group_async(
+                        client.clone(),
+                        envs.clone(),
+                        pre_request_parent_script_scopes.clone(),
+                        test_parent_script_scopes.clone(),
+                        testcase.clone(),
+                        test_group_run_result.clone(),
+                        collection_name.clone(),
+                        collection_path.clone(),
+                        folder_only_read.clone(),
+                    )
+                    .await
+                }
             })
         })
     }
@@ -235,6 +251,7 @@ impl Runner {
         envs: BTreeMap<String, EnvironmentItemValue>,
         pre_request_parent_script_scopes: Vec<ScriptScope>,
         test_parent_script_scopes: Vec<ScriptScope>,
+        testcase: Testcase,
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
         collection_name: String,
         collection_path: String,
@@ -244,17 +261,27 @@ impl Runner {
         // 每个文件夹的shared_map是隔离的
         let shared_map = SharedMap::default();
         for (name, folder) in folder.folders.iter() {
-            Self::run_test_group_async(
-                client.clone(),
-                envs.clone(),
-                pre_request_parent_script_scopes.clone(),
-                test_parent_script_scopes.clone(),
-                test_group_run_result.clone(),
-                collection_name.clone(),
-                collection_path.clone() + "/" + name,
-                folder.clone(),
-            )
-            .await;
+            let mut child_testcases = folder.testcases.clone();
+            if child_testcases.is_empty() {
+                let testcase = Testcase::default();
+                child_testcases.insert(testcase.name.clone(), testcase);
+            }
+            for (name, child_testcase) in child_testcases.iter() {
+                let mut merge_testcase = child_testcase.clone();
+                merge_testcase.merge(&testcase);
+                Self::run_test_group_async(
+                    client.clone(),
+                    envs.clone(),
+                    pre_request_parent_script_scopes.clone(),
+                    test_parent_script_scopes.clone(),
+                    merge_testcase,
+                    test_group_run_result.clone(),
+                    collection_name.clone(),
+                    collection_path.clone() + "/" + name,
+                    folder.clone(),
+                )
+                .await;
+            }
         }
         for (name, record) in folder.requests.iter() {
             let mut record_pre_request_parent_script_scopes =
@@ -280,6 +307,7 @@ impl Runner {
                 envs: envs.clone(),
                 pre_request_scripts: record_pre_request_parent_script_scopes,
                 test_scripts: record_test_parent_script_scopes,
+                testcase: testcase.clone(),
             };
             run_request_infos.push(run_request_info)
         }
@@ -308,17 +336,19 @@ impl TestGroupRunResults {
         match &result {
             Ok(r) => self.results.insert(
                 format!(
-                    "{}/{}",
+                    "{}/{}::{}",
                     r.collection_path.clone().unwrap_or_default(),
-                    r.request_name
+                    r.request_name,
+                    r.case_name
                 ),
                 result.clone(),
             ),
             Err(e) => self.results.insert(
                 format!(
-                    "{}/{}",
+                    "{}/{}::{}",
                     e.collection_path.clone().unwrap_or_default(),
-                    e.request_name
+                    e.request_name,
+                    e.case_name
                 ),
                 result.clone(),
             ),
@@ -330,8 +360,13 @@ impl TestGroupRunResults {
         }
     }
 
-    pub fn find(&self, path: String, name: String) -> Option<Result<TestRunResult, TestRunError>> {
-        let key = format!("{}/{}", path, name);
+    pub fn find(
+        &self,
+        path: String,
+        case: String,
+        name: String,
+    ) -> Option<Result<TestRunResult, TestRunError>> {
+        let key = format!("{}/{}::{}", path, name, case);
         return self.results.get(key.as_str()).cloned();
     }
 }

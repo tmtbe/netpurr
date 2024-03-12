@@ -1,4 +1,6 @@
+use crate::data::collections::Testcase;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 use crate::data::http::HttpRecord;
 use crate::data::websocket::WebSocketRecord;
@@ -22,6 +24,12 @@ impl Record {
             Record::WebSocket(websocket) => websocket.http_record.test_script = script,
         }
     }
+    pub fn set_testcases(&mut self, testcases: BTreeMap<String, Testcase>) {
+        match self {
+            Record::Rest(rest) => rest.testcases = testcases,
+            Record::WebSocket(websocket) => {}
+        }
+    }
     pub fn pre_request_script(&self) -> String {
         match self {
             Record::Rest(rest) => rest.pre_request_script.clone(),
@@ -32,6 +40,13 @@ impl Record {
         match self {
             Record::Rest(rest) => rest.test_script.clone(),
             Record::WebSocket(websocket) => websocket.http_record.test_script.clone(),
+        }
+    }
+
+    pub fn testcase(&self) -> BTreeMap<String, Testcase> {
+        match self {
+            Record::Rest(rest) => rest.testcases.clone(),
+            Record::WebSocket(websocket) => BTreeMap::new(),
         }
     }
     pub fn must_get_rest(&self) -> &HttpRecord {

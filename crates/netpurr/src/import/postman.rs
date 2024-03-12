@@ -49,6 +49,7 @@ impl Postman {
                     folders: PostmanItemGroup::gen_folders(self.item.clone()),
                     pre_request_script: "".to_string(),
                     test_script: "".to_string(),
+                    testcases: Default::default(),
                 })),
             };
             Ok(collection)
@@ -160,6 +161,7 @@ impl PostmanItemGroup {
                 folders: PostmanItemGroup::gen_folders(p.item.clone()),
                 pre_request_script: "".to_string(),
                 test_script: "".to_string(),
+                testcases: Default::default(),
             })
             .collect();
         let mut result = BTreeMap::default();

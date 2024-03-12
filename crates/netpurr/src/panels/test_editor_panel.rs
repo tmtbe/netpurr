@@ -9,7 +9,7 @@ use egui::text::LayoutJob;
 use egui::{Align, FontSelection, RichText, Style, Ui};
 use poll_promise::Promise;
 
-use netpurr_core::data::collections::CollectionFolder;
+use netpurr_core::data::collections::{CollectionFolder, Testcase};
 use netpurr_core::data::test::TestStatus;
 use netpurr_core::runner::{TestGroupRunResults, TestRunError, TestRunResult};
 
@@ -76,6 +76,31 @@ impl TestEditorPanel {
             });
     }
 
+    fn render_tree_case(
+        &self,
+        ui: &mut Ui,
+        workspace_data: &mut WorkspaceData,
+        result_tree_case: &ResultTreeCase,
+    ) {
+        let title = self.render_test_title(
+            ui,
+            format!(
+                "{} ({}/{})",
+                result_tree_case.name.clone(),
+                result_tree_case.get_success_count(),
+                result_tree_case.get_total_count()
+            ),
+            result_tree_case.status.clone(),
+        );
+        utils::open_collapsing(ui, title, |child_ui| {
+            for (name, rf) in result_tree_case.folders.iter() {
+                self.render_tree_folder(child_ui, workspace_data, rf)
+            }
+            for request_tree_request in result_tree_case.requests.iter() {
+                self.render_test_request(child_ui, workspace_data, request_tree_request);
+            }
+        });
+    }
     fn render_tree_folder(
         &self,
         ui: &mut Ui,
@@ -93,11 +118,8 @@ impl TestEditorPanel {
             result_tree_folder.status.clone(),
         );
         utils::open_collapsing(ui, title, |child_ui| {
-            for (name, rf) in result_tree_folder.folders.iter() {
-                self.render_tree_folder(child_ui, workspace_data, rf)
-            }
-            for request_tree_request in result_tree_folder.requests.iter() {
-                self.render_test_request(child_ui, workspace_data, request_tree_request);
+            for (_, case) in result_tree_folder.cases.iter() {
+                self.render_tree_case(child_ui, workspace_data, case);
             }
         });
     }
@@ -115,25 +137,35 @@ impl TestEditorPanel {
         );
         if ui
             .collapsing(request_title, |ui| {
-                // 增加写测试的信息
+                // 增加测试的信息
                 if let Some(r) = &request_tree_request.result {
-                    if let Ok(tr) = r {
-                        for test_info in tr.test_result.test_info_list.iter() {
+                    match r {
+                        Ok(tr) => {
+                            for test_info in tr.test_result.test_info_list.iter() {
+                                let test_info_title = self.render_test_title(
+                                    ui,
+                                    test_info.name.clone(),
+                                    test_info.status.clone(),
+                                );
+                                ui.collapsing(test_info_title, |ui| {
+                                    for tar in test_info.results.iter() {
+                                        let test_assert_title = self.render_test_title(
+                                            ui,
+                                            tar.msg.clone(),
+                                            tar.assert_result.clone(),
+                                        );
+                                        ui.label(test_assert_title);
+                                    }
+                                });
+                            }
+                        }
+                        Err(te) => {
                             let test_info_title = self.render_test_title(
                                 ui,
-                                test_info.name.clone(),
-                                test_info.status.clone(),
+                                te.error.clone(),
+                                TestStatus::FAIL.clone(),
                             );
-                            ui.collapsing(test_info_title, |ui| {
-                                for tar in test_info.results.iter() {
-                                    let test_assert_title = self.render_test_title(
-                                        ui,
-                                        tar.msg.clone(),
-                                        tar.assert_result.clone(),
-                                    );
-                                    ui.label(test_assert_title);
-                                }
-                            });
+                            ui.label(test_info_title);
                         }
                     }
                 }
@@ -206,63 +238,20 @@ impl TestEditorPanel {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct ResultTreeFolder {
+    status: TestStatus,
+    name: String,
+    cases: BTreeMap<String, ResultTreeCase>,
+}
+#[derive(Default, Clone)]
+struct ResultTreeCase {
     status: TestStatus,
     name: String,
     folders: BTreeMap<String, ResultTreeFolder>,
     requests: Vec<ResultTreeRequest>,
 }
-impl ResultTreeFolder {
-    pub fn create(folder: Rc<RefCell<CollectionFolder>>, results: TestGroupRunResults) -> Self {
-        let mut folder_status = TestStatus::Waiting;
-        let mut new = ResultTreeFolder {
-            status: folder_status.clone(),
-            name: folder.borrow().name.clone(),
-            folders: Default::default(),
-            requests: Default::default(),
-        };
-        folder_status = TestStatus::PASS;
-        for (name, f) in folder.borrow().folders.iter() {
-            let child_folder = ResultTreeFolder::create(f.clone(), results.clone());
-            match &child_folder.status {
-                TestStatus::None => {}
-                TestStatus::Waiting => folder_status = TestStatus::Waiting,
-                TestStatus::PASS => {}
-                TestStatus::FAIL => folder_status = TestStatus::FAIL,
-            }
-            new.folders.insert(name.to_string(), child_folder);
-        }
-        for (name, _) in folder.borrow().requests.iter() {
-            let result = results.find(folder.borrow().get_path(), name.clone());
-            let mut status = TestStatus::Waiting;
-            match &result {
-                None => {
-                    folder_status = TestStatus::Waiting;
-                }
-                Some(rr) => match rr {
-                    Ok(r) => {
-                        status = r.test_result.status.clone();
-                        if status == TestStatus::FAIL {
-                            folder_status = TestStatus::FAIL;
-                        }
-                    }
-                    Err(e) => {
-                        status = TestStatus::FAIL;
-                        folder_status = TestStatus::FAIL;
-                    }
-                },
-            }
-            new.requests.push(ResultTreeRequest {
-                name: name.clone(),
-                status: status,
-                result: result.clone(),
-            });
-        }
-        new.status = folder_status.clone();
-        new
-    }
-
+impl ResultTreeCase {
     fn get_success_count(&self) -> i32 {
         let mut success_count = 0;
         for r in self.requests.iter() {
@@ -277,16 +266,125 @@ impl ResultTreeFolder {
     }
     fn get_total_count(&self) -> i32 {
         let mut success_count = 0;
+
         for r in self.requests.iter() {
             success_count = success_count + 1;
         }
         for (_, f) in self.folders.iter() {
             success_count += f.get_total_count();
         }
+
+        success_count
+    }
+}
+impl ResultTreeFolder {
+    pub fn create(folder: Rc<RefCell<CollectionFolder>>, results: TestGroupRunResults) -> Self {
+        let mut folder_status = TestStatus::Waiting;
+        let mut testcases = folder.borrow().testcases.clone();
+        if testcases.is_empty() {
+            let testcase = Testcase::default();
+            testcases.insert(testcase.name.clone(), testcase);
+        }
+        let mut new_result_tree_folder = ResultTreeFolder {
+            status: folder_status.clone(),
+            name: folder.borrow().name.clone(),
+            cases: Default::default(),
+        };
+        folder_status = TestStatus::PASS;
+        for (name, testcase) in testcases.iter() {
+            let mut case_status = TestStatus::Waiting;
+            let mut case_folders = BTreeMap::new();
+            let mut case_requests = vec![];
+            case_status = TestStatus::PASS;
+            for (name, f) in folder.borrow().folders.iter() {
+                let child_folder = ResultTreeFolder::create(f.clone(), results.clone());
+                match &child_folder.status {
+                    TestStatus::None => {}
+                    TestStatus::Waiting => case_status = TestStatus::Waiting,
+                    TestStatus::PASS => {}
+                    TestStatus::FAIL => case_status = TestStatus::FAIL,
+                }
+                case_folders.insert(name.to_string(), child_folder);
+            }
+            for (name, _) in folder.borrow().requests.iter() {
+                let result = results.find(
+                    folder.borrow().get_path(),
+                    testcase.name.clone(),
+                    name.clone(),
+                );
+                let mut request_status = TestStatus::Waiting;
+                match &result {
+                    None => {
+                        case_status = TestStatus::Waiting;
+                    }
+                    Some(rr) => match rr {
+                        Ok(r) => {
+                            request_status = r.test_result.status.clone();
+                            if request_status == TestStatus::FAIL {
+                                case_status = TestStatus::FAIL;
+                            }
+                        }
+                        Err(e) => {
+                            request_status = TestStatus::FAIL;
+                            case_status = TestStatus::FAIL;
+                        }
+                    },
+                }
+                case_requests.push(ResultTreeRequest {
+                    name: name.clone(),
+                    status: request_status,
+                    result: result.clone(),
+                });
+            }
+            let result_tree_case = ResultTreeCase {
+                status: case_status.clone(),
+                name: testcase.name.to_string(),
+                folders: case_folders.clone(),
+                requests: case_requests.clone(),
+            };
+            new_result_tree_folder
+                .cases
+                .insert(testcase.name.to_string(), result_tree_case);
+            match &case_status {
+                TestStatus::None => {}
+                TestStatus::Waiting => folder_status = TestStatus::Waiting,
+                TestStatus::PASS => {}
+                TestStatus::FAIL => folder_status = TestStatus::FAIL,
+            }
+        }
+        new_result_tree_folder.status = folder_status.clone();
+        new_result_tree_folder
+    }
+
+    fn get_success_count(&self) -> i32 {
+        let mut success_count = 0;
+        for (_, case) in self.cases.iter() {
+            for r in case.requests.iter() {
+                if r.status == TestStatus::PASS {
+                    success_count = success_count + 1;
+                }
+            }
+            for (_, f) in case.folders.iter() {
+                success_count += f.get_success_count();
+            }
+        }
+        success_count
+    }
+    fn get_total_count(&self) -> i32 {
+        let mut success_count = 0;
+        for (_, case) in self.cases.iter() {
+            for r in case.requests.iter() {
+                success_count = success_count + 1;
+            }
+            for (_, f) in case.folders.iter() {
+                success_count += f.get_total_count();
+            }
+        }
         success_count
     }
 }
 
+#[derive(Default, Clone)]
 struct ResultTreeRequest {
     name: String,
     status: TestStatus,

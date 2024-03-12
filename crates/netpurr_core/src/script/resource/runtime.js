@@ -26,6 +26,10 @@
         }
     }
 
+    globalThis.testcase = function(){
+        JSON.parse(core.ops.op_get_testcase())
+    }
+
     globalThis.console = {
         log: (...args) => {
             core.ops.op_log(argsToMessage(...args));
