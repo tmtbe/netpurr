@@ -50,7 +50,7 @@ impl RequestPreScriptPanel {
                         ui.vertical(|ui| {
                     ui.strong("SNIPPETS");
                             if ui.link("Get testcase info").clicked() {
-                                script = script.clone().add("\nlet value = testcase().key;");
+                                script = script.clone().add("\nlet value = netpurr.get_testcase().key;");
                             }
                             if ui.link("Log info message").clicked() {
                                 script = script.clone().add("\nconsole.log(\"info1\",\"info2\");");

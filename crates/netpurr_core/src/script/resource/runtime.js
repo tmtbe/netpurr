@@ -27,7 +27,7 @@
     }
 
     globalThis.testcase = function(){
-        JSON.parse(core.ops.op_get_testcase())
+        return JSON.parse(core.ops.op_get_testcase());
     }
 
     globalThis.console = {
@@ -42,17 +42,20 @@
         },
     };
     globalThis.netpurr = {
+        get_testcase:() => {
+            return JSON.parse(core.ops.op_get_testcase());
+        },
         set_env: (key, value) => {
-            return core.ops.op_set_env(key, value)
+            return core.ops.op_set_env(key, String(value))
         },
         get_env: (key) => {
             return core.ops.op_get_env(key)
         },
         add_header: (key, value) => {
-            return core.ops.op_add_header(key, value)
+            return core.ops.op_add_header(key, String(value))
         },
         add_params: (key, value) => {
-            return core.ops.op_add_params(key, value)
+            return core.ops.op_add_params(key, String(value))
         },
         set_shared: (key, value) => {
             let json_value = JSON.stringify(value)

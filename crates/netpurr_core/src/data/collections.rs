@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::format;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -368,22 +369,39 @@ pub struct CollectionFolder {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 pub struct Testcase {
+    pub entry_name: String,
     pub name: String,
     pub value: HashMap<String, Value>,
+    pub parent_path: Vec<String>,
 }
 impl Default for Testcase {
     fn default() -> Self {
         Testcase {
+            entry_name: "".to_string(),
             name: "Default Testcase".to_string(),
             value: Default::default(),
+            parent_path: vec![],
         }
     }
 }
 impl Testcase {
-    pub fn merge(&mut self, parent: &Testcase) {
+    pub fn merge(&mut self, entry_name: String, parent: &Testcase) {
         for (key, value) in parent.value.iter() {
             self.value.insert(key.clone(), value.clone());
         }
+        self.entry_name = entry_name;
+        self.parent_path = parent.parent_path.clone();
+        self.parent_path
+            .push(format!("{}:{}", parent.entry_name, parent.name));
+    }
+    pub fn get_testcase_path(&self) -> Vec<String> {
+        let mut paths = self.parent_path.clone();
+        paths.push(self.get_path());
+        paths
+    }
+
+    pub fn get_path(&self) -> String {
+        format!("{}:{}", self.entry_name, self.name)
     }
 }
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]

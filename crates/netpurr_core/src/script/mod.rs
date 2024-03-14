@@ -232,7 +232,10 @@ fn op_get_testcase(state: &mut OpState) -> anyhow::Result<String> {
     let context = state.try_borrow_mut::<Context>();
     match context {
         None => Err(Error::msg("context is none")),
-        Some(c) => Ok(serde_json::to_string(&c.testcase.value).unwrap()),
+        Some(c) => {
+            let json = serde_json::to_string(&c.testcase.value).unwrap();
+            Ok(json)
+        }
     }
 }
 

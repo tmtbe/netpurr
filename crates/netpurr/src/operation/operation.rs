@@ -7,7 +7,7 @@ use egui::{emath, WidgetText};
 use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
 use poll_promise::Promise;
 
-use netpurr_core::data::collections::CollectionFolder;
+use netpurr_core::data::collections::{CollectionFolder, Testcase};
 use netpurr_core::data::cookies_manager::CookiesManager;
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::Request;
@@ -82,6 +82,7 @@ impl Operation {
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
         collection_name: String,
         collection_path: String,
+        parent_testcase: Option<Testcase>,
         folder: Rc<RefCell<CollectionFolder>>,
     ) -> Promise<()> {
         self.runner.run_test_group_promise(
@@ -91,6 +92,7 @@ impl Operation {
             test_group_run_result,
             collection_name,
             collection_path,
+            parent_testcase,
             folder,
         )
     }

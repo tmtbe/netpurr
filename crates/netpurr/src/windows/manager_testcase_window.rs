@@ -79,8 +79,10 @@ impl Window for ManagerTestcaseWindows {
                                             testcases.insert(
                                                 self.new_case_name.clone(),
                                                 Testcase {
+                                                    entry_name: "".to_string(),
                                                     name: self.new_case_name.clone(),
                                                     value: Default::default(),
+                                                    parent_path: vec![],
                                                 },
                                             );
                                         }
@@ -140,8 +142,10 @@ impl Window for ManagerTestcaseWindows {
                                     testcases.insert(
                                         select.to_string(),
                                         Testcase {
+                                            entry_name: "".to_string(),
                                             name: select.to_string(),
                                             value: testcase_value,
+                                            parent_path: vec![],
                                         },
                                     );
                                 }

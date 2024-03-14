@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::fmt::format;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
@@ -8,8 +9,10 @@ use eframe::epaint::{Color32, FontFamily, FontId};
 use egui::text::LayoutJob;
 use egui::{Align, FontSelection, RichText, Style, Ui};
 use poll_promise::Promise;
+use rfd::MessageDialogResult::No;
 
 use netpurr_core::data::collections::{CollectionFolder, Testcase};
+use netpurr_core::data::http::Method;
 use netpurr_core::data::test::TestStatus;
 use netpurr_core::runner::{TestGroupRunResults, TestRunError, TestRunResult};
 
@@ -21,6 +24,9 @@ use crate::utils;
 pub struct TestEditorPanel {
     test_group_run_result: Option<Arc<RwLock<TestGroupRunResults>>>,
     run_promise: Option<Promise<()>>,
+    collection_path: String,
+    parent_testcase_list: Vec<Testcase>,
+    parent_paths: Vec<String>,
 }
 impl TestEditorPanel {
     pub fn render(
@@ -44,9 +50,13 @@ impl TestEditorPanel {
                 if let (collection_name, Some(folder)) =
                     workspace_data.get_folder_with_path(collection_path.clone())
                 {
+                    if self.collection_path != collection_path {
+                        self.init(workspace_data, collection_path.clone());
+                    }
                     ui.heading(folder.borrow().name.clone());
                     ui.separator();
                     ui.add_enabled_ui(self.run_promise.is_none(), |ui| {
+                        self.render_select_testcase(workspace_data, ui);
                         if ui.button("Run").clicked() {
                             let test_group_run_result =
                                 Arc::new(RwLock::new(TestGroupRunResults::default()));
@@ -57,6 +67,7 @@ impl TestEditorPanel {
                                 test_group_run_result,
                                 collection_name,
                                 collection_path,
+                                self.build_parent_testcase(),
                                 folder.clone(),
                             );
                         }
@@ -65,8 +76,13 @@ impl TestEditorPanel {
                         egui::ScrollArea::vertical()
                             .max_height(ui.available_height() - 30.0)
                             .show(ui, |ui| {
+                                let mut testcase_paths = vec![];
+                                if let Some(pt) = self.build_parent_testcase() {
+                                    testcase_paths = pt.get_testcase_path();
+                                }
                                 let result_tree = ResultTreeFolder::create(
                                     folder.clone(),
+                                    testcase_paths,
                                     test_group_run_result.read().unwrap().deref().clone(),
                                 );
                                 self.render_tree_folder(ui, workspace_data, &result_tree);
@@ -74,6 +90,86 @@ impl TestEditorPanel {
                     }
                 }
             });
+    }
+
+    fn render_select_testcase(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
+        ui.horizontal_wrapped(|ui| {
+            for (index, parent_path) in self.parent_paths.iter().enumerate() {
+                let (_, folder_op) = workspace_data.get_folder_with_path(parent_path.clone());
+                if let Some(folder) = folder_op {
+                    let mut testcases = folder.borrow().testcases.clone();
+                    if testcases.is_empty() {
+                        let testcase = Testcase::default();
+                        testcases.insert(testcase.name.clone(), testcase);
+                    }
+                    egui::ComboBox::from_id_source(format!("testcase-{}", parent_path))
+                        .selected_text(self.parent_testcase_list[index].clone().get_path())
+                        .show_ui(ui, |ui| {
+                            ui.style_mut().wrap = Some(false);
+                            ui.set_min_width(60.0);
+                            for (name, testcase) in testcases.iter() {
+                                let testcase_path = format!("{}:{}", folder.borrow().name, name);
+                                let mut response = ui.selectable_label(
+                                    self.parent_testcase_list[index].get_path().as_str()
+                                        == testcase_path.as_str(),
+                                    testcase_path.clone(),
+                                );
+                                if response.clicked() {
+                                    let mut new_testcase = testcase.clone();
+                                    new_testcase.entry_name = folder.borrow().name.clone();
+                                    self.parent_testcase_list[index] = new_testcase;
+                                    response.mark_changed();
+                                }
+                            }
+                        });
+                }
+            }
+        });
+    }
+
+    fn init(&mut self, workspace_data: &mut WorkspaceData, collection_path: String) {
+        self.collection_path = collection_path.clone();
+        self.parent_testcase_list.clear();
+        self.parent_paths.clear();
+        let collection_path_split: Vec<String> =
+            collection_path.split("/").map(|s| s.to_string()).collect();
+        for index in 0..collection_path_split.len() {
+            if index == collection_path_split.len() || index == 0 {
+                continue;
+            }
+            let path: Vec<String> = collection_path_split.iter().take(index).cloned().collect();
+            let path_join = path.join("/");
+            self.parent_paths.push(path_join.clone());
+
+            let (_, folder_op) = workspace_data.get_folder_with_path(path_join.clone());
+            if let Some(folder) = folder_op {
+                let mut testcases = folder.borrow().testcases.clone();
+                if testcases.is_empty() {
+                    let testcase = Testcase::default();
+                    testcases.insert(testcase.name.clone(), testcase);
+                }
+                let mut select_testcase = testcases.first_entry().unwrap().get().clone();
+                select_testcase.entry_name = folder.borrow().name.clone();
+                self.parent_testcase_list.push(select_testcase)
+            }
+        }
+    }
+
+    fn build_parent_testcase(&self) -> Option<Testcase> {
+        let mut merge_testcase: Option<Testcase> = None;
+        for testcase in self.parent_testcase_list.iter() {
+            match &merge_testcase {
+                Some(t) => {
+                    let mut next_testcase = testcase.clone();
+                    next_testcase.merge(testcase.entry_name.clone(), t);
+                    merge_testcase = Some(next_testcase);
+                }
+                None => {
+                    merge_testcase = Some(testcase.clone());
+                }
+            }
+        }
+        merge_testcase
     }
 
     fn render_tree_case(
@@ -220,6 +316,7 @@ impl TestEditorPanel {
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
         collection_name: String,
         collection_path: String,
+        parent_testcase: Option<Testcase>,
         folder: Rc<RefCell<CollectionFolder>>,
     ) {
         let envs = workspace_data
@@ -233,6 +330,7 @@ impl TestEditorPanel {
             test_group_run_result,
             collection_name,
             collection_path,
+            parent_testcase,
             folder,
         ));
     }
@@ -278,9 +376,14 @@ impl ResultTreeCase {
     }
 }
 impl ResultTreeFolder {
-    pub fn create(folder: Rc<RefCell<CollectionFolder>>, results: TestGroupRunResults) -> Self {
+    pub fn create(
+        folder: Rc<RefCell<CollectionFolder>>,
+        testcase_paths: Vec<String>,
+        results: TestGroupRunResults,
+    ) -> Self {
         let mut folder_status = TestStatus::Waiting;
         let mut testcases = folder.borrow().testcases.clone();
+        let folder_name = folder.borrow().name.clone();
         if testcases.is_empty() {
             let testcase = Testcase::default();
             testcases.insert(testcase.name.clone(), testcase);
@@ -291,13 +394,19 @@ impl ResultTreeFolder {
             cases: Default::default(),
         };
         folder_status = TestStatus::PASS;
-        for (name, testcase) in testcases.iter() {
+        for (folder_testcase_name, folder_testcase) in testcases.iter() {
             let mut case_status = TestStatus::Waiting;
             let mut case_folders = BTreeMap::new();
             let mut case_requests = vec![];
             case_status = TestStatus::PASS;
+            let mut new_folder_testcase_nodes = testcase_paths.clone();
+            new_folder_testcase_nodes.push(format!("{}:{}", folder_name, folder_testcase_name));
             for (name, f) in folder.borrow().folders.iter() {
-                let child_folder = ResultTreeFolder::create(f.clone(), results.clone());
+                let child_folder = ResultTreeFolder::create(
+                    f.clone(),
+                    new_folder_testcase_nodes.clone(),
+                    results.clone(),
+                );
                 match &child_folder.status {
                     TestStatus::None => {}
                     TestStatus::Waiting => case_status = TestStatus::Waiting,
@@ -306,45 +415,51 @@ impl ResultTreeFolder {
                 }
                 case_folders.insert(name.to_string(), child_folder);
             }
-            for (name, _) in folder.borrow().requests.iter() {
-                let result = results.find(
-                    folder.borrow().get_path(),
-                    testcase.name.clone(),
-                    name.clone(),
-                );
-                let mut request_status = TestStatus::Waiting;
-                match &result {
-                    None => {
-                        case_status = TestStatus::Waiting;
-                    }
-                    Some(rr) => match rr {
-                        Ok(r) => {
-                            request_status = r.test_result.status.clone();
-                            if request_status == TestStatus::FAIL {
+            for (request_name, record) in folder.borrow().requests.iter() {
+                let mut record_testcases = record.testcase().clone();
+                if record_testcases.is_empty() {
+                    let testcase = Testcase::default();
+                    record_testcases.insert(testcase.name.clone(), testcase);
+                }
+                for (request_testcase_name, _) in record_testcases.iter() {
+                    let mut request_testcase_path = new_folder_testcase_nodes.clone();
+                    request_testcase_path
+                        .push(format!("{}:{}", request_name, request_testcase_name));
+                    let result = results.find(request_testcase_path);
+                    let mut request_status = TestStatus::Waiting;
+                    match &result {
+                        None => {
+                            case_status = TestStatus::Waiting;
+                        }
+                        Some(rr) => match rr {
+                            Ok(r) => {
+                                request_status = r.test_result.status.clone();
+                                if request_status == TestStatus::FAIL {
+                                    case_status = TestStatus::FAIL;
+                                }
+                            }
+                            Err(e) => {
+                                request_status = TestStatus::FAIL;
                                 case_status = TestStatus::FAIL;
                             }
-                        }
-                        Err(e) => {
-                            request_status = TestStatus::FAIL;
-                            case_status = TestStatus::FAIL;
-                        }
-                    },
+                        },
+                    }
+                    case_requests.push(ResultTreeRequest {
+                        name: format!("{}:{}", request_name, request_testcase_name),
+                        status: request_status,
+                        result: result.clone(),
+                    });
                 }
-                case_requests.push(ResultTreeRequest {
-                    name: name.clone(),
-                    status: request_status,
-                    result: result.clone(),
-                });
             }
             let result_tree_case = ResultTreeCase {
                 status: case_status.clone(),
-                name: testcase.name.to_string(),
+                name: folder_testcase.name.to_string(),
                 folders: case_folders.clone(),
                 requests: case_requests.clone(),
             };
             new_result_tree_folder
                 .cases
-                .insert(testcase.name.to_string(), result_tree_case);
+                .insert(folder_testcase.name.to_string(), result_tree_case);
             match &case_status {
                 TestStatus::None => {}
                 TestStatus::Waiting => folder_status = TestStatus::Waiting,

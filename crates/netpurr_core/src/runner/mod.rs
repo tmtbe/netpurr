@@ -49,13 +49,13 @@ pub struct TestRunResult {
     pub test_result: TestResult,
     pub collection_path: Option<String>,
     pub request_name: String,
-    pub case_name: String,
+    pub testcase: Testcase,
 }
 #[derive(Default, Clone, Debug)]
 pub struct TestRunError {
     pub collection_path: Option<String>,
     pub request_name: String,
-    pub case_name: String,
+    pub testcase: Testcase,
     pub error: String,
 }
 impl Runner {
@@ -154,7 +154,7 @@ impl Runner {
                                     return Err(TestRunError {
                                         collection_path: run_request_info.collection_path.clone(),
                                         request_name: run_request_info.request_name,
-                                        case_name: run_request_info.testcase.name.clone(),
+                                        testcase: run_request_info.testcase.clone(),
                                         error: e.to_string(),
                                     });
                                 }
@@ -166,13 +166,13 @@ impl Runner {
                             test_result,
                             collection_path: run_request_info.collection_path.clone(),
                             request_name: run_request_info.request_name.clone(),
-                            case_name: run_request_info.testcase.name.clone(),
+                            testcase: run_request_info.testcase.clone(),
                         })
                     }
                     Err(e) => Err(TestRunError {
                         collection_path: run_request_info.collection_path.clone(),
                         request_name: run_request_info.request_name,
-                        case_name: run_request_info.testcase.name.clone(),
+                        testcase: run_request_info.testcase.clone(),
                         error: e.to_string(),
                     }),
                 }
@@ -180,7 +180,7 @@ impl Runner {
             Err(e) => Err(TestRunError {
                 collection_path: run_request_info.collection_path.clone(),
                 request_name: run_request_info.request_name,
-                case_name: run_request_info.testcase.name.clone(),
+                testcase: run_request_info.testcase.clone(),
                 error: e.to_string(),
             }),
         }
@@ -212,10 +212,12 @@ impl Runner {
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
         collection_name: String,
         collection_path: String,
+        parent_testcase: Option<Testcase>,
         folder: Rc<RefCell<CollectionFolder>>,
     ) -> Promise<()> {
         let client = self.client.clone();
         let folder_only_read = CollectionFolderOnlyRead::from(folder);
+
         Promise::spawn_thread("send_with_script", move || {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -227,13 +229,19 @@ impl Runner {
                     let testcase = Testcase::default();
                     testcases.insert(testcase.name.clone(), testcase);
                 }
-                for (name, testcase) in testcases.iter() {
+                for (_, testcase) in testcases.iter() {
+                    let mut root_testcase = testcase.clone();
+                    if let Some(parent) = &parent_testcase {
+                        root_testcase.merge(folder_only_read.name.clone(), parent);
+                    } else {
+                        root_testcase.entry_name = folder_only_read.name.clone();
+                    }
                     Self::run_test_group_async(
                         client.clone(),
                         envs.clone(),
                         pre_request_parent_script_scopes.clone(),
                         test_parent_script_scopes.clone(),
-                        testcase.clone(),
+                        root_testcase,
                         test_group_run_result.clone(),
                         collection_name.clone(),
                         collection_path.clone(),
@@ -263,12 +271,12 @@ impl Runner {
         for (name, folder) in folder.folders.iter() {
             let mut child_testcases = folder.testcases.clone();
             if child_testcases.is_empty() {
-                let testcase = Testcase::default();
+                let mut testcase = Testcase::default();
                 child_testcases.insert(testcase.name.clone(), testcase);
             }
             for (name, child_testcase) in child_testcases.iter() {
                 let mut merge_testcase = child_testcase.clone();
-                merge_testcase.merge(&testcase);
+                merge_testcase.merge(folder.name.clone(), &testcase);
                 Self::run_test_group_async(
                     client.clone(),
                     envs.clone(),
@@ -284,32 +292,41 @@ impl Runner {
             }
         }
         for (name, record) in folder.requests.iter() {
-            let mut record_pre_request_parent_script_scopes =
-                pre_request_parent_script_scopes.clone();
-            let scope = format!("{}/{}", collection_path.clone(), name);
-            if record.pre_request_script() != "" {
-                record_pre_request_parent_script_scopes.push(ScriptScope {
-                    scope: scope.clone(),
-                    script: record.pre_request_script(),
-                });
+            let mut record_testcases = record.testcase().clone();
+            if record_testcases.is_empty() {
+                let mut testcase = Testcase::default();
+                record_testcases.insert(testcase.name.clone(), testcase);
             }
-            let mut record_test_parent_script_scopes = test_parent_script_scopes.clone();
-            if record.test_script() != "" {
-                record_test_parent_script_scopes.push(ScriptScope {
-                    scope: scope.clone(),
-                    script: record.test_script(),
-                });
+            for (_, request_testcase) in record_testcases.iter() {
+                let mut record_pre_request_parent_script_scopes =
+                    pre_request_parent_script_scopes.clone();
+                let scope = format!("{}/{}", collection_path.clone(), name);
+                if record.pre_request_script() != "" {
+                    record_pre_request_parent_script_scopes.push(ScriptScope {
+                        scope: scope.clone(),
+                        script: record.pre_request_script(),
+                    });
+                }
+                let mut record_test_parent_script_scopes = test_parent_script_scopes.clone();
+                if record.test_script() != "" {
+                    record_test_parent_script_scopes.push(ScriptScope {
+                        scope: scope.clone(),
+                        script: record.test_script(),
+                    });
+                }
+                let mut new_request_testcase = request_testcase.clone();
+                new_request_testcase.merge(record.name(), &testcase);
+                let run_request_info = RunRequestInfo {
+                    collection_path: Some(collection_path.clone()),
+                    request_name: record.name(),
+                    request: record.must_get_rest().request.clone(),
+                    envs: envs.clone(),
+                    pre_request_scripts: record_pre_request_parent_script_scopes,
+                    test_scripts: record_test_parent_script_scopes,
+                    testcase: new_request_testcase.clone(),
+                };
+                run_request_infos.push(run_request_info)
             }
-            let run_request_info = RunRequestInfo {
-                collection_path: Some(collection_path.clone()),
-                request_name: record.name(),
-                request: record.must_get_rest().request.clone(),
-                envs: envs.clone(),
-                pre_request_scripts: record_pre_request_parent_script_scopes,
-                test_scripts: record_test_parent_script_scopes,
-                testcase: testcase.clone(),
-            };
-            run_request_infos.push(run_request_info)
         }
         let mut jobs = vec![];
         for run_request_info in run_request_infos.iter() {
@@ -334,24 +351,16 @@ pub struct TestGroupRunResults {
 impl TestGroupRunResults {
     pub fn add_result(&mut self, result: Result<TestRunResult, TestRunError>) {
         match &result {
-            Ok(r) => self.results.insert(
-                format!(
-                    "{}/{}::{}",
-                    r.collection_path.clone().unwrap_or_default(),
-                    r.request_name,
-                    r.case_name
-                ),
-                result.clone(),
-            ),
-            Err(e) => self.results.insert(
-                format!(
-                    "{}/{}::{}",
-                    e.collection_path.clone().unwrap_or_default(),
-                    e.request_name,
-                    e.case_name
-                ),
-                result.clone(),
-            ),
+            Ok(r) => {
+                let key = r.testcase.get_testcase_path().join("/");
+                println!("{}", key);
+                self.results.insert(key, result.clone());
+            }
+            Err(e) => {
+                let key = e.testcase.get_testcase_path().join("/");
+                println!("{}", key);
+                self.results.insert(key, result.clone());
+            }
         };
     }
     pub fn add_results(&mut self, results: Vec<Result<TestRunResult, TestRunError>>) {
@@ -360,13 +369,8 @@ impl TestGroupRunResults {
         }
     }
 
-    pub fn find(
-        &self,
-        path: String,
-        case: String,
-        name: String,
-    ) -> Option<Result<TestRunResult, TestRunError>> {
-        let key = format!("{}/{}::{}", path, name, case);
+    pub fn find(&self, testcase_path: Vec<String>) -> Option<Result<TestRunResult, TestRunError>> {
+        let key = testcase_path.join("/");
         return self.results.get(key.as_str()).cloned();
     }
 }
