@@ -7,7 +7,7 @@ use egui_code_editor::{CodeEditor, ColorTheme};
 
 use netpurr_core::data::collections::CollectionFolder;
 
-use crate::data::workspace_data::WorkspaceData;
+use crate::data::workspace_data::{TestItem, WorkspaceData};
 use crate::operation::operation::Operation;
 use crate::widgets::syntax::js_syntax;
 use crate::windows::manager_testcase_window::ManagerTestcaseWindows;
@@ -25,33 +25,31 @@ impl TestScriptPanel {
         &mut self,
         ui: &mut Ui,
         workspace_data: &mut WorkspaceData,
-        operation: &Operation,
-        crt_or_folder: CrtOrFolder,
-        id: String,
+        test_item: TestItem,
     ) {
         let mut script = "".to_string();
-        match &crt_or_folder {
-            CrtOrFolder::CRT(crt_id) => {
-                script = workspace_data
-                    .must_get_crt(crt_id.clone())
-                    .record
-                    .test_script();
-            }
-            CrtOrFolder::Folder(folder) => {
+        match &test_item {
+            TestItem::Folder(_, folder) => {
                 script = folder.borrow().test_script.clone();
             }
+            TestItem::Record(_, folder, record_name) => {
+                folder
+                    .borrow()
+                    .requests
+                    .get(record_name.as_str())
+                    .map(|record| script = record.test_script());
+            }
         }
+        let compare_script = script.clone();
         ui.vertical(|ui| {
             ui.label("Test scripts are written in JavaScript, and are run after the response is received.");
             ui.separator();
             ui.horizontal(|ui| {
                 egui::ScrollArea::vertical()
                     .min_scrolled_height(250.0)
+                    .id_source("test_manager_test_script_snippets")
                     .show(ui, |ui| {
                         ui.vertical(|ui| {
-                            if ui.button("Manager Testcases").clicked(){
-                                operation.add_window(Box::new(ManagerTestcaseWindows::default().with_crt_or_folder(crt_or_folder.clone())))
-                            }
                             ui.strong("SNIPPETS");
                             if ui.link("Test Example").clicked() {
                                 script = script.clone().add(r#"let response = netpurr.resp();
@@ -104,34 +102,43 @@ netpurr.test("Response status is 200",function(){
                     });
                 ui.separator();
                 ui.vertical(|ui|{
-                    ui.push_id(id+"_test_script", |ui| {
-                        egui::ScrollArea::vertical()
-                            .min_scrolled_height(250.0)
-                            .show(ui, |ui| {
-                                let mut code_editor = CodeEditor::default()
-                                    .id_source("test_code_editor")
-                                    .with_rows(12)
-                                    .with_ui_fontsize(ui)
-                                    .with_syntax(js_syntax())
-                                    .with_numlines(true);
-                                if ui.visuals().dark_mode {
-                                    code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)
-                                } else {
-                                    code_editor = code_editor.with_theme(ColorTheme::GRUVBOX_LIGHT)
-                                }
-                                code_editor.show(ui, &mut script);
-                            });
-                    });
+                    egui::ScrollArea::vertical()
+                        .min_scrolled_height(250.0)
+                        .id_source("test_manager_test_script")
+                        .show(ui, |ui| {
+                            let mut code_editor = CodeEditor::default()
+                                .id_source("test_code_editor")
+                                .with_rows(12)
+                                .with_ui_fontsize(ui)
+                                .with_syntax(js_syntax())
+                                .with_numlines(true);
+                            if ui.visuals().dark_mode {
+                                code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)
+                            } else {
+                                code_editor = code_editor.with_theme(ColorTheme::GRUVBOX_LIGHT)
+                            }
+                            code_editor.show(ui, &mut script);
+                        });
                 });
             });
         });
-        match &crt_or_folder {
-            CrtOrFolder::CRT(crt_id) => {
-                workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                    crt.record.set_test_script(script);
-                });
+        if compare_script != script {
+            match &test_item {
+                TestItem::Folder(_, folder) => {
+                    folder.borrow_mut().test_script = script.clone();
+                    workspace_data.save_folder(folder.clone());
+                }
+                TestItem::Record(_, folder, record_name) => {
+                    folder
+                        .borrow_mut()
+                        .requests
+                        .get_mut(record_name.as_str())
+                        .map(|record| {
+                            record.set_test_script(script.clone());
+                            workspace_data.save_record(folder.clone(), record_name.clone());
+                        });
+                }
             }
-            CrtOrFolder::Folder(folder) => folder.borrow_mut().test_script = script,
         }
     }
 }

@@ -21,7 +21,7 @@ use crate::data::logger::Logger;
 use crate::data::test::TestResult;
 use crate::data::websocket::WebSocketSession;
 use crate::runner::websocket::WebSocketSender;
-use crate::script::{Context, JsResponse, ScriptRuntime, ScriptScope, SharedMap};
+use crate::script::{Context, JsResponse, ScriptRuntime, ScriptScope, ScriptTree, SharedMap};
 
 mod rest;
 pub mod test;
@@ -207,10 +207,8 @@ impl Runner {
     pub fn run_test_group_promise(
         &self,
         envs: BTreeMap<String, EnvironmentItemValue>,
-        pre_request_parent_script_scopes: Vec<ScriptScope>,
-        test_parent_script_scopes: Vec<ScriptScope>,
+        script_tree: ScriptTree,
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
-        collection_name: String,
         collection_path: String,
         parent_testcase: Option<Testcase>,
         folder: Rc<RefCell<CollectionFolder>>,
@@ -239,11 +237,9 @@ impl Runner {
                     Self::run_test_group_async(
                         client.clone(),
                         envs.clone(),
-                        pre_request_parent_script_scopes.clone(),
-                        test_parent_script_scopes.clone(),
+                        script_tree.clone(),
                         root_testcase,
                         test_group_run_result.clone(),
-                        collection_name.clone(),
                         collection_path.clone(),
                         folder_only_read.clone(),
                     )
@@ -257,11 +253,9 @@ impl Runner {
     async fn run_test_group_async(
         client: Client,
         envs: BTreeMap<String, EnvironmentItemValue>,
-        pre_request_parent_script_scopes: Vec<ScriptScope>,
-        test_parent_script_scopes: Vec<ScriptScope>,
+        script_tree: ScriptTree,
         testcase: Testcase,
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
-        collection_name: String,
         collection_path: String,
         folder: CollectionFolderOnlyRead,
     ) {
@@ -280,11 +274,9 @@ impl Runner {
                 Self::run_test_group_async(
                     client.clone(),
                     envs.clone(),
-                    pre_request_parent_script_scopes.clone(),
-                    test_parent_script_scopes.clone(),
+                    script_tree.clone(),
                     merge_testcase,
                     test_group_run_result.clone(),
-                    collection_name.clone(),
                     collection_path.clone() + "/" + name,
                     folder.clone(),
                 )
@@ -298,8 +290,9 @@ impl Runner {
                 record_testcases.insert(testcase.name.clone(), testcase);
             }
             for (_, request_testcase) in record_testcases.iter() {
-                let mut record_pre_request_parent_script_scopes =
-                    pre_request_parent_script_scopes.clone();
+                let mut record_pre_request_parent_script_scopes = script_tree
+                    .get_pre_request_parent_script_scope(folder.get_path())
+                    .clone();
                 let scope = format!("{}/{}", collection_path.clone(), name);
                 if record.pre_request_script() != "" {
                     record_pre_request_parent_script_scopes.push(ScriptScope {
@@ -307,7 +300,9 @@ impl Runner {
                         script: record.pre_request_script(),
                     });
                 }
-                let mut record_test_parent_script_scopes = test_parent_script_scopes.clone();
+                let mut record_test_parent_script_scopes = script_tree
+                    .get_test_parent_script_scope(folder.get_path())
+                    .clone();
                 if record.test_script() != "" {
                     record_test_parent_script_scopes.push(ScriptScope {
                         scope: scope.clone(),

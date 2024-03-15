@@ -13,7 +13,7 @@ use netpurr_core::data::cookies_manager::{Cookie, CookiesManager};
 use netpurr_core::data::environment::{Environment, EnvironmentConfig, EnvironmentItemValue};
 use netpurr_core::data::record::Record;
 use netpurr_core::runner::TestRunResult;
-use netpurr_core::script::ScriptScope;
+use netpurr_core::script::{ScriptScope, ScriptTree};
 
 use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
 use crate::data::history::{DateGroupHistoryList, HistoryDataList};
@@ -23,7 +23,7 @@ use crate::utils;
 pub struct WorkspaceData {
     pub workspace_name: String,
     pub editor_model: EditorModel,
-    pub selected_test_group_path: Option<String>,
+    pub selected_test_item: Option<TestItem>,
     pub selected_test_run_result: Option<TestRunResult>,
     cookies_manager: RefCell<CookiesManager>,
     central_request_data_list: RefCell<CentralRequestDataList>,
@@ -32,6 +32,11 @@ pub struct WorkspaceData {
     collections: RefCell<Collections>,
 }
 
+#[derive(Clone, Debug)]
+pub enum TestItem {
+    Folder(String, Rc<RefCell<CollectionFolder>>),
+    Record(String, Rc<RefCell<CollectionFolder>>, String),
+}
 #[derive(Display, PartialEq, EnumIter, Clone, Debug)]
 pub enum EditorModel {
     Request,
@@ -144,6 +149,19 @@ impl WorkspaceData {
         self.collections
             .borrow_mut()
             .update_folder_info(old_folder_name, parent_folder, folder)
+    }
+
+    pub fn save_folder(&self, folder: Rc<RefCell<CollectionFolder>>) {
+        self.collections.borrow_mut().save_folder(folder)
+    }
+
+    pub fn add_record(&self, folder: Rc<RefCell<CollectionFolder>>, record: Record) {
+        self.collections.borrow_mut().add_record(folder, record)
+    }
+    pub fn save_record(&self, folder: Rc<RefCell<CollectionFolder>>, record_name: String) {
+        self.collections
+            .borrow_mut()
+            .save_record(folder, record_name)
     }
 
     pub fn remove_folder(&self, parent_folder: Rc<RefCell<CollectionFolder>>, name: String) {
@@ -346,6 +364,29 @@ impl WorkspaceData {
             .get_path_scripts(collection_path.clone());
     }
 
+    pub fn get_script_tree(&self, collection_path: String) -> ScriptTree {
+        let mut script_tree = ScriptTree::default();
+        if let (_, Some(folder)) = self.get_folder_with_path(collection_path) {
+            self._get_script_tree(folder.clone(), &mut script_tree);
+        }
+        script_tree
+    }
+    fn _get_script_tree(
+        &self,
+        folder: Rc<RefCell<CollectionFolder>>,
+        script_tree: &mut ScriptTree,
+    ) {
+        let path = folder.borrow().get_path();
+        let (pre_request_parent_script_scopes, test_parent_script_scopes) =
+            self.get_parent_scripts(path.clone());
+        script_tree
+            .add_pre_request_parent_script_scope(path.clone(), pre_request_parent_script_scopes);
+        script_tree.add_test_parent_script_scope(path.clone(), test_parent_script_scopes);
+        for (_, child_folder) in folder.borrow().folders.iter() {
+            self._get_script_tree(child_folder.clone(), script_tree);
+        }
+    }
+
     pub fn get_crt_select_id(&self) -> Option<String> {
         self.central_request_data_list.borrow().select_id.clone()
     }
@@ -452,7 +493,7 @@ impl WorkspaceData {
     pub fn load_all(&mut self, workspace: String) {
         self.workspace_name = workspace.clone();
         self.editor_model = EditorModel::Request;
-        self.selected_test_group_path = None;
+        self.selected_test_item = None;
         self.central_request_data_list
             .borrow_mut()
             .load_all(workspace.clone());

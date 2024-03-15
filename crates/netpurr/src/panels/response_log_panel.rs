@@ -1,3 +1,4 @@
+use egui_code_editor::highlighting::highlight;
 use egui_code_editor::{CodeEditor, ColorTheme};
 
 use netpurr_core::data::http::Response;
@@ -12,7 +13,7 @@ impl ResponseLogPanel {
         let theme = egui_extras::syntax_highlighting::CodeTheme::from_memory(ui.ctx());
         let mut layouter = |ui: &egui::Ui, string: &str, wrap_width: f32| {
             let mut layout_job =
-                egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, "log");
+                egui_extras::syntax_highlighting::highlight(ui.ctx(), &theme, string, "js");
             layout_job.wrap.max_width = wrap_width;
             ui.fonts(|f| f.layout_job(layout_job))
         };
@@ -20,21 +21,13 @@ impl ResponseLogPanel {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 for (index, log) in response.logger.logs.iter().enumerate() {
                     let mut content = format!("> {}", log.show());
-                    let mut code_editor = CodeEditor::default()
-                        .id_source(format!("{}-{}", "log", index))
-                        .with_rows(1)
-                        .with_ui_fontsize(ui)
-                        .with_syntax(js_syntax())
-                        .with_numlines(false);
-                    if ui.visuals().dark_mode {
-                        code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)
-                    } else {
-                        code_editor = code_editor.with_theme(ColorTheme::GRUVBOX_LIGHT)
-                    }
-                    code_editor
-                        .show(ui, &mut content)
-                        .response
-                        .on_hover_text(content);
+                    egui::TextEdit::multiline(&mut content)
+                        .layouter(&mut layouter)
+                        .lock_focus(true)
+                        .desired_rows(4)
+                        .frame(true)
+                        .desired_width(f32::MAX)
+                        .show(ui);
                 }
             });
         });

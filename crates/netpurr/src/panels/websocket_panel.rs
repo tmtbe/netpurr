@@ -40,7 +40,6 @@ enum RequestPanelEnum {
     Params,
     Authorization,
     Headers,
-    PreRequestScript,
 }
 
 impl Default for RequestPanelEnum {
@@ -105,13 +104,6 @@ impl WebSocketPanel {
                 HighlightValue::Usize(hr.request.headers.iter().filter(|i| i.enable).count())
             }
             RequestPanelEnum::Content => HighlightValue::None,
-            RequestPanelEnum::PreRequestScript => {
-                if hr.pre_request_script != "" {
-                    HighlightValue::Has
-                } else {
-                    HighlightValue::None
-                }
-            }
         }
     }
     fn render_editor_right_panel(
@@ -321,23 +313,6 @@ impl WebSocketPanel {
                 workspace_data,
                 crt_id.clone(),
             ),
-            RequestPanelEnum::PreRequestScript => {
-                let script = self.request_pre_script_panel.set_and_render(
-                    ui,
-                    operation,
-                    crt.get_tab_name(),
-                    crt.record.pre_request_script(),
-                    pre_request_parent_script_scopes,
-                    crt.record.must_get_rest().request.clone(),
-                    envs.clone(),
-                    "rest".to_string(),
-                );
-                {
-                    crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                        crt.record.set_pre_request_script(script);
-                    });
-                }
-            }
         }
     }
     fn render_middle_select(

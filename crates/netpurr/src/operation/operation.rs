@@ -15,7 +15,7 @@ use netpurr_core::data::websocket::WebSocketSession;
 use netpurr_core::runner::{
     RunRequestInfo, Runner, TestGroupRunResults, TestRunError, TestRunResult,
 };
-use netpurr_core::script::{Context, ScriptScope};
+use netpurr_core::script::{Context, ScriptScope, ScriptTree};
 
 use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
@@ -77,20 +77,16 @@ impl Operation {
     pub fn run_test_group_promise(
         &self,
         envs: BTreeMap<String, EnvironmentItemValue>,
-        pre_request_parent_script_scopes: Vec<ScriptScope>,
-        test_parent_script_scopes: Vec<ScriptScope>,
+        script_tree: ScriptTree,
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
-        collection_name: String,
         collection_path: String,
         parent_testcase: Option<Testcase>,
         folder: Rc<RefCell<CollectionFolder>>,
     ) -> Promise<()> {
         self.runner.run_test_group_promise(
             envs,
-            pre_request_parent_script_scopes,
-            test_parent_script_scopes,
+            script_tree,
             test_group_run_result,
-            collection_name,
             collection_path,
             parent_testcase,
             folder,

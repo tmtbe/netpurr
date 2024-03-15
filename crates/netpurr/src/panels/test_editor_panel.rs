@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
@@ -12,13 +13,20 @@ use netpurr_core::data::collections::{CollectionFolder, Testcase};
 use netpurr_core::data::test::TestStatus;
 use netpurr_core::runner::test::{ResultTreeCase, ResultTreeFolder, ResultTreeRequest};
 use netpurr_core::runner::TestGroupRunResults;
+use netpurr_core::script::ScriptScope;
 
-use crate::data::workspace_data::WorkspaceData;
+use crate::data::workspace_data::{TestItem, WorkspaceData};
 use crate::operation::operation::Operation;
+use crate::panels::manager_testcase_panel::ManagerTestcasePanel;
+use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
+use crate::panels::test_script_panel::TestScriptPanel;
 use crate::utils;
 
 #[derive(Default)]
 pub struct TestEditorPanel {
+    manager_testcase_panel: ManagerTestcasePanel,
+    request_pre_script_panel: RequestPreScriptPanel,
+    test_script_panel: TestScriptPanel,
     test_group_run_result: Option<Arc<RwLock<TestGroupRunResults>>>,
     run_promise: Option<Promise<()>>,
     collection_path: String,
@@ -40,56 +48,140 @@ impl TestEditorPanel {
         if self.run_promise.is_some() {
             ui.ctx().request_repaint();
         }
-        workspace_data
-            .selected_test_group_path
-            .clone()
-            .map(|collection_path| {
-                if let (collection_name, Some(folder)) =
-                    workspace_data.get_folder_with_path(collection_path.clone())
-                {
-                    if self.collection_path != collection_path {
-                        self.init(workspace_data, collection_path.clone());
-                    }
-                    ui.heading(folder.borrow().name.clone());
-                    ui.separator();
-                    ui.add_enabled_ui(self.run_promise.is_none(), |ui| {
-                        self.render_select_testcase(workspace_data, ui);
-                        if ui.button("Run").clicked() {
-                            let test_group_run_result =
-                                Arc::new(RwLock::new(TestGroupRunResults::default()));
-                            self.test_group_run_result = Some(test_group_run_result.clone());
-                            self.run_test_group(
-                                workspace_data,
-                                operation,
-                                test_group_run_result,
-                                collection_name,
-                                collection_path,
-                                self.build_parent_testcase(),
-                                folder.clone(),
-                            );
-                        }
-                    });
-                    if let Some(test_group_run_result) = self.test_group_run_result.clone() {
-                        egui::ScrollArea::vertical()
-                            .max_height(ui.available_height() - 30.0)
-                            .show(ui, |ui| {
-                                let mut testcase_paths = vec![];
-                                if let Some(pt) = self.build_parent_testcase() {
-                                    testcase_paths = pt.get_testcase_path();
-                                }
-                                let result_tree = ResultTreeFolder::create(
-                                    folder.clone(),
-                                    testcase_paths,
-                                    test_group_run_result.read().unwrap().deref().clone(),
-                                );
-                                self.render_tree_folder(ui, workspace_data, &result_tree);
-                            });
-                    }
-                }
-            });
+        workspace_data.selected_test_item.clone().map(|test_item| {
+            self.render_test_item_folder(operation, workspace_data, ui, test_item.clone());
+        });
     }
 
+    fn render_test_item_folder(
+        &mut self,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        ui: &mut Ui,
+        test_item: TestItem,
+    ) {
+        match &test_item {
+            TestItem::Folder(collection_name, folder) => {
+                if self.collection_path != folder.borrow().get_path() {
+                    self.init(workspace_data, folder.borrow().get_path());
+                }
+                ui.heading(folder.borrow().get_path().clone());
+                ui.separator();
+                egui::ScrollArea::vertical()
+                    .id_source("testcase_item")
+                    .max_height(ui.available_height() - 30.0)
+                    .show(ui, |ui| {
+                        self.render_select_testcase(workspace_data, ui);
+                        ui.separator();
+                        self.render_run(
+                            operation,
+                            workspace_data,
+                            ui,
+                            collection_name.clone(),
+                            &folder,
+                        );
+                        ui.separator();
+                        self.render_result_tree(workspace_data, ui, folder.clone());
+                        ui.separator();
+                        self.render_manager_testcase(workspace_data, ui, test_item.clone());
+                        ui.separator();
+                        self.render_script(workspace_data, operation, ui, test_item.clone());
+                        ui.separator();
+                    });
+            }
+            TestItem::Record(_collection_name, folder, record_name) => {
+                ui.heading(format!("{} : {}", folder.borrow().get_path(), record_name));
+                ui.separator();
+                egui::ScrollArea::vertical()
+                    .id_source("testcase_item")
+                    .max_height(ui.available_height() - 30.0)
+                    .show(ui, |ui| {
+                        self.render_manager_testcase(workspace_data, ui, test_item.clone());
+                        ui.separator();
+                        self.render_script(workspace_data, operation, ui, test_item.clone());
+                        ui.separator();
+                    });
+            }
+        }
+    }
+
+    fn render_result_tree(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        ui: &mut Ui,
+        folder: Rc<RefCell<CollectionFolder>>,
+    ) {
+        if let Some(test_group_run_result) = self.test_group_run_result.clone() {
+            let mut testcase_paths = vec![];
+            if let Some(pt) = self.build_parent_testcase() {
+                testcase_paths = pt.get_testcase_path();
+            }
+            let result_tree = ResultTreeFolder::create(
+                folder.clone(),
+                testcase_paths,
+                test_group_run_result.read().unwrap().deref().clone(),
+            );
+            self.render_tree_folder(ui, workspace_data, &result_tree);
+        }
+    }
+
+    fn render_run(
+        &mut self,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        ui: &mut Ui,
+        collection_name: String,
+        folder: &Rc<RefCell<CollectionFolder>>,
+    ) {
+        ui.add_enabled_ui(self.run_promise.is_none(), |ui| {
+            if ui.button("Run Test").clicked() {
+                let test_group_run_result = Arc::new(RwLock::new(TestGroupRunResults::default()));
+                self.test_group_run_result = Some(test_group_run_result.clone());
+                self.run_test_group(
+                    workspace_data,
+                    operation,
+                    test_group_run_result,
+                    collection_name,
+                    folder.borrow().get_path(),
+                    self.build_parent_testcase(),
+                    folder.clone(),
+                );
+            }
+        });
+    }
+
+    fn render_script(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        operation: &Operation,
+        ui: &mut Ui,
+        test_item: TestItem,
+    ) {
+        ui.strong("Pre-request Script:");
+        self.request_pre_script_panel
+            .set_and_render(ui, workspace_data, test_item.clone());
+        ui.separator();
+        ui.strong("Test Script:");
+        self.test_script_panel
+            .set_and_render(ui, workspace_data, test_item.clone())
+    }
+    fn render_manager_testcase(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        ui: &mut Ui,
+        test_item: TestItem,
+    ) {
+        ui.strong("Edit Self Testcase:");
+        egui::ScrollArea::neither()
+            .id_source("manager_testcase_scroll")
+            .max_height(200.0)
+            .show(ui, |ui| {
+                self.manager_testcase_panel
+                    .render(ui, workspace_data, test_item)
+            });
+    }
     fn render_select_testcase(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
+        ui.strong("Select Parent Testcase:");
         ui.horizontal_wrapped(|ui| {
             for (index, parent_path) in self.parent_paths.iter().enumerate() {
                 let (_, folder_op) = workspace_data.get_folder_with_path(parent_path.clone());
@@ -318,14 +410,11 @@ impl TestEditorPanel {
     ) {
         let envs = workspace_data
             .get_build_envs(workspace_data.get_collection(Some(collection_name.clone())));
-        let (pre_request_parent_script_scopes, test_parent_script_scopes) =
-            workspace_data.get_parent_scripts(collection_path.clone());
+        let script_tree = workspace_data.get_script_tree(collection_path.clone());
         self.run_promise = Some(operation.run_test_group_promise(
             envs,
-            pre_request_parent_script_scopes,
-            test_parent_script_scopes,
+            script_tree,
             test_group_run_result,
-            collection_name,
             collection_path,
             parent_testcase,
             folder,

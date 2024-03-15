@@ -56,6 +56,11 @@ pub struct ScriptScope {
     pub script: String,
     pub scope: String,
 }
+#[derive(Default, Clone)]
+pub struct ScriptTree {
+    pub pre_request_parent_script_scopes: BTreeMap<String, Vec<ScriptScope>>,
+    pub test_parent_script_scopes: BTreeMap<String, Vec<ScriptScope>>,
+}
 impl ScriptRuntime {
     pub fn run_block(
         &self,
@@ -456,5 +461,25 @@ fn op_append_assert(state: &mut OpState, result: bool, #[string] msg: String) {
     match context {
         None => {}
         Some(c) => c.test_result.append(result, msg),
+    }
+}
+impl ScriptTree {
+    pub fn add_pre_request_parent_script_scope(&mut self, path: String, scopes: Vec<ScriptScope>) {
+        self.pre_request_parent_script_scopes.insert(path, scopes);
+    }
+    pub fn add_test_parent_script_scope(&mut self, path: String, scopes: Vec<ScriptScope>) {
+        self.test_parent_script_scopes.insert(path, scopes);
+    }
+    pub fn get_pre_request_parent_script_scope(&self, path: String) -> Vec<ScriptScope> {
+        self.pre_request_parent_script_scopes
+            .get(path.as_str())
+            .cloned()
+            .unwrap_or_default()
+    }
+    pub fn get_test_parent_script_scope(&self, path: String) -> Vec<ScriptScope> {
+        self.test_parent_script_scopes
+            .get(path.as_str())
+            .cloned()
+            .unwrap_or_default()
     }
 }

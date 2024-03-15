@@ -4,6 +4,7 @@ use std::ops::Add;
 use egui::Ui;
 use egui_code_editor::{CodeEditor, ColorTheme};
 
+use crate::data::workspace_data::{TestItem, WorkspaceData};
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::Request;
 use netpurr_core::script::{Context, ScriptScope};
@@ -19,33 +20,29 @@ impl RequestPreScriptPanel {
     pub fn set_and_render(
         &mut self,
         ui: &mut Ui,
-        operation: &Operation,
-        scope: String,
-        mut script: String,
-        mut parent_scripts: Vec<ScriptScope>,
-        request: Request,
-        envs: BTreeMap<String, EnvironmentItemValue>,
-        id: String,
-    ) -> String {
+        workspace_data: &mut WorkspaceData,
+        test_item: TestItem,
+    ) {
+        let mut script = "".to_string();
+        match &test_item {
+            TestItem::Folder(_, folder) => {
+                script = folder.borrow().pre_request_script.clone();
+            }
+            TestItem::Record(_, folder, record_name) => {
+                folder
+                    .borrow()
+                    .requests
+                    .get(record_name.as_str())
+                    .map(|record| script = record.pre_request_script());
+            }
+        }
+        let compare_script = script.clone();
         ui.vertical(|ui| {
             ui.label("Pre-request scripts are written in JavaScript， and are run before the request is sent.");
-            if ui.link("Test").clicked() {
-                let script_scope = ScriptScope {
-                    script: script.clone(),
-                    scope: scope.clone(),
-                };
-                parent_scripts.push(script_scope);
-                let context = Context {
-                    scope_name: scope.clone(),
-                    request: request.clone(),
-                    envs,
-                    ..Default::default()
-                };
-                operation.add_window(Box::new(TestScriptWindows::default().with(parent_scripts, context)));
-            }
             ui.separator();
             ui.horizontal(|ui| {
                 egui::ScrollArea::vertical().min_scrolled_height(250.0)
+                    .id_source("test_manager_pre_request_script_snippets")
                     .show(ui, |ui| {
                         ui.vertical(|ui| {
                     ui.strong("SNIPPETS");
@@ -105,6 +102,7 @@ console.log(response)"#)
                 ui.push_id("pre_request_script", |ui| {
                     egui::ScrollArea::vertical()
                         .min_scrolled_height(250.0)
+                        .id_source("test_manager_pre_request_script")
                         .show(ui, |ui| {
                             let mut code_editor = CodeEditor::default()
                                 .id_source("request_pre_script_code_editor")
@@ -122,6 +120,23 @@ console.log(response)"#)
                 });
             });
         });
-        script
+        if compare_script != script {
+            match &test_item {
+                TestItem::Folder(_, folder) => {
+                    folder.borrow_mut().pre_request_script = script.clone();
+                    workspace_data.save_folder(folder.clone());
+                }
+                TestItem::Record(_, folder, record_name) => {
+                    folder
+                        .borrow_mut()
+                        .requests
+                        .get_mut(record_name.as_str())
+                        .map(|record| {
+                            record.set_pre_request_script(script.clone());
+                            workspace_data.save_record(folder.clone(), record_name.clone());
+                        });
+                }
+            }
+        }
     }
 }

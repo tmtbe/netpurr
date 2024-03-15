@@ -68,6 +68,21 @@ impl Collections {
             &record,
         );
     }
+    pub fn save_record(&mut self, folder: Rc<RefCell<CollectionFolder>>, record_name: String) {
+        folder
+            .borrow_mut()
+            .requests
+            .get(record_name.as_str())
+            .map(|record| {
+                self.persistence.save(
+                    Path::new("collections")
+                        .join(folder.borrow().parent_path.as_str())
+                        .join(folder.borrow().name.as_str()),
+                    record.name(),
+                    record,
+                );
+            });
+    }
 
     pub fn remove_http_record(&mut self, folder: Rc<RefCell<CollectionFolder>>, name: String) {
         folder.borrow_mut().requests.remove(name.as_str());
@@ -95,6 +110,15 @@ impl Collections {
             self.persistence.clone(),
             Path::new("collections")
                 .join(folder.borrow().parent_path.as_str())
+                .to_path_buf(),
+        );
+    }
+    pub fn save_folder(&self, folder: Rc<RefCell<CollectionFolder>>) {
+        folder.borrow().save_info(
+            self.persistence.clone(),
+            Path::new("collections")
+                .join(folder.borrow().parent_path.clone())
+                .join(folder.borrow().name.clone())
                 .to_path_buf(),
         );
     }
@@ -417,6 +441,13 @@ pub struct CollectionFolderOnlyRead {
     pub test_script: String,
     pub testcases: BTreeMap<String, Testcase>,
 }
+impl CollectionFolderOnlyRead {
+    pub fn get_path(&self) -> String {
+        format!("{}/{}", self.parent_path, self.name)
+            .trim_start_matches("./")
+            .to_string()
+    }
+}
 #[derive(Default, Clone, PartialEq, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SaveCollection {
@@ -530,6 +561,8 @@ impl CollectionFolder {
     }
 
     pub fn get_path(&self) -> String {
-        self.parent_path.clone() + "/" + self.name.as_str()
+        format!("{}/{}", self.parent_path, self.name)
+            .trim_start_matches("./")
+            .to_string()
     }
 }

@@ -3,6 +3,7 @@ pub mod bottom_panel;
 pub mod collection_panel;
 pub mod history_panel;
 pub mod left_panel;
+pub mod manager_testcase_panel;
 pub mod openapi_editor_panel;
 pub mod openapi_show_request_panel;
 pub mod request_body_form_data_panel;

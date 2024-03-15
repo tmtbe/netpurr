@@ -43,8 +43,6 @@ enum RequestPanelEnum {
     Authorization,
     Headers,
     Body,
-    PreRequestScript,
-    Tests,
 }
 
 impl Default for RequestPanelEnum {
@@ -130,20 +128,6 @@ impl RestPanel {
                     }
                 }
             },
-            RequestPanelEnum::PreRequestScript => {
-                if hr.pre_request_script != "" {
-                    HighlightValue::Has
-                } else {
-                    HighlightValue::None
-                }
-            }
-            RequestPanelEnum::Tests => {
-                if hr.test_script != "" {
-                    HighlightValue::Has
-                } else {
-                    HighlightValue::None
-                }
-            }
         }
     }
 
@@ -156,8 +140,6 @@ impl RestPanel {
         ui: &mut Ui,
     ) {
         let mut send_rest = None;
-        let (mut pre_request_parent_script_scopes, mut test_parent_script_scopes) =
-            workspace_data.get_crt_parent_scripts(crt_id.clone());
         let envs = workspace_data.get_crt_envs(crt_id.clone());
         let parent_auth = workspace_data.get_crt_parent_auth(crt_id.clone());
         let mut crt = workspace_data.must_get_crt(crt_id.clone());
@@ -175,33 +157,14 @@ impl RestPanel {
                                     .must_get_mut_rest()
                                     .prepare_send(envs.clone(), parent_auth.clone());
                             });
-                            let scope = format!(
-                                "{}/{}",
-                                crt.collection_path.clone().unwrap_or_default(),
-                                crt.get_tab_name()
-                            );
-                            if crt.record.pre_request_script() != "" {
-                                pre_request_parent_script_scopes.push(ScriptScope {
-                                    scope: scope.clone(),
-                                    script: crt.record.pre_request_script(),
-                                });
-                            }
-
-                            if crt.record.test_script() != "" {
-                                test_parent_script_scopes.push(ScriptScope {
-                                    scope: scope.clone(),
-                                    script: crt.record.test_script(),
-                                });
-                            }
-
                             let send_response =
                                 operation.send_rest_with_script_promise(RunRequestInfo {
                                     collection_path: crt.collection_path.clone(),
                                     request_name: crt.get_tab_name(),
                                     request: crt.record.must_get_rest().request.clone(),
                                     envs: envs.clone(),
-                                    pre_request_scripts: pre_request_parent_script_scopes,
-                                    test_scripts: test_parent_script_scopes,
+                                    pre_request_scripts: vec![],
+                                    test_scripts: vec![],
                                     testcase: Default::default(),
                                 });
                             self.send_promise = Some(send_response);
@@ -333,33 +296,6 @@ impl RestPanel {
                 workspace_data,
                 crt_id.clone(),
             ),
-
-            RequestPanelEnum::PreRequestScript => {
-                let script = self.request_pre_script_panel.set_and_render(
-                    ui,
-                    operation,
-                    crt.get_tab_name(),
-                    crt.record.pre_request_script(),
-                    pre_request_parent_script_scopes,
-                    crt.record.must_get_rest().request.clone(),
-                    envs.clone(),
-                    "rest".to_string(),
-                );
-                {
-                    crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
-                        crt.record.set_pre_request_script(script);
-                    });
-                }
-            }
-            RequestPanelEnum::Tests => {
-                self.test_script_panel.set_and_render(
-                    ui,
-                    workspace_data,
-                    &operation,
-                    CrtOrFolder::CRT(crt_id.clone()),
-                    "rest".to_string(),
-                );
-            }
         }
     }
 
