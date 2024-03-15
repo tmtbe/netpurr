@@ -7,7 +7,6 @@ use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
-use crate::data::collections::Testcase;
 use anyhow::Error;
 use deno_core::url::Url;
 use deno_core::{op2, ExtensionBuilder, FsModuleLoader, ModuleCodeString, Op, OpState};
@@ -18,6 +17,7 @@ use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 
+use crate::data::collections::Testcase;
 use crate::data::environment::{EnvironmentItemValue, EnvironmentValueType};
 use crate::data::http;
 use crate::data::http::{Header, LockWith, QueryParam, Request};

@@ -2,13 +2,13 @@ use std::cell::RefCell;
 use std::ops::Add;
 use std::rc::Rc;
 
-use crate::data::workspace::Workspace;
-use crate::data::workspace_data::WorkspaceData;
-use crate::operation::operation::Operation;
 use egui::Ui;
 use egui_code_editor::{CodeEditor, ColorTheme};
-use netpurr_core::data::collections::{CollectionFolder, Testcase};
 
+use netpurr_core::data::collections::CollectionFolder;
+
+use crate::data::workspace_data::WorkspaceData;
+use crate::operation::operation::Operation;
 use crate::widgets::syntax::js_syntax;
 use crate::windows::manager_testcase_window::ManagerTestcaseWindows;
 

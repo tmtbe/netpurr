@@ -1,7 +1,8 @@
-use crate::data::collections::Testcase;
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
+
+use crate::data::collections::Testcase;
 use crate::data::http::HttpRecord;
 use crate::data::websocket::WebSocketRecord;
 

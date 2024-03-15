@@ -18,13 +18,13 @@ use crate::data::collections::{CollectionFolder, CollectionFolderOnlyRead, Testc
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::{Request, Response};
 use crate::data::logger::Logger;
-use crate::data::test;
 use crate::data::test::TestResult;
 use crate::data::websocket::WebSocketSession;
 use crate::runner::websocket::WebSocketSender;
 use crate::script::{Context, JsResponse, ScriptRuntime, ScriptScope, SharedMap};
 
 mod rest;
+pub mod test;
 mod websocket;
 
 #[derive(Clone)]
@@ -129,7 +129,7 @@ impl Runner {
                             format!("get response: {:?}", after_response),
                         );
                         after_response.logger = logger;
-                        let mut test_result: test::TestResult = Default::default();
+                        let mut test_result: TestResult = Default::default();
                         let mut test_context = pre_request_context.clone();
                         test_context.response =
                             JsResponse::from_data_response(after_response.clone());

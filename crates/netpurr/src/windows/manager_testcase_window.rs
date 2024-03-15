@@ -1,3 +1,11 @@
+use std::collections::{BTreeMap, HashMap};
+
+use egui::{Color32, RichText, Ui};
+use egui_code_editor::{CodeEditor, ColorTheme};
+use serde_json::Value;
+
+use netpurr_core::data::collections::Testcase;
+
 use crate::data::config_data::ConfigData;
 use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
@@ -5,13 +13,6 @@ use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::test_script_panel::CrtOrFolder;
 use crate::utils;
 use crate::widgets::syntax::js_syntax;
-use crate::windows::import_windows::ImportWindows;
-use egui::{Color32, RichText, TextEdit, Ui, Widget};
-use egui_code_editor::{CodeEditor, ColorTheme};
-use netpurr_core::data::collections::Testcase;
-use serde_json::Value;
-use std::collections::{BTreeMap, HashMap};
-use std::path::PathBuf;
 
 #[derive(Default)]
 pub struct ManagerTestcaseWindows {

@@ -1,12 +1,11 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
-use std::fmt::format;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use openapiv3::OpenAPI;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::data::auth::{Auth, AuthType};
 use crate::data::environment::{EnvironmentConfig, EnvironmentItemValue};
