@@ -81,7 +81,7 @@ impl CollectionPanel {
                         operation,
                         workspace_data,
                         collection.clone(),
-                        parent_folder.clone(),
+                        folder.clone(),
                         cf.clone(),
                         format!("{}/{}", path, name),
                     )
