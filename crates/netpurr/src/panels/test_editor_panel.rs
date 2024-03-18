@@ -6,13 +6,14 @@ use std::sync::{Arc, RwLock};
 
 use eframe::epaint::{Color32, FontFamily, FontId};
 use egui::text::LayoutJob;
-use egui::{Align, FontSelection, RichText, Style, Ui};
+use egui::{Align, FontSelection, Label, RichText, Sense, Style, Ui, Widget};
 use poll_promise::Promise;
 
 use netpurr_core::data::collections::{CollectionFolder, Testcase};
+use netpurr_core::data::record::Record;
 use netpurr_core::data::test::TestStatus;
 use netpurr_core::runner::test::{ResultTreeCase, ResultTreeFolder, ResultTreeRequest};
-use netpurr_core::runner::TestGroupRunResults;
+use netpurr_core::runner::{TestGroupRunResults, TestRunError, TestRunResult};
 use netpurr_core::script::ScriptScope;
 
 use crate::data::workspace_data::{TestItem, WorkspaceData};
@@ -73,7 +74,7 @@ impl TestEditorPanel {
                     .show(ui, |ui| {
                         self.render_select_testcase(workspace_data, ui);
                         ui.separator();
-                        self.render_run(
+                        self.render_run_folder(
                             operation,
                             workspace_data,
                             ui,
@@ -89,13 +90,30 @@ impl TestEditorPanel {
                         ui.separator();
                     });
             }
-            TestItem::Record(_collection_name, folder, record_name) => {
+            TestItem::Record(collection_name, folder, record_name) => {
+                let record_path = format!("{}/{}", folder.borrow().get_path(), record_name);
+                if self.collection_path != record_path {
+                    self.init(workspace_data, record_path);
+                }
                 ui.heading(format!("{} : {}", folder.borrow().get_path(), record_name));
                 ui.separator();
                 egui::ScrollArea::vertical()
                     .id_source("testcase_item")
                     .max_height(ui.available_height() - 30.0)
                     .show(ui, |ui| {
+                        self.render_select_testcase(workspace_data, ui);
+                        ui.separator();
+                        let record = folder.borrow().requests[record_name].clone();
+                        self.render_run_record(
+                            operation,
+                            workspace_data,
+                            ui,
+                            collection_name.clone(),
+                            folder.clone(),
+                            record,
+                        );
+                        ui.separator();
+                        self.render_result_record(workspace_data, ui);
                         self.render_manager_testcase(workspace_data, ui, test_item.clone());
                         ui.separator();
                         self.render_script(workspace_data, operation, ui, test_item.clone());
@@ -104,7 +122,32 @@ impl TestEditorPanel {
             }
         }
     }
-
+    fn render_result_record(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
+        if let Some(test_group_run_result) = self.test_group_run_result.clone() {
+            for (name, result) in test_group_run_result.read().unwrap().results.iter() {
+                let mut status = TestStatus::PASS;
+                match result {
+                    Ok(result) => status = result.test_result.status.clone(),
+                    Err(err) => {
+                        status = TestStatus::FAIL;
+                    }
+                }
+                let title = self.render_test_title(
+                    ui,
+                    name.split("/").last().unwrap_or_default().to_string(),
+                    status,
+                );
+                if Label::new(title).sense(Sense::click()).ui(ui).clicked() {
+                    match result {
+                        Ok(result) => {
+                            workspace_data.selected_test_run_result = Some(result.clone())
+                        }
+                        Err(err) => {}
+                    }
+                }
+            }
+        }
+    }
     fn render_result_tree(
         &mut self,
         workspace_data: &mut WorkspaceData,
@@ -125,7 +168,7 @@ impl TestEditorPanel {
         }
     }
 
-    fn render_run(
+    fn render_run_folder(
         &mut self,
         operation: &Operation,
         workspace_data: &mut WorkspaceData,
@@ -145,6 +188,32 @@ impl TestEditorPanel {
                     folder.borrow().get_path(),
                     self.build_parent_testcase(),
                     folder.clone(),
+                );
+            }
+        });
+    }
+
+    fn render_run_record(
+        &mut self,
+        operation: &Operation,
+        workspace_data: &mut WorkspaceData,
+        ui: &mut Ui,
+        collection_name: String,
+        parent_folder: Rc<RefCell<CollectionFolder>>,
+        record: Record,
+    ) {
+        ui.add_enabled_ui(self.run_promise.is_none(), |ui| {
+            if ui.button("Run Test").clicked() {
+                let test_group_run_result = Arc::new(RwLock::new(TestGroupRunResults::default()));
+                self.test_group_run_result = Some(test_group_run_result.clone());
+                self.run_test_record(
+                    workspace_data,
+                    operation,
+                    test_group_run_result,
+                    collection_name,
+                    parent_folder.borrow().get_path(),
+                    self.build_parent_testcase(),
+                    record.clone(),
                 );
             }
         });
@@ -418,6 +487,29 @@ impl TestEditorPanel {
             collection_path,
             parent_testcase,
             folder,
+        ));
+    }
+
+    fn run_test_record(
+        &mut self,
+        workspace_data: &mut WorkspaceData,
+        operation: &Operation,
+        test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
+        collection_name: String,
+        collection_path: String,
+        parent_testcase: Option<Testcase>,
+        record: Record,
+    ) {
+        let envs = workspace_data
+            .get_build_envs(workspace_data.get_collection(Some(collection_name.clone())));
+        let script_tree = workspace_data.get_script_tree(collection_path.clone());
+        self.run_promise = Some(operation.run_test_record_promise(
+            envs,
+            script_tree,
+            test_group_run_result,
+            collection_path,
+            parent_testcase,
+            record,
         ));
     }
 }

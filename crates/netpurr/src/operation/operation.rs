@@ -11,6 +11,7 @@ use netpurr_core::data::collections::{CollectionFolder, Testcase};
 use netpurr_core::data::cookies_manager::CookiesManager;
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::Request;
+use netpurr_core::data::record::Record;
 use netpurr_core::data::websocket::WebSocketSession;
 use netpurr_core::runner::{
     RunRequestInfo, Runner, TestGroupRunResults, TestRunError, TestRunResult,
@@ -90,6 +91,25 @@ impl Operation {
             collection_path,
             parent_testcase,
             folder,
+        )
+    }
+
+    pub fn run_test_record_promise(
+        &self,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        script_tree: ScriptTree,
+        test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
+        collection_path: String,
+        parent_testcase: Option<Testcase>,
+        record: Record,
+    ) -> Promise<()> {
+        self.runner.run_test_record_promise(
+            envs,
+            script_tree,
+            test_group_run_result,
+            collection_path,
+            parent_testcase,
+            record,
         )
     }
 

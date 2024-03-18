@@ -18,18 +18,20 @@ impl ResponseLogPanel {
             ui.fonts(|f| f.layout_job(layout_job))
         };
         ui.push_id("log_info", |ui| {
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                for (index, log) in response.logger.logs.iter().enumerate() {
-                    let mut content = format!("> {}", log.show());
-                    egui::TextEdit::multiline(&mut content)
-                        .layouter(&mut layouter)
-                        .lock_focus(true)
-                        .desired_rows(4)
-                        .frame(true)
-                        .desired_width(f32::MAX)
-                        .show(ui);
-                }
-            });
+            egui::ScrollArea::vertical()
+                .max_height(ui.available_height() - 30.0)
+                .show(ui, |ui| {
+                    for (index, log) in response.logger.logs.iter().enumerate() {
+                        let mut content = format!("> {}", log.show());
+                        egui::TextEdit::multiline(&mut content)
+                            .layouter(&mut layouter)
+                            .lock_focus(true)
+                            .desired_rows(1)
+                            .frame(true)
+                            .desired_width(f32::MAX)
+                            .show(ui);
+                    }
+                });
         });
     }
 }

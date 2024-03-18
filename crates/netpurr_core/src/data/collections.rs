@@ -69,18 +69,15 @@ impl Collections {
         );
     }
     pub fn save_record(&mut self, folder: Rc<RefCell<CollectionFolder>>, record_name: String) {
+        let path = Path::new("collections")
+            .join(folder.borrow().parent_path.as_str())
+            .join(folder.borrow().name.as_str());
         folder
             .borrow_mut()
             .requests
             .get(record_name.as_str())
             .map(|record| {
-                self.persistence.save(
-                    Path::new("collections")
-                        .join(folder.borrow().parent_path.as_str())
-                        .join(folder.borrow().name.as_str()),
-                    record.name(),
-                    record,
-                );
+                self.persistence.save(path, record.name(), record);
             });
     }
 

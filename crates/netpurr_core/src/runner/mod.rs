@@ -18,6 +18,7 @@ use crate::data::collections::{CollectionFolder, CollectionFolderOnlyRead, Testc
 use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::{Request, Response};
 use crate::data::logger::Logger;
+use crate::data::record::Record;
 use crate::data::test::TestResult;
 use crate::data::websocket::WebSocketSession;
 use crate::runner::websocket::WebSocketSender;
@@ -248,7 +249,101 @@ impl Runner {
             })
         })
     }
-
+    pub fn run_test_record_promise(
+        &self,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        script_tree: ScriptTree,
+        test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
+        collection_path: String,
+        parent_testcase: Option<Testcase>,
+        record: Record,
+    ) -> Promise<()> {
+        let client = self.client.clone();
+        Promise::spawn_thread("send_with_script", move || {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            runtime.block_on(async {
+                Self::run_test_record_async(
+                    client.clone(),
+                    envs.clone(),
+                    script_tree.clone(),
+                    parent_testcase,
+                    test_group_run_result.clone(),
+                    collection_path.clone(),
+                    record.clone(),
+                )
+                .await
+            })
+        })
+    }
+    async fn run_test_record_async(
+        client: Client,
+        envs: BTreeMap<String, EnvironmentItemValue>,
+        script_tree: ScriptTree,
+        testcase: Option<Testcase>,
+        test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
+        collection_path: String,
+        record: Record,
+    ) {
+        let mut run_request_infos = vec![];
+        // 每个文件夹的shared_map是隔离的
+        let shared_map = SharedMap::default();
+        let mut record_testcases = record.testcase().clone();
+        if record_testcases.is_empty() {
+            let mut testcase = Testcase::default();
+            record_testcases.insert(testcase.name.clone(), testcase);
+        }
+        for (_, request_testcase) in record_testcases.iter() {
+            let mut record_pre_request_parent_script_scopes = script_tree
+                .get_pre_request_parent_script_scope(collection_path.clone())
+                .clone();
+            let scope = format!("{}/{}", collection_path.clone(), record.name());
+            if record.pre_request_script() != "" {
+                record_pre_request_parent_script_scopes.push(ScriptScope {
+                    scope: scope.clone(),
+                    script: record.pre_request_script(),
+                });
+            }
+            let mut record_test_parent_script_scopes = script_tree
+                .get_test_parent_script_scope(collection_path.clone())
+                .clone();
+            if record.test_script() != "" {
+                record_test_parent_script_scopes.push(ScriptScope {
+                    scope: scope.clone(),
+                    script: record.test_script(),
+                });
+            }
+            let mut new_request_testcase = request_testcase.clone();
+            testcase.clone().map(|t| {
+                new_request_testcase.merge(record.name(), &t);
+            });
+            let run_request_info = RunRequestInfo {
+                collection_path: Some(collection_path.clone()),
+                request_name: record.name(),
+                request: record.must_get_rest().request.clone(),
+                envs: envs.clone(),
+                pre_request_scripts: record_pre_request_parent_script_scopes,
+                test_scripts: record_test_parent_script_scopes,
+                testcase: new_request_testcase.clone(),
+            };
+            run_request_infos.push(run_request_info)
+        }
+        let mut jobs = vec![];
+        for run_request_info in run_request_infos.iter() {
+            let _client = client.clone();
+            let _run_request_info = run_request_info.clone();
+            let _shared_map = shared_map.clone();
+            jobs.push(Self::send_rest_with_script_async(
+                _run_request_info,
+                _client,
+                _shared_map,
+            ));
+        }
+        let results = join_all(jobs).await;
+        test_group_run_result.write().unwrap().add_results(results);
+    }
     #[async_recursion(?Send)]
     async fn run_test_group_async(
         client: Client,
