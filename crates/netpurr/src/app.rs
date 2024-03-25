@@ -5,12 +5,12 @@ use log::info;
 use poll_promise::Promise;
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::bottom_panel::BottomPanel;
 use crate::panels::selected_collection_panel::SelectedCollectionPanel;
 use crate::panels::selected_workspace_panel::SelectedWorkspacePanel;
 use crate::panels::top_panel::TopPanel;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 pub struct App {
     workspace_data: WorkspaceData,

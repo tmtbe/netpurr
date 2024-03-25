@@ -4,10 +4,10 @@ use poll_promise::Promise;
 use netpurr_core::script::{Context, ScriptScope};
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::utils;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct TestScriptWindows {

@@ -7,12 +7,12 @@ use serde_json::Value;
 use netpurr_core::data::collections::Testcase;
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::test_script_panel::CrtOrFolder;
 use crate::utils;
 use crate::widgets::syntax::js_syntax;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct ManagerTestcaseWindows {

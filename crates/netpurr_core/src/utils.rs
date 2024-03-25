@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::str::FromStr;
 
 use regex::Regex;
@@ -44,4 +44,19 @@ pub fn replace_variable(content: String, envs: BTreeMap<String, EnvironmentItemV
         }
     }
     result
+}
+pub fn build_copy_name(mut name: String, names: HashSet<String>) -> String {
+    name = name
+        .splitn(2, "Copy")
+        .next()
+        .unwrap_or_default()
+        .trim()
+        .to_string();
+    let mut index = 2;
+    let mut new_name = name.clone();
+    while (names.contains(new_name.as_str())) {
+        new_name = format!("{} Copy {}", name.clone(), index);
+        index += 1;
+    }
+    return new_name;
 }

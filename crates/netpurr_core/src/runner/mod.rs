@@ -86,7 +86,7 @@ impl Runner {
     ) -> WebSocketSession {
         WebSocketSender::connect(run_request_info.request)
     }
-    async fn send_rest_with_script_async(
+    pub async fn send_rest_with_script_async(
         run_request_info: RunRequestInfo,
         client: Client,
         shared_map: SharedMap,
@@ -345,7 +345,7 @@ impl Runner {
         test_group_run_result.write().unwrap().add_results(results);
     }
     #[async_recursion(?Send)]
-    async fn run_test_group_async(
+    pub async fn run_test_group_async(
         client: Client,
         envs: BTreeMap<String, EnvironmentItemValue>,
         script_tree: ScriptTree,

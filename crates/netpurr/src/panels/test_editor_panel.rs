@@ -16,12 +16,12 @@ use netpurr_core::runner::test::{ResultTreeCase, ResultTreeFolder, ResultTreeReq
 use netpurr_core::runner::{TestGroupRunResults, TestRunError, TestRunResult};
 use netpurr_core::script::ScriptScope;
 
-use crate::data::workspace_data::{TestItem, WorkspaceData};
 use crate::operation::operation::Operation;
 use crate::panels::manager_testcase_panel::ManagerTestcasePanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::utils;
+use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
 
 #[derive(Default)]
 pub struct TestEditorPanel {

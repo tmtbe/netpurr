@@ -9,7 +9,6 @@ use netpurr_core::data::http::HttpRecord;
 use netpurr_core::data::websocket::WebSocketStatus;
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
@@ -22,6 +21,7 @@ use crate::utils;
 use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 use crate::windows::save_crt_windows::SaveCRTWindows;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct WebSocketPanel {

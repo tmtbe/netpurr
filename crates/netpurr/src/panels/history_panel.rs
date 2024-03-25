@@ -1,8 +1,8 @@
 use egui::CollapsingHeader;
 
-use crate::data::central_request_data::CentralRequestItem;
-use crate::data::workspace_data::WorkspaceData;
 use crate::utils;
+use netpurr_core::data::central_request_data::CentralRequestItem;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct HistoryPanel {}

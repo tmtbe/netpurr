@@ -1,10 +1,10 @@
-use crate::data::workspace_data::{TestItem, WorkspaceData};
 use crate::utils;
 use crate::widgets::syntax::js_syntax;
 use eframe::epaint::Color32;
 use egui::{RichText, Ui};
 use egui_code_editor::{CodeEditor, ColorTheme};
 use netpurr_core::data::collections::Testcase;
+use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
 

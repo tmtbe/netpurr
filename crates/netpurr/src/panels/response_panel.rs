@@ -9,7 +9,6 @@ use netpurr_core::data::http::{Response, ResponseStatus};
 use netpurr_core::data::test::{TestResult, TestStatus};
 use netpurr_core::runner::TestRunResult;
 
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::response_body_panel::ResponseBodyPanel;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
@@ -18,6 +17,7 @@ use crate::panels::response_log_panel::ResponseLogPanel;
 use crate::panels::test_result_panel::TestResultPanel;
 use crate::utils;
 use crate::utils::HighlightValue;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct ResponsePanel {

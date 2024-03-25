@@ -1,14 +1,12 @@
-use std::path::Path;
-
-use eframe::epaint::ahash::HashMap;
+use crate::data::record::Record;
+use crate::data::record::Record::{Rest, WebSocket};
+use crate::data::test::TestResult;
+use crate::data::websocket::WebSocketRecord;
+use crate::persistence::{Persistence, PersistenceItem};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::path::Path;
 use uuid::Uuid;
-
-use netpurr_core::data::record::Record;
-use netpurr_core::data::record::Record::{Rest, WebSocket};
-use netpurr_core::data::test::TestResult;
-use netpurr_core::data::websocket::WebSocketRecord;
-use netpurr_core::persistence::{Persistence, PersistenceItem};
 
 #[derive(Default, Clone, Debug)]
 pub struct CentralRequestDataList {

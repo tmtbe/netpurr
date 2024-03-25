@@ -5,12 +5,12 @@ use egui::{Direction, Label, Layout, RichText, Sense, Ui, Vec2, Widget};
 
 use crate::data::config_data::ConfigData;
 use crate::data::export::{Export, ExportType};
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 use crate::widgets::empty_container::EmptyContainer;
 use crate::windows::new_collection_windows::NewCollectionWindows;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 pub struct MatrixLabel {
     matrix_label_type: MatrixLabelType,

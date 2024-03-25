@@ -19,9 +19,9 @@ use netpurr_core::runner::{
 use netpurr_core::script::{Context, ScriptScope, ScriptTree};
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::git::Git;
 use crate::operation::windows::{Window, Windows};
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Clone)]
 pub struct Operation {

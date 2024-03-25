@@ -2,12 +2,12 @@ use eframe::emath::Align;
 use egui::{Layout, Ui};
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::panels::HORIZONTAL_GAP;
 use crate::utils;
 use crate::widgets::matrix_label::{MatrixLabel, MatrixLabelType};
 use crate::windows::workspace_windows::WorkspaceWindows;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct SelectedWorkspacePanel {

@@ -4,9 +4,9 @@ use std::ops::Add;
 use egui::Ui;
 use egui_code_editor::{CodeEditor, ColorTheme};
 
-use crate::data::workspace_data::{TestItem, WorkspaceData};
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::Request;
+use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
 use netpurr_core::script::{Context, ScriptScope};
 
 use crate::operation::operation::Operation;

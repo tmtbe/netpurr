@@ -7,10 +7,10 @@ use egui_code_editor::{CodeEditor, ColorTheme};
 
 use netpurr_core::data::collections::CollectionFolder;
 
-use crate::data::workspace_data::{TestItem, WorkspaceData};
 use crate::operation::operation::Operation;
 use crate::widgets::syntax::js_syntax;
 use crate::windows::manager_testcase_window::ManagerTestcaseWindows;
+use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
 
 #[derive(Default)]
 pub struct TestScriptPanel {}

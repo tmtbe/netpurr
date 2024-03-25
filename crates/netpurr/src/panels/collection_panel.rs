@@ -3,16 +3,15 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use egui::{CollapsingHeader, Response, Ui};
-
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::record::Record;
 
-use crate::data::central_request_data::CentralRequestItem;
-use crate::data::workspace_data::WorkspaceData;
 use crate::operation::operation::Operation;
 use crate::utils;
 use crate::windows::new_collection_windows::NewCollectionWindows;
 use crate::windows::save_windows::SaveWindows;
+use netpurr_core::data::central_request_data::CentralRequestItem;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct CollectionPanel {}

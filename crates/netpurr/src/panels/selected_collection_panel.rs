@@ -4,7 +4,6 @@ use egui::{FontSelection, Label, RichText, Style, Ui, Widget};
 use netpurr_core::data::record::Record;
 
 use crate::data::config_data::ConfigData;
-use crate::data::workspace_data::{EditorModel, WorkspaceData};
 use crate::operation::operation::Operation;
 use crate::panels::left_panel::MyLeftPanel;
 use crate::panels::openapi_editor_panel::OpenApiEditorPanel;
@@ -15,6 +14,7 @@ use crate::panels::test_editor_panel::TestEditorPanel;
 use crate::panels::websocket_panel::WebSocketPanel;
 use crate::utils;
 use crate::windows::request_close_windows::RequestCloseWindows;
+use netpurr_core::data::workspace_data::{EditorModel, WorkspaceData};
 
 #[derive(Default)]
 pub struct SelectedCollectionPanel {

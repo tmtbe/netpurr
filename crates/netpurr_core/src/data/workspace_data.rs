@@ -2,22 +2,20 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashSet};
 use std::rc::Rc;
 
+use crate::data::auth::{Auth, AuthType};
+use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
+use crate::data::collections::{Collection, CollectionFolder, Collections};
+use crate::data::cookies_manager::{Cookie, CookiesManager};
+use crate::data::environment::{Environment, EnvironmentConfig, EnvironmentItemValue};
+use crate::data::history::{DateGroupHistoryList, HistoryDataList};
+use crate::data::record::Record;
+use crate::runner::TestRunResult;
+use crate::script::{ScriptScope, ScriptTree};
+use crate::utils;
 use chrono::NaiveDate;
 use log::error;
 use strum_macros::{Display, EnumIter};
 use uuid::Uuid;
-
-use netpurr_core::data::auth::{Auth, AuthType};
-use netpurr_core::data::collections::{Collection, CollectionFolder, Collections};
-use netpurr_core::data::cookies_manager::{Cookie, CookiesManager};
-use netpurr_core::data::environment::{Environment, EnvironmentConfig, EnvironmentItemValue};
-use netpurr_core::data::record::Record;
-use netpurr_core::runner::TestRunResult;
-use netpurr_core::script::{ScriptScope, ScriptTree};
-
-use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
-use crate::data::history::{DateGroupHistoryList, HistoryDataList};
-use crate::utils;
 
 #[derive(Default, Clone, Debug)]
 pub struct WorkspaceData {
