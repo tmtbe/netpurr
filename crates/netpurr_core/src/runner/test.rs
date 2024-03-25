@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
@@ -6,13 +7,13 @@ use crate::data::collections::{CollectionFolder, Testcase};
 use crate::data::test::TestStatus;
 use crate::runner::{TestGroupRunResults, TestRunError, TestRunResult};
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct ResultTreeFolder {
     pub status: TestStatus,
     pub name: String,
     pub cases: BTreeMap<String, ResultTreeCase>,
 }
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct ResultTreeCase {
     pub status: TestStatus,
     pub name: String,
@@ -169,7 +170,7 @@ impl ResultTreeFolder {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct ResultTreeRequest {
     pub name: String,
     pub status: TestStatus,

@@ -1,4 +1,6 @@
 use std::cell::RefCell;
+use std::ops::Deref;
+use std::process::exit;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
@@ -7,8 +9,10 @@ use clap::Parser;
 use reqwest::Client;
 
 use netpurr_core::data::collections::{CollectionFolder, CollectionFolderOnlyRead, Testcase};
+use netpurr_core::data::test::TestStatus;
 use netpurr_core::data::workspace_data::WorkspaceData;
 use netpurr_core::runner;
+use netpurr_core::runner::test::ResultTreeFolder;
 use netpurr_core::runner::TestGroupRunResults;
 
 #[derive(Parser, Debug)]
@@ -33,7 +37,9 @@ fn main() {
     let test_group_run_results = Arc::new(RwLock::new(TestGroupRunResults::default()));
     let collection_op = workspace_data.get_collection_by_name(args.collection_name.clone());
     match collection_op {
-        None => {}
+        None => {
+            println!("{}", "collection is not exist")
+        }
         Some(collection) => run_test_group(
             client,
             workspace_data,
@@ -57,7 +63,7 @@ fn run_test_group(
     let envs =
         workspace_data.get_build_envs(workspace_data.get_collection(Some(collection_name.clone())));
     let script_tree = workspace_data.get_script_tree(collection_path.clone());
-    let folder_only_read = CollectionFolderOnlyRead::from(folder);
+    let folder_only_read = CollectionFolderOnlyRead::from(folder.clone());
 
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -87,5 +93,19 @@ fn run_test_group(
             )
             .await
         }
-    })
+    });
+    let result_tree = ResultTreeFolder::create(
+        folder.clone(),
+        vec![],
+        test_group_run_result.read().unwrap().deref().clone(),
+    );
+    let json = serde_json::to_string(&result_tree).expect("json error");
+    println!("{}", json);
+    if result_tree.status == TestStatus::PASS {
+        println!("{}", "Test Success");
+        exit(0);
+    } else {
+        println!("{}", "Test Error");
+        exit(1);
+    }
 }

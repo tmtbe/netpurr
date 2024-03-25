@@ -10,6 +10,7 @@ use deno_core::futures::future::join_all;
 use deno_core::futures::FutureExt;
 use poll_promise::Promise;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 
 use reqwest_cookie_store::CookieStoreMutex;
 use rest::RestSender;
@@ -43,7 +44,7 @@ pub struct RunRequestInfo {
     pub test_scripts: Vec<ScriptScope>,
     pub testcase: Testcase,
 }
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct TestRunResult {
     pub request: Request,
     pub response: Response,
@@ -52,7 +53,7 @@ pub struct TestRunResult {
     pub request_name: String,
     pub testcase: Testcase,
 }
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct TestRunError {
     pub collection_path: Option<String>,
     pub request_name: String,
