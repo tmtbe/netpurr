@@ -99,7 +99,7 @@ fn run_test_group(
         vec![],
         test_group_run_result.read().unwrap().deref().clone(),
     );
-    let json = serde_json::to_string(&result_tree).expect("json error");
+    let json = serde_yaml::to_string(&result_tree).expect("yaml error");
     println!("{}", json);
     if result_tree.status == TestStatus::PASS {
         println!("{}", "Test Success");

@@ -2395,6 +2395,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "serde_yaml 0.9.34+deprecated",
  "tokio",
 ]
 
