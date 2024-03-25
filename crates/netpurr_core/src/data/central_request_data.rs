@@ -2,7 +2,7 @@ use crate::data::record::Record;
 use crate::data::record::Record::{Rest, WebSocket};
 use crate::data::test::TestResult;
 use crate::data::websocket::WebSocketRecord;
-use crate::persistence::{Persistence, PersistenceItem};
+use crate::persistence::{get_persistence_path, Persistence, PersistenceItem};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
@@ -24,7 +24,7 @@ impl CentralRequestDataList {
         self.data_map.clear();
         let result: Option<CentralRequestDataListSaved> = self
             .persistence
-            .load(Path::new("requests/data.json").to_path_buf());
+            .load(Path::new(get_persistence_path("requests/data").as_str()).to_path_buf());
         match result {
             Some(mut c) => {
                 match &c.select_id {

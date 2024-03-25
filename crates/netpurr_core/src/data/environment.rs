@@ -8,7 +8,9 @@ use strum_macros::Display;
 
 use crate::data::collections::Collection;
 use crate::data::environment_function::EnvFunction;
-use crate::persistence::{Persistence, PersistenceItem};
+use crate::persistence::{
+    get_persistence_path, Persistence, PersistenceItem, PERSISTENCE_EXTENSION,
+};
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
 pub struct Environment {
@@ -147,7 +149,7 @@ impl Environment {
         }
         let status = self
             .persistence
-            .load(Path::new("environment/status.json").to_path_buf());
+            .load(Path::new(get_persistence_path("environment/status").as_str()).to_path_buf());
         status.map(|s| {
             self.status = s;
         });

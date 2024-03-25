@@ -10,7 +10,9 @@ use serde_json::Value;
 use crate::data::auth::{Auth, AuthType};
 use crate::data::environment::{EnvironmentConfig, EnvironmentItemValue};
 use crate::data::record::Record;
-use crate::persistence::{Persistence, PersistenceItem};
+use crate::persistence::{
+    get_persistence_path, Persistence, PersistenceItem, PERSISTENCE_EXTENSION,
+};
 use crate::script::ScriptScope;
 
 #[derive(Default, Clone, Debug)]
@@ -355,7 +357,7 @@ impl Collection {
     fn load(&mut self, persistence: Persistence, dir_path: PathBuf, file_path: PathBuf) {
         file_path.clone().file_name().map(|file_name_os| {
             file_name_os.to_str().map(|file_name| {
-                if file_name.ends_with("@info.json") {
+                if file_name.ends_with(get_persistence_path("@info").as_str()) {
                     file_name.split("@info").next().map(|folder_name| {
                         let collection: Option<Collection> = persistence.load(file_path);
                         collection.map(|c| {
@@ -488,7 +490,7 @@ impl CollectionFolder {
     }
     pub fn load(&mut self, persistence: Persistence, path: PathBuf) {
         let collection_folder: Option<CollectionFolder> =
-            persistence.load(path.join("folder@info.json").to_path_buf());
+            persistence.load(path.join(get_persistence_path("folder@info")).to_path_buf());
         let path_str = path.to_str().unwrap_or_default().trim_start_matches(
             persistence
                 .get_workspace_dir()
@@ -515,7 +517,9 @@ impl CollectionFolder {
         for item in persistence.load_list(path.clone()).iter() {
             if item.is_file() {
                 item.to_str().map(|name| {
-                    if name.ends_with(".json") && !name.ends_with("folder@info.json") {
+                    if name.ends_with(PERSISTENCE_EXTENSION)
+                        && !name.ends_with(get_persistence_path("folder@info").as_str())
+                    {
                         let request: Option<Record> = persistence.load(item.clone());
                         request.map(|r| {
                             self.requests.insert(r.name(), r);

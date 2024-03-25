@@ -3,6 +3,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::string::ToString;
 
 use log::error;
 use serde::de::DeserializeOwned;
@@ -10,6 +11,12 @@ use serde::Serialize;
 
 use crate::APP_NAME;
 
+pub const PERSISTENCE_EXTENSION_RAW: &str = "yaml";
+pub const PERSISTENCE_EXTENSION: &str = ".yaml";
+
+pub fn get_persistence_path(path: &str) -> String {
+    return format!("{}{}", path, PERSISTENCE_EXTENSION);
+}
 pub trait PersistenceItem {
     fn save<T: Serialize>(&self, path: PathBuf, key: String, data: &T);
 
@@ -49,7 +56,7 @@ impl Persistence {
     }
 
     pub fn decode_with_file_name(key: String) -> String {
-        Persistence::decode(key.trim_end_matches(".json").to_string())
+        Persistence::decode(key.trim_end_matches(PERSISTENCE_EXTENSION).to_string())
     }
 }
 impl PersistenceItem for Persistence {
@@ -60,29 +67,29 @@ impl PersistenceItem for Persistence {
         if !rel_path.starts_with(workspace_dir.clone()) {
             rel_path = workspace_dir.join(rel_path.clone());
         }
-        match serde_json::to_string(data) {
-            Ok(json) => {
-                let mut json_path = rel_path.join(save_key);
-                json_path.set_extension("json");
-                json_path.parent().map(|s| {
+        match serde_yaml::to_string(data) {
+            Ok(yaml_str) => {
+                let mut yaml_path = rel_path.join(save_key);
+                yaml_path.set_extension(PERSISTENCE_EXTENSION_RAW);
+                yaml_path.parent().map(|s| {
                     if fs::create_dir_all(s.clone()).is_err() {
                         error!("create_dir_all {:?} failed", rel_path);
                     }
                 });
-                let mut file_result = File::create(json_path.clone());
+                let mut file_result = File::create(yaml_path.clone());
                 match file_result {
                     Ok(mut file) => {
-                        if file.write_all(json.as_bytes()).is_err() {
+                        if file.write_all(yaml_str.as_bytes()).is_err() {
                             error!("write_all failed");
                         }
                     }
                     Err(_) => {
-                        error!("create_file {:?} failed", json_path);
+                        error!("create_file {:?} failed", yaml_path);
                     }
                 }
             }
             Err(_) => {
-                error!("serde_json::to_string failed");
+                error!("serde_yaml::to_string failed");
             }
         }
     }
@@ -97,7 +104,7 @@ impl PersistenceItem for Persistence {
                 let mut content = String::new();
                 match file.read_to_string(&mut content) {
                     Ok(_) => {
-                        let result: serde_json::Result<T> = serde_json::from_str(content.as_str());
+                        let result: serde_yaml::Result<T> = serde_yaml::from_str(content.as_str());
                         match result {
                             Ok(t) => Some(t),
                             Err(_) => {
@@ -143,7 +150,7 @@ impl PersistenceItem for Persistence {
             rel_path = workspace_dir.join(rel_path.clone());
         }
         let mut json_path = rel_path.join(save_key);
-        json_path.set_extension("json");
+        json_path.set_extension(PERSISTENCE_EXTENSION_RAW);
         if fs::remove_file(json_path.clone()).is_err() {
             error!("remove_file {:?} failed", json_path)
         }
