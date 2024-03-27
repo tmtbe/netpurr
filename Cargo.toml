@@ -52,3 +52,14 @@ base64 = "0.22.0"
 log = { version = "0.4", features = ["std"] }
 poll-promise = { version = "0.3", default-features = false, features = ["tokio"] }
 tokio = { version = "1", features = ["full"] }
+egui = { version = "0.27.0", features = [
+    "callstack",
+    "extra_debug_asserts",
+    "log",
+] }
+egui_extras = { version = "0.27.0", features = ["image", "syntect"] }
+egui_plot = { version = "0.27.0" }
+eframe = { version = "0.27.0", default-features = false, features = [
+    "default_fonts", # Embed the default egui fonts.
+    "glow", # Use the glow rendering backend. Alternative: "wgpu".
+] }

@@ -1,0 +1,24 @@
+[package]
+name = "egui_json_tree"
+version = "0.5.0"
+authors = ["Duncan MacKinnon <dmackdev@gmail.com>"]
+edition = "2021"
+description = "An interactive JSON tree visualiser for egui, with search and highlight functionality."
+repository = "https://github.com/dmackdev/egui_json_tree"
+license = "MIT OR Apache-2.0"
+keywords = ["json", "egui"]
+categories = ["gui", "visualization"]
+include = ["src/*.rs", "LICENSE-MIT", "LICENSE-APACHE", "Cargo.toml"]
+rust-version = "1.72"
+
+[dependencies]
+egui.workspace = true
+serde_json.workspace = true
+serde_json.optional = true
+
+[dev-dependencies]
+eframe.workspace = true
+
+[features]
+default = ["serde_json"]
+serde_json = ["dep:serde_json"]

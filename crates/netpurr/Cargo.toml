@@ -24,30 +24,22 @@ image_viewer = ["image", "egui_extras/all_loaders"]
 glow = ["eframe/glow"]
 
 [dependencies]
-egui = { version = "0.26", features = [
-    "callstack",
-    "extra_debug_asserts",
-    "log",
-] }
-egui_extras = { version = "0.26", features = ["image", "syntect"] }
-egui_plot = { version = "0.26" }
-eframe = { version = "0.26", default-features = false, features = [
-    "default_fonts", # Embed the default egui fonts.
-    "glow", # Use the glow rendering backend. Alternative: "wgpu".
-] }
-image = { version = "0.24.7", optional = true, default-features = false, features = [
+image = { version = "0.25.0", optional = true, default-features = false, features = [
     "jpeg",
     "png",
 ] }
-egui-toast = "0.12.1"
-egui_json_tree = "0.4.0"
-egui_code_editor = "0.2.2"
-
-rfd = { version = "0.13" }
+egui_json_tree = { path = "./../egui_json_tree" }
+egui_code_editor = { path = "./../egui_code_editor", features = ["egui"] }
+egui-toast = { path = "./../egui-toast" }
+rfd = { version = "0.14.1" }
 log4rs = '1.2.0'
 rustygit = "0.5.0"
-# workspace
 netpurr_core = { path = "./../netpurr_core" }
+# workspace
+egui.workspace = true
+egui_plot.workspace = true
+egui_extras.workspace = true
+eframe.workspace = true
 anyhow.workspace = true
 log.workspace = true
 base64.workspace = true

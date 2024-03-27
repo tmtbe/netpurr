@@ -1,9 +1,4 @@
-use egui_code_editor::highlighting::highlight;
-use egui_code_editor::{CodeEditor, ColorTheme};
-
 use netpurr_core::data::http::Response;
-
-use crate::widgets::syntax::js_syntax;
 
 #[derive(Default)]
 pub struct ResponseLogPanel {}
