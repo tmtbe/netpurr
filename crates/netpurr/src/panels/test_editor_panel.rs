@@ -82,9 +82,9 @@ impl TestEditorPanel {
                             &folder,
                         );
                         ui.separator();
-                        self.render_result_tree(workspace_data, ui, folder.clone());
-                        ui.separator();
                         self.render_manager_testcase(workspace_data, ui, test_item.clone());
+                        ui.separator();
+                        self.render_result_tree(workspace_data, ui, folder.clone());
                         ui.separator();
                         self.render_script(workspace_data, operation, ui, test_item.clone());
                         ui.separator();
@@ -113,8 +113,9 @@ impl TestEditorPanel {
                             record,
                         );
                         ui.separator();
-                        self.render_result_record(workspace_data, ui);
                         self.render_manager_testcase(workspace_data, ui, test_item.clone());
+                        ui.separator();
+                        self.render_result_record(workspace_data, ui);
                         ui.separator();
                         self.render_script(workspace_data, operation, ui, test_item.clone());
                         ui.separator();

@@ -109,6 +109,7 @@ impl ManagerTestcasePanel {
         }
         if let Some(select) = &self.select {
             egui::ScrollArea::vertical()
+                .min_scrolled_height(200.0)
                 .max_height(400.0)
                 .show(ui, |ui| {
                     if code_editor.show(ui, &mut self.source).response.changed() {
