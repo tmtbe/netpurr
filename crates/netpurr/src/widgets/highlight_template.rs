@@ -4,7 +4,10 @@ use eframe::emath::pos2;
 use egui::ahash::HashSet;
 use egui::text::{CCursor, CCursorRange, CursorRange};
 use egui::text_edit::TextEditState;
-use egui::{Context, Id, Pos2, Response, RichText, TextBuffer, TextEdit, Ui, Widget};
+use egui::{
+    Context, Event, EventFilter, Id, Key, Pos2, Response, RichText, TextBuffer, TextEdit, Ui,
+    Widget,
+};
 use serde::{Deserialize, Serialize};
 
 use netpurr_core::data::environment::EnvironmentItemValue;
@@ -65,9 +68,8 @@ impl HighlightTemplate<'_> {
                 let prompt_option = self.find_prompt(before_cursor_text.to_string());
                 if prompt_option.is_some() && self.envs.clone().len() > 0 {
                     let prompt = prompt_option.unwrap_or_default();
-                    let mut hovered_label_key = None;
                     ui.memory_mut(|mem| mem.open_popup(popup_id));
-                    popup_widget(
+                    let popup_response = popup_widget(
                         ui,
                         popup_id,
                         &response,
@@ -78,74 +80,19 @@ impl HighlightTemplate<'_> {
                                 + (c.primary.rcursor.row as f32) * (self.size / 2.0 + 1.0)
                                 + 16.0,
                         ),
-                        |ui| {
-                            ui.horizontal(|ui| {
-                                egui::ScrollArea::vertical()
-                                    .max_width(150.0)
-                                    .max_height(400.0)
-                                    .show(ui, |ui| {
-                                        ui.vertical(|ui| {
-                                            for (key, _) in self.envs.clone().iter() {
-                                                if !key.starts_with(prompt.as_str()) {
-                                                    continue;
-                                                }
-                                                let label = utils::select_label(
-                                                    ui,
-                                                    RichText::new(key.as_str()).strong(),
-                                                );
-                                                if label.hovered() {
-                                                    hovered_label_key = Some(key.clone());
-                                                }
-                                                if label.clicked() {
-                                                    self.content.insert_text(
-                                                        (key[prompt.len()..].to_string() + "}}")
-                                                            .as_str(),
-                                                        c.primary.ccursor.index,
-                                                    );
-                                                    ui.memory_mut(|mem| mem.toggle_popup(popup_id));
-                                                    let mut tes =
-                                                        TextEditState::load(ui.ctx(), response.id)
-                                                            .unwrap();
-                                                    tes.cursor.set_char_range(Some(CCursorRange {
-                                                        primary: CCursor {
-                                                            index: self.content.as_str().len(),
-                                                            prefer_next_row: false,
-                                                        },
-                                                        secondary: CCursor {
-                                                            index: self.content.as_str().len(),
-                                                            prefer_next_row: false,
-                                                        },
-                                                    }));
-                                                    tes.store(ui.ctx(), response.id);
-                                                    response.request_focus();
-                                                }
-                                            }
-                                        });
-                                    });
-                                hovered_label_key.clone().map(|key| {
-                                    ui.separator();
-                                    ui.vertical(|ui| {
-                                        ui.horizontal(|ui| {
-                                            ui.strong("VALUE");
-                                            ui.label(self.envs.get(&key).unwrap().value.clone())
-                                        });
-                                        ui.add_space(VERTICAL_GAP);
-                                        ui.horizontal(|ui| {
-                                            ui.strong("TYPE");
-                                            ui.label(
-                                                self.envs.get(&key).unwrap().value_type.to_string(),
-                                            )
-                                        });
-                                        ui.add_space(VERTICAL_GAP);
-                                        ui.horizontal(|ui| {
-                                            ui.strong("SCOPE");
-                                            ui.label(self.envs.get(&key).unwrap().scope.clone())
-                                        });
-                                    });
-                                });
-                            });
-                        },
+                        |ui| self.render_popup(&response, popup_id, c, prompt, ui),
                     );
+                    let mut tab = false;
+                    ui.ctx().input(|i| {
+                        if i.key_pressed(Key::Tab) {
+                            tab = true;
+                        }
+                    });
+                    if tab {
+                        if let Some(Some(first)) = &popup_response {
+                            first.request_focus();
+                        }
+                    }
                 } else {
                     ui.memory_mut(|mem| {
                         if mem.is_popup_open(popup_id) {
@@ -156,6 +103,80 @@ impl HighlightTemplate<'_> {
             });
         });
         None
+    }
+
+    fn render_popup(
+        self,
+        response: &Response,
+        popup_id: Id,
+        c: CursorRange,
+        prompt: String,
+        ui: &mut Ui,
+    ) -> Option<Response> {
+        let mut hovered_label_key = None;
+        let mut first_response = None;
+        ui.horizontal(|ui| {
+            egui::ScrollArea::vertical()
+                .max_width(150.0)
+                .max_height(400.0)
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        for (index, (key, _)) in self.envs.clone().iter().enumerate() {
+                            if !key.starts_with(prompt.as_str()) {
+                                continue;
+                            }
+                            let label =
+                                utils::select_label(ui, RichText::new(key.as_str()).strong());
+                            if label.hovered() {
+                                hovered_label_key = Some(key.clone());
+                            }
+                            if index == 0 {
+                                first_response = Some(label.clone());
+                            }
+                            if label.clicked() {
+                                self.content.insert_text(
+                                    (key[prompt.len()..].to_string() + "}}").as_str(),
+                                    c.primary.ccursor.index,
+                                );
+                                ui.memory_mut(|mem| mem.toggle_popup(popup_id));
+                                let mut tes = TextEditState::load(ui.ctx(), response.id).unwrap();
+                                tes.cursor.set_char_range(Some(CCursorRange {
+                                    primary: CCursor {
+                                        index: self.content.as_str().len(),
+                                        prefer_next_row: false,
+                                    },
+                                    secondary: CCursor {
+                                        index: self.content.as_str().len(),
+                                        prefer_next_row: false,
+                                    },
+                                }));
+                                tes.store(ui.ctx(), response.id);
+                                response.request_focus();
+                            }
+                        }
+                    });
+                });
+            hovered_label_key.clone().map(|key| {
+                ui.separator();
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.strong("VALUE");
+                        ui.label(self.envs.get(&key).unwrap().value.clone())
+                    });
+                    ui.add_space(VERTICAL_GAP);
+                    ui.horizontal(|ui| {
+                        ui.strong("TYPE");
+                        ui.label(self.envs.get(&key).unwrap().value_type.to_string())
+                    });
+                    ui.add_space(VERTICAL_GAP);
+                    ui.horizontal(|ui| {
+                        ui.strong("SCOPE");
+                        ui.label(self.envs.get(&key).unwrap().scope.clone())
+                    });
+                });
+            });
+        });
+        first_response
     }
 }
 
@@ -201,6 +222,17 @@ impl Widget for HighlightTemplate<'_> {
         if let Some(value) = self.popup(ui, output.galley_pos.clone(), response.clone()) {
             return value;
         }
+        ui.memory_mut(|mem| {
+            mem.set_focus_lock_filter(
+                response.id,
+                EventFilter {
+                    tab: true,
+                    horizontal_arrows: true,
+                    vertical_arrows: true,
+                    escape: true,
+                },
+            );
+        });
         response
     }
 }

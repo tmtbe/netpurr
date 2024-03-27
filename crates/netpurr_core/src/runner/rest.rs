@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use anyhow::anyhow;
+use log::info;
 use reqwest::header::CONTENT_TYPE;
 use reqwest::multipart::Part;
 use reqwest::Method;
@@ -31,6 +32,11 @@ impl RestSender {
         let reqwest_request = Self::build_reqwest_request(request.clone()).await?;
         let mut new_request = request.clone();
         for (hn, hv) in reqwest_request.headers().iter() {
+            info!(
+                "set header {}:{}",
+                hn.as_str(),
+                hv.to_str().unwrap_or_default()
+            );
             if new_request
                 .headers
                 .iter()
@@ -122,28 +128,46 @@ impl RestSender {
                 }
                 builder = builder.form(&params);
             }
-            BodyType::RAW => match request.body.body_raw_type {
-                BodyRawType::TEXT => {
-                    builder = builder.header(CONTENT_TYPE, "text/plain");
-                    builder = builder.body(request.body.body_str);
+            BodyType::RAW => {
+                let content_type = request
+                    .headers
+                    .iter()
+                    .filter(|h| h.key.to_lowercase() == "content-type")
+                    .last();
+
+                match request.body.body_raw_type {
+                    BodyRawType::TEXT => {
+                        if content_type.is_none() {
+                            builder = builder.header(CONTENT_TYPE, "text/plain");
+                        }
+                        builder = builder.body(request.body.body_str);
+                    }
+                    BodyRawType::JSON => {
+                        if content_type.is_none() {
+                            builder = builder.header(CONTENT_TYPE, "application/json");
+                        }
+                        builder = builder.body(request.body.body_str);
+                    }
+                    BodyRawType::HTML => {
+                        if content_type.is_none() {
+                            builder = builder.header(CONTENT_TYPE, "text/html");
+                        }
+                        builder = builder.body(request.body.body_str);
+                    }
+                    BodyRawType::XML => {
+                        if content_type.is_none() {
+                            builder = builder.header(CONTENT_TYPE, "application/xml");
+                        }
+                        builder = builder.body(request.body.body_str);
+                    }
+                    BodyRawType::JavaScript => {
+                        if content_type.is_none() {
+                            builder = builder.header(CONTENT_TYPE, "application/javascript");
+                        }
+                        builder = builder.body(request.body.body_str);
+                    }
                 }
-                BodyRawType::JSON => {
-                    builder = builder.header(CONTENT_TYPE, "application/json");
-                    builder = builder.body(request.body.body_str);
-                }
-                BodyRawType::HTML => {
-                    builder = builder.header(CONTENT_TYPE, "text/html");
-                    builder = builder.body(request.body.body_str);
-                }
-                BodyRawType::XML => {
-                    builder = builder.header(CONTENT_TYPE, "application/xml");
-                    builder = builder.body(request.body.body_str);
-                }
-                BodyRawType::JavaScript => {
-                    builder = builder.header(CONTENT_TYPE, "application/javascript");
-                    builder = builder.body(request.body.body_str);
-                }
-            },
+            }
             BodyType::BINARY => {
                 let path = Path::new(request.body.body_file.as_str());
                 let content_type = mime_guess::from_path(path);

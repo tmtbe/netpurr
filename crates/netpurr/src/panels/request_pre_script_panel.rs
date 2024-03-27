@@ -133,8 +133,8 @@ console.log(response)"#)
                         .get_mut(record_name.as_str())
                         .map(|record| {
                             record.set_pre_request_script(script.clone());
-                            workspace_data.save_record(folder.clone(), record_name.clone());
                         });
+                    workspace_data.save_record(folder.clone(), record_name.clone());
                 }
             }
         }
