@@ -135,8 +135,8 @@ netpurr.test("Response status is 200",function(){
                         .get_mut(record_name.as_str())
                         .map(|record| {
                             record.set_test_script(script.clone());
-                            workspace_data.save_record(folder.clone(), record_name.clone());
                         });
+                    workspace_data.save_record(folder.clone(), record_name.clone());
                 }
             }
         }

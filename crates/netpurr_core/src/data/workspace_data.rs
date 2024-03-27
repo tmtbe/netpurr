@@ -285,6 +285,11 @@ impl WorkspaceData {
                     let mut record = crt.record.clone();
                     modify_record(&mut record);
                     new_name_option = Some(record.name());
+                    cf.borrow().requests.get(&record.name()).map(|old| {
+                        record.set_testcases(old.testcase());
+                        record.set_test_script(old.test_script());
+                        record.set_pre_request_script(old.pre_request_script());
+                    });
                     self.collection_insert_record(cf.clone(), record);
                     crt.set_baseline();
                 });
