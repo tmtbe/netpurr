@@ -7,6 +7,7 @@ use netpurr_core::data::collections::Testcase;
 use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
 use serde_json::Value;
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::format;
 
 #[derive(Default)]
 pub struct ManagerTestcasePanel {
@@ -16,18 +17,31 @@ pub struct ManagerTestcasePanel {
     source: String,
     message: RichText,
     test_item: Option<TestItem>,
+    old_test_item_name: String,
 }
 impl ManagerTestcasePanel {
+    pub fn clear(&mut self) {
+        self.source = "".to_string();
+        self.select = None;
+        self.test_item = None;
+    }
     pub fn render(&mut self, ui: &mut Ui, workspace_data: &mut WorkspaceData, test_item: TestItem) {
         let mut testcases = BTreeMap::new();
         let mut is_change = false;
+        let mut test_item_name = "".to_string();
         match &test_item {
             TestItem::Record(_, folder, record_name) => {
                 testcases = folder.borrow().requests[record_name].testcase();
+                test_item_name = format!("{}/{}", folder.borrow().get_path(), record_name);
             }
             TestItem::Folder(_, folder) => {
                 testcases = folder.borrow().testcases.clone();
+                test_item_name = folder.borrow().get_path();
             }
+        }
+        if self.old_test_item_name != test_item_name {
+            self.clear();
+            self.old_test_item_name = test_item_name;
         }
         egui::panel::SidePanel::left("manager_testcase_left")
             .max_width(200.0)
