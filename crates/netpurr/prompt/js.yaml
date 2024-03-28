@@ -4,43 +4,49 @@ map:
     desc: netpurr
   netpurr.get_testcase:
     fill: netpurr.get_testcase()
-    desc: get testcase
+    desc: Get the current test case, which is a json structure.
   netpurr.resp:
     fill: netpurr.resp()
-    desc: netpurr.resp
+    desc: Get http response.
+  netpurr.resp().status:
+    fill: netpurr.resp().status
+    desc: Get http response status.
   netpurr.resp().json:
     fill: netpurr.resp().json
-    desc: netpurr.resp().json
+    desc: Get http response body as json.
   netpurr.resp().text:
     fill: netpurr.resp().text
-    desc: netpurr.resp().text
+    desc: Get http response body as text.
+  netpurr.resp().headers:
+    fill: netpurr.resp().headers
+    desc: Get http response headers.
   netpurr.test:
     fill: |
       netpurr.test("<name>",function(){
           //assert body
       });
-    desc: netpurr.test
+    desc: Write a test.
   netpurr.get_env:
     fill: netpurr.get_env(<key>)
-    desc: get_env
+    desc: Get environment variables.
   netpurr.set_env:
     fill: netpurr.set_env(<key>,<value>)
-    desc: set_env
+    desc: Set environment variables.
   netpurr.add_header:
     fill: netpurr.add_header(<key>,<value>)
-    desc: netpurr.add_header
+    desc: Add http request header.
   netpurr.add_params:
     fill: netpurr.add_params(<key>,<value>)
-    desc: netpurr.add_params
+    desc: Add http request param.
   netpurr.get_shared:
     fill: netpurr.get_shared(<key>)
-    desc: netpurr.get_shared
+    desc: Get a shared key, the key must exist.
   netpurr.wait_shared:
     fill: netpurr.wait_shared(<key>)
-    desc: await netpurr.wait_shared("key")
+    desc: 'Wait a shared key. Example: await netpurr.wait_shared("key")'
   netpurr.set_shared:
     fill: netpurr.set_shared(<key>,<value>)
-    desc: netpurr.set_shared
+    desc: Set a shared key.
   console:
     fill: console
     desc: console
