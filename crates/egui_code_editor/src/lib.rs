@@ -362,7 +362,6 @@ impl CodeEditor {
                 });
                 self.popup_prompt_widget(
                     ui,
-                    &output.response,
                     pos2(
                         output.galley_pos.x
                             + (c.primary.rcursor.column as f32) * (12.0 / 2.0 + 1.0),
@@ -394,12 +393,11 @@ impl CodeEditor {
     ) {
         let mut prompt_state = CodeEditorPromptState::load(ui.ctx(),self._popup_id);
         ui.horizontal(|ui| {
-            egui::ScrollArea::vertical()
+            let scroll =   egui::ScrollArea::vertical()
                 .max_width(150.0)
                 .min_scrolled_height(150.0)
-                .max_height(400.0)
-                .vertical_scroll_offset(15.0*prompt_state.index as f32)
-                .show(ui, |ui| {
+                .max_height(400.0);
+            scroll.show(ui, |ui| {
                     ui.vertical(|ui| {
                         let mut not_found = false;
                         if prompts.iter().find(|key|{
@@ -416,6 +414,9 @@ impl CodeEditor {
                                     prompt_state.select = key.to_string();
                                     prompt_state.index = 0;
                                 }
+                            }
+                            if index==prompt_state.index{
+                                label.scroll_to_me(Some(Align::Center));
                             }
                             if label.double_clicked() {
                                 let insert_text = self._prompt.map.get(key).unwrap().fill.clone();
@@ -459,7 +460,6 @@ impl CodeEditor {
     fn popup_prompt_widget<R>(
         &self,
         ui: &Ui,
-        widget_response: &Response,
         suggested_position: Pos2,
         add_contents: impl FnOnce(&mut Ui) -> R,
     ) -> Option<R> {
