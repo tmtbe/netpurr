@@ -3,7 +3,7 @@ use std::ops::Add;
 use std::rc::Rc;
 
 use egui::Ui;
-use egui_code_editor::{CodeEditor, ColorTheme};
+use egui_code_editor::{CodeEditor, ColorTheme, Prompt};
 
 use netpurr_core::data::collections::CollectionFolder;
 
@@ -106,10 +106,12 @@ netpurr.test("Response status is 200",function(){
                         .min_scrolled_height(250.0)
                         .id_source("test_manager_test_script")
                         .show(ui, |ui| {
+                            let prompt_yaml = include_str!("../../prompt/js.yaml");
                             let mut code_editor = CodeEditor::default()
                                 .id_source("test_code_editor")
                                 .with_rows(12)
                                 .with_ui_fontsize(ui)
+                                .with_prompt(Prompt::from_str(prompt_yaml))
                                 .with_syntax(js_syntax())
                                 .with_numlines(true);
                             if ui.visuals().dark_mode {

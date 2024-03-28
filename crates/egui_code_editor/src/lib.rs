@@ -1,88 +1,25 @@
-#![allow(rustdoc::invalid_rust_codeblocks)]
-//! Text Editor Widget for [egui](https://github.com/emilk/egui) with numbered lines and simple syntax highlighting based on keywords sets.
-//!
-//! ## Usage with egui
-//!
-//! ```rust
-//! use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
-//!
-//! CodeEditor::default()
-//!   .id_source("code editor")
-//!   .with_rows(12)
-//!   .with_fontsize(14.0)
-//!   .with_theme(ColorTheme::GRUVBOX)
-//!   .with_syntax(Syntax::rust())
-//!   .with_numlines(true)
-//!   .show(ui, &mut self.code);
-//! ```
-//!
-//! ## Usage as lexer without egui
-//!
-//! **Cargo.toml**
-//!
-//! ```toml
-//! [dependencies]
-//! egui_code_editor = { version = "0.2" , default-features = false }
-//! colorful = "0.2.2"
-//! ```
-//!
-//! **main.rs**
-//!
-//! ```rust
-//! use colorful::{Color, Colorful};
-//! use egui_code_editor::{Syntax, Token, TokenType};
-//!
-//! fn color(token: TokenType) -> Color {
-//!     match token {
-//!         TokenType::Comment(_) => Color::Grey37,
-//!         TokenType::Function => Color::Yellow3b,
-//!         TokenType::Keyword => Color::IndianRed1c,
-//!         TokenType::Literal => Color::NavajoWhite1,
-//!         TokenType::Numeric(_) => Color::MediumPurple,
-//!         TokenType::Punctuation(_) => Color::Orange3,
-//!         TokenType::Special => Color::Cyan,
-//!         TokenType::Str(_) => Color::Green,
-//!         TokenType::Type => Color::GreenYellow,
-//!         TokenType::Whitespace(_) => Color::White,
-//!         TokenType::Unknown => Color::Pink1,
-//!     }
-//! }
-//!
-//! fn main() {
-//!     let text = r#"// Code Editor
-//! CodeEditor::default()
-//!     .id_source("code editor")
-//!     .with_rows(12)
-//!     .with_fontsize(14.0)
-//!     .with_theme(self.theme)
-//!     .with_syntax(self.syntax.to_owned())
-//!     .with_numlines(true)
-//!     .vscroll(true)
-//!     .show(ui, &mut self.code);
-//!     "#;
-//!
-//!     let syntax = Syntax::rust();
-//!     for token in Token::default().tokens(&syntax, text) {
-//!         print!("{}", token.buffer().color(color(token.ty())));
-//!     }
-//! }
-//! ```
+use std::collections::BTreeMap;
+use std::hash::{Hash, Hasher};
+
+use egui::{Align, Area, Context, Event, EventFilter, Frame, Id, Key, Layout, Order, Pos2, pos2, Response, RichText, TextBuffer, Ui};
+use egui::text::{CCursor, CCursorRange, CursorRange};
+use egui::text_edit::TextEditState;
+#[cfg(feature = "egui")]
+use egui::widgets::text_edit::TextEditOutput;
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "egui")]
+use highlighting::highlight;
+pub use highlighting::Token;
+pub use syntax::{Syntax, TokenType};
+pub use themes::ColorTheme;
+pub use themes::DEFAULT_THEMES;
 
 pub mod highlighting;
 mod syntax;
 #[cfg(test)]
 mod tests;
 mod themes;
-
-#[cfg(feature = "egui")]
-use egui::widgets::text_edit::TextEditOutput;
-#[cfg(feature = "egui")]
-use highlighting::highlight;
-pub use highlighting::Token;
-use std::hash::{Hash, Hasher};
-pub use syntax::{Syntax, TokenType};
-pub use themes::ColorTheme;
-pub use themes::DEFAULT_THEMES;
 
 #[derive(Clone, Debug, PartialEq)]
 /// CodeEditor struct which stores settings for highlighting.
@@ -96,6 +33,23 @@ pub struct CodeEditor {
     vscroll: bool,
     stick_to_bottom: bool,
     shrink: bool,
+    _prompt: Prompt,
+    _popup_id:Id,
+}
+
+#[derive(Clone, Debug, PartialEq, Default,Serialize,Deserialize)]
+pub struct Prompt {
+    pub map: BTreeMap<String,PromptInfo>
+}
+#[derive(Clone, Debug, PartialEq, Default,Serialize,Deserialize)]
+pub struct PromptInfo{
+    pub desc:String,
+    pub fill:String
+}
+impl Prompt{
+    pub fn from_str(text:&str) ->Self{
+        serde_yaml::from_str(text).unwrap_or_default()
+    }
 }
 
 impl Hash for CodeEditor {
@@ -119,14 +73,18 @@ impl Default for CodeEditor {
             vscroll: true,
             stick_to_bottom: false,
             shrink: false,
+            _prompt: Prompt::default(),
+            _popup_id: Id::new("code_editor_prompt"),
         }
     }
 }
 
 impl CodeEditor {
     pub fn id_source(self, id_source: impl Into<String>) -> Self {
+        let id =  id_source.into();
         CodeEditor {
-            id: id_source.into(),
+            id: id.clone(),
+            _popup_id: Id::new(format!("{}_{}",id.clone(),"popup")),
             ..self
         }
     }
@@ -173,6 +131,10 @@ impl CodeEditor {
     /// **Default: Rust**
     pub fn with_syntax(self, syntax: Syntax) -> Self {
         CodeEditor { syntax, ..self }
+    }
+
+    pub fn with_prompt(self, prompt: Prompt) -> Self {
+        CodeEditor { _prompt: prompt, ..self }
     }
 
     /// Turn on/off scrolling on the vertical axis.
@@ -260,6 +222,67 @@ impl CodeEditor {
     #[cfg(feature = "egui")]
     /// Show Code Editor
     pub fn show(&mut self, ui: &mut egui::Ui, text: &mut String) -> TextEditOutput {
+        let mut need_insert_text = false;
+        let mut need_up = false;
+        let mut need_down = false;
+        let mut is_pop = false;
+        ui.ctx().memory(|mem|{
+            if mem.is_popup_open(self._popup_id) {
+                is_pop = true;
+            }
+        });
+        if is_pop{
+            ui.input(|input_state|{
+                if input_state.key_released(Key::Tab)||input_state.key_pressed(Key::Enter) {
+                    need_insert_text = true;
+                }
+                if input_state.key_released(Key::ArrowUp){
+                    need_up = true;
+                }
+                if input_state.key_released(Key::ArrowDown){
+                    need_down = true;
+                }
+            });
+            if need_up{
+                let mut prompt_state = CodeEditorPromptState::load(ui.ctx(),self._popup_id);
+                let mut index = 0;
+                if prompt_state.index<=0{
+                    index = prompt_state.prompts.len()-1;
+                }else{
+                    index = prompt_state.index-1;
+                }
+                prompt_state.index = index;
+                prompt_state.select = prompt_state.prompts.get(index).cloned().unwrap_or_default();
+                prompt_state.store(ui.ctx(),self._popup_id);
+            }
+            if need_down{
+                let mut prompt_state = CodeEditorPromptState::load(ui.ctx(),self._popup_id);
+                let mut index = prompt_state.index+1;
+                if index>=prompt_state.prompts.len(){
+                    index = 0;
+                }
+                prompt_state.index = index;
+                prompt_state.select = prompt_state.prompts.get(index).cloned().unwrap_or_default();
+                prompt_state.store(ui.ctx(),self._popup_id);
+            }
+            ui.input_mut(|i|{
+                i.events.retain(|e|{
+                    match e {
+                        Event::Key { key, .. } => {
+                            let k = key.clone();
+                            if k==Key::ArrowUp||k==Key::ArrowDown||k==Key::Tab||k==Key::Enter{
+                                return false
+                            }
+                            return true
+                        }
+                        _=>{
+                            return true
+                        }
+                    }
+                })
+            });
+        }
+
         let mut text_edit_output: Option<TextEditOutput> = None;
         let mut code_editor = |ui: &mut egui::Ui| {
             ui.horizontal_top(|h| {
@@ -282,6 +305,31 @@ impl CodeEditor {
                             .desired_width(if self.shrink { 0.0 } else { f32::MAX })
                             .layouter(&mut layouter)
                             .show(ui);
+                        self.popup(ui, text,&output);
+                        if need_insert_text {
+                            let prompt_state = CodeEditorPromptState::load(ui.ctx(),self._popup_id);
+                            let insert_text = prompt_state.prompts.get(prompt_state.index).unwrap().clone();
+                            prompt_state.cursor_range.map(|c|{
+                                text.insert_text(
+                                    &insert_text[prompt_state.prompt.len()..].to_string(),
+                                    c.primary.ccursor.index,
+                                );
+                            });
+                            ui.memory_mut(|mem| mem.toggle_popup(self._popup_id));
+                            let mut tes = TextEditState::load(ui.ctx(), output.response.id).unwrap();
+                            tes.cursor.set_char_range(Some(CCursorRange {
+                                primary: CCursor {
+                                    index: text.as_str().len(),
+                                    prefer_next_row: false,
+                                },
+                                secondary: CCursor {
+                                    index: text.as_str().len(),
+                                    prefer_next_row: false,
+                                },
+                            }));
+                            tes.store(ui.ctx(), output.response.id);
+                            ui.ctx().request_repaint();
+                        }
                         text_edit_output = Some(output);
                     });
             });
@@ -294,7 +342,181 @@ impl CodeEditor {
         } else {
             code_editor(ui);
         }
-
         text_edit_output.expect("TextEditOutput should exist at this point")
+    }
+    fn popup(&self, ui: &mut Ui, text: &mut String, output:&TextEditOutput) {
+        output.cursor_range.map(|c| {
+            let len = text.as_str().len();
+            if len <= 1 || c.primary.ccursor.index > len {
+                return;
+            }
+            let before_cursor_text: String = text
+                .as_str()
+                .chars()
+                .take(c.primary.ccursor.index)
+                .collect();
+            let (prompt,prompts) = self.find_prompt(before_cursor_text);
+            if prompts.len()>0 {
+                ui.memory_mut(|mem| {
+                    mem.open_popup(self._popup_id)
+                });
+                self.popup_prompt_widget(
+                    ui,
+                    &output.response,
+                    pos2(
+                        output.galley_pos.x
+                            + (c.primary.rcursor.column as f32) * (12.0 / 2.0 + 1.0),
+                        output.galley_pos.y
+                            + (c.primary.rcursor.row as f32) * (12.0 / 2.0 + 1.0)
+                            + 16.0,
+                    ),
+                    |ui| {
+                        self.render_popup_prompt(&output.response, c, prompt, prompts, ui, text)
+                    },
+                );
+            }else{
+                ui.memory_mut(|mem| {
+                    if mem.is_popup_open(self._popup_id) {
+                        mem.close_popup()
+                    }
+                });
+            }
+        });
+    }
+    fn render_popup_prompt(
+        &self,
+        response: &Response,
+        c: CursorRange,
+        prompt: String,
+        prompts: Vec<String>,
+        ui: &mut Ui,
+        text:&mut String,
+    ) {
+        let mut prompt_state = CodeEditorPromptState::load(ui.ctx(),self._popup_id);
+        ui.horizontal(|ui| {
+            egui::ScrollArea::vertical()
+                .max_width(150.0)
+                .min_scrolled_height(150.0)
+                .max_height(400.0)
+                .vertical_scroll_offset(15.0*prompt_state.index as f32)
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        let mut not_found = false;
+                        if prompts.iter().find(|key|{
+                            key.as_str()==prompt_state.select
+                        }).is_none(){
+                            not_found = true;
+                        }
+                        for (index, key) in prompts.iter().enumerate() {
+                            let show_text = key.split(".").last().unwrap_or_default();
+                            let label =
+                                ui.selectable_value(&mut prompt_state.select ,key.to_string(),RichText::new(show_text).strong());
+                            if index == 0 {
+                                if not_found{
+                                    prompt_state.select = key.to_string();
+                                    prompt_state.index = 0;
+                                }
+                            }
+                            if label.double_clicked() {
+                                let insert_text = self._prompt.map.get(key).unwrap().fill.clone();
+                                text.insert_text(
+                                    &insert_text[prompt.len()..].to_string(),
+                                    c.primary.ccursor.index,
+                                );
+                                ui.memory_mut(|mem| mem.toggle_popup(self._popup_id));
+                                let mut tes = TextEditState::load(ui.ctx(), response.id).unwrap();
+                                tes.cursor.set_char_range(Some(CCursorRange {
+                                    primary: CCursor {
+                                        index: text.as_str().len(),
+                                        prefer_next_row: false,
+                                    },
+                                    secondary: CCursor {
+                                        index: text.as_str().len(),
+                                        prefer_next_row: false,
+                                    },
+                                }));
+                                tes.store(ui.ctx(), response.id);
+                                response.request_focus();
+                            }
+                        }
+                        let new_prompt_state = CodeEditorPromptState{
+                            prompts:prompts.clone(),
+                            select:prompt_state.select.clone(),
+                            index:prompts.iter().position(|x|x.as_str()==prompt_state.select.as_str()).unwrap(),
+                            prompt:prompt.clone(),
+                            cursor_range: Some(c.clone()),
+                        };
+                        new_prompt_state.store(ui.ctx(),self._popup_id);
+                    });
+                });
+                ui.separator();
+                ui.vertical(|ui| {
+                    ui.strong(self._prompt.map.get(CodeEditorPromptState::load(ui.ctx(),self._popup_id).select.as_str()).cloned().unwrap_or_default().desc)
+                });
+        });
+    }
+
+    fn popup_prompt_widget<R>(
+        &self,
+        ui: &Ui,
+        widget_response: &Response,
+        suggested_position: Pos2,
+        add_contents: impl FnOnce(&mut Ui) -> R,
+    ) -> Option<R> {
+        if ui.memory(|mem| mem.is_popup_open(self._popup_id)) {
+            let inner = Area::new(self._popup_id)
+                .order(Order::Foreground)
+                .constrain(true)
+                .fixed_pos(suggested_position)
+                .show(ui.ctx(), |ui| {
+                    let frame = Frame::popup(ui.style());
+                    frame
+                        .show(ui, |ui| {
+                            ui.with_layout(Layout::left_to_right(Align::LEFT), |ui| add_contents(ui))
+                                .inner
+                        })
+                        .inner
+                })
+                .inner;
+            Some(inner)
+        } else {
+            None
+        }
+    }
+    fn count_dots(sentence: &str) -> usize {
+        let dot: char = '.';
+        sentence.chars().filter(|&c| c == dot).count()
+    }
+    fn find_prompt(&self,text:String)->(String,Vec<String>){
+        let replace = text
+            .replace("\t"," ")
+            .replace("\n"," ");
+        let sentence = replace.split(" ").last().unwrap_or_default();
+        if sentence.is_empty(){
+            return ("".to_string(),vec![])
+        }
+        let dot_count = Self::count_dots(sentence);
+        (sentence.to_string(), self._prompt.map.keys().filter(|(k)|{
+            k.starts_with(sentence)&&k.as_str()!= sentence
+        }).filter(|(k)|{
+            Self::count_dots(k)==dot_count
+        }).cloned().collect())
+    }
+}
+
+#[derive(Clone, Default, Serialize, Deserialize, Debug)]
+struct CodeEditorPromptState {
+    pub select: String,
+    pub prompt: String,
+    pub prompts:Vec<String>,
+    pub index: usize,
+    pub cursor_range:Option<CursorRange>
+}
+impl CodeEditorPromptState {
+    pub fn load(ctx: &Context, id: Id) -> Self {
+        ctx.data_mut(|d| d.get_persisted(id)).unwrap_or_default()
+    }
+    pub fn store(self, ctx: &Context, id: Id) {
+        ctx.data_mut(|d| d.insert_persisted(id, self));
     }
 }

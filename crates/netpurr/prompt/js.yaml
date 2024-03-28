@@ -1,0 +1,55 @@
+map:
+  netpurr:
+    fill: netpurr
+    desc: netpurr
+  netpurr.get_testcase:
+    fill: netpurr.get_testcase()
+    desc: get testcase
+  netpurr.resp:
+    fill: netpurr.resp()
+    desc: netpurr.resp
+  netpurr.test:
+    fill: netpurr.test
+    desc: netpurr.test
+  netpurr.get_env:
+    fill: netpurr.get_env
+    desc: get_env
+  netpurr.set_env:
+    fill: netpurr.set_env
+    desc: set_env
+  netpurr.add_header:
+    fill: netpurr.add_header
+    desc: netpurr.add_header
+  netpurr.add_params:
+    fill: netpurr.add_params
+    desc: netpurr.add_params
+  netpurr.get_shared:
+    fill: netpurr.get_shared
+    desc: netpurr.get_shared
+  netpurr.wait_shared:
+    fill: netpurr.wait_shared
+    desc: netpurr.wait_shared
+  netpurr.set_shared:
+    fill: netpurr.set_shared
+    desc: netpurr.set_shared
+  console:
+    fill: console
+    desc: console
+  console.log:
+    fill: console.log
+    desc: console.log
+  console.warn:
+    fill: console.warn
+    desc: console.warn
+  console.error:
+    fill: console.error
+    desc: console.error
+  sleep:
+    fill: sleep
+    desc: sleep
+  await:
+    fill: await
+    desc: await
+  assert:
+    fill: assert
+    desc: assert

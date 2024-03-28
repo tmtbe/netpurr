@@ -1,8 +1,9 @@
 use std::collections::BTreeMap;
 use std::ops::Add;
+use egui::ahash::HashMap;
 
 use egui::Ui;
-use egui_code_editor::{CodeEditor, ColorTheme};
+use egui_code_editor::{CodeEditor, ColorTheme, Prompt};
 
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::Request;
@@ -104,11 +105,13 @@ console.log(response)"#)
                         .min_scrolled_height(250.0)
                         .id_source("test_manager_pre_request_script")
                         .show(ui, |ui| {
+                            let prompt_yaml = include_str!("../../prompt/js.yaml");
                             let mut code_editor = CodeEditor::default()
                                 .id_source("request_pre_script_code_editor")
                                 .with_rows(12)
                                 .with_ui_fontsize(ui)
                                 .with_syntax(js_syntax())
+                                .with_prompt(Prompt::from_str(prompt_yaml))
                                 .with_numlines(true);
                             if ui.visuals().dark_mode {
                                 code_editor = code_editor.with_theme(ColorTheme::GRUVBOX)

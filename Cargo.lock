@@ -1223,6 +1223,9 @@ version = "0.2.6"
 dependencies = [
  "eframe",
  "egui",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.9.34+deprecated",
 ]
 
 [[package]]
