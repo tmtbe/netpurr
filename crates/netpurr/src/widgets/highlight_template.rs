@@ -159,7 +159,7 @@ impl HighlightTemplate<'_> {
             hovered_label_key.clone().map(|key| {
                 ui.separator();
                 ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
+                    ui.horizontal_wrapped(|ui| {
                         ui.strong("VALUE");
                         ui.label(self.envs.get(&key).unwrap().value.clone())
                     });
