@@ -370,7 +370,7 @@ impl CodeEditor {
                             + 16.0,
                     ),
                     |ui| {
-                        self.render_popup_prompt(&output.response, c, prompt, prompts, ui, text)
+                        self.render_popup_prompt(c, prompt, prompts, ui)
                     },
                 );
             }else{
@@ -384,12 +384,10 @@ impl CodeEditor {
     }
     fn render_popup_prompt(
         &self,
-        response: &Response,
         c: CursorRange,
         prompt: String,
         prompts: Vec<String>,
         ui: &mut Ui,
-        text:&mut String,
     ) {
         let mut prompt_state = CodeEditorPromptState::load(ui.ctx(),self._popup_id);
         ui.horizontal(|ui| {
@@ -398,41 +396,45 @@ impl CodeEditor {
                 .min_scrolled_height(150.0)
                 .max_height(400.0);
             scroll.show(ui, |ui| {
-                    ui.vertical(|ui| {
-                        let mut not_found = false;
-                        if prompts.iter().find(|key|{
-                            key.as_str()==prompt_state.select
-                        }).is_none(){
-                            not_found = true;
-                        }
-                        for (index, key) in prompts.iter().enumerate() {
-                            let show_text = key.split(".").last().unwrap_or_default();
-                            let label =
-                                ui.selectable_value(&mut prompt_state.select ,key.to_string(),RichText::new(show_text).strong());
-                            if index == 0 {
-                                if not_found{
-                                    prompt_state.select = key.to_string();
-                                    prompt_state.index = 0;
-                                }
-                            }
-                            if index==prompt_state.index{
-                                label.scroll_to_me(Some(Align::Center));
-                            }
-                        }
-                        let new_prompt_state = CodeEditorPromptState{
-                            prompts:prompts.clone(),
-                            select:prompt_state.select.clone(),
-                            index:prompts.iter().position(|x|x.as_str()==prompt_state.select.as_str()).unwrap(),
-                            prompt:prompt.clone(),
-                            cursor_range: Some(c.clone()),
-                        };
-                        new_prompt_state.store(ui.ctx(),self._popup_id);
-                    });
-                });
-                ui.separator();
                 ui.vertical(|ui| {
-                    ui.strong(self._prompt.map.get(CodeEditorPromptState::load(ui.ctx(),self._popup_id).select.as_str()).cloned().unwrap_or_default().desc)
+                    let mut not_found = false;
+                    if prompts.iter().find(|key|{
+                        key.as_str()==prompt_state.select
+                    }).is_none(){
+                        not_found = true;
+                    }
+                    for (index, key) in prompts.iter().enumerate() {
+                        let show_text = key.split(".").last().unwrap_or_default();
+                        let label =
+                            ui.selectable_value(&mut prompt_state.select ,key.to_string(),RichText::new(show_text).strong());
+                        if index == 0 {
+                            if not_found{
+                                prompt_state.select = key.to_string();
+                                prompt_state.index = 0;
+                            }
+                        }
+                        if index==prompt_state.index{
+                            label.scroll_to_me(Some(Align::Center));
+                        }
+                    }
+                    let new_prompt_state = CodeEditorPromptState{
+                        prompts:prompts.clone(),
+                        select:prompt_state.select.clone(),
+                        index:prompts.iter().position(|x|x.as_str()==prompt_state.select.as_str()).unwrap(),
+                        prompt:prompt.clone(),
+                        cursor_range: Some(c.clone()),
+                    };
+                    new_prompt_state.store(ui.ctx(),self._popup_id);
                 });
+            });
+            ui.separator();
+            ui.vertical(|ui| {
+                let prompt_state = CodeEditorPromptState::load(ui.ctx(),self._popup_id);
+                ui.heading(prompt_state.select.as_str());
+                ui.horizontal_wrapped(|ui|{
+                    ui.strong(self._prompt.map.get(prompt_state.select.as_str()).cloned().unwrap_or_default().desc)
+                });
+            });
         });
     }
 
