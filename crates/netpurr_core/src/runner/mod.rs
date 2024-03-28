@@ -55,6 +55,8 @@ pub struct TestRunResult {
 }
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct TestRunError {
+    pub request: Option<Request>,
+    pub response: Option<Response>,
     pub collection_path: Option<String>,
     pub request_name: String,
     pub testcase: Testcase,
@@ -154,6 +156,8 @@ impl Runner {
                                 }
                                 Err(e) => {
                                     return Err(TestRunError {
+                                        request: Some(after_request),
+                                        response: Some(after_response),
                                         collection_path: run_request_info.collection_path.clone(),
                                         request_name: run_request_info.request_name,
                                         testcase: run_request_info.testcase.clone(),
@@ -172,6 +176,8 @@ impl Runner {
                         })
                     }
                     Err(e) => Err(TestRunError {
+                        request: None,
+                        response: None,
                         collection_path: run_request_info.collection_path.clone(),
                         request_name: run_request_info.request_name,
                         testcase: run_request_info.testcase.clone(),
@@ -180,6 +186,8 @@ impl Runner {
                 }
             }
             Err(e) => Err(TestRunError {
+                request: None,
+                response: None,
                 collection_path: run_request_info.collection_path.clone(),
                 request_name: run_request_info.request_name,
                 testcase: run_request_info.testcase.clone(),

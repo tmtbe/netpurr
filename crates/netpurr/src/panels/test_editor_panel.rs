@@ -186,7 +186,16 @@ impl TestEditorPanel {
                             workspace_data.selected_test_run_result = Some(result.clone());
                         }
                         Err(err) => {
-                            workspace_data.selected_test_run_result = None;
+                            if err.request.is_some()&&err.response.is_some() {
+                                workspace_data.selected_test_run_result = Some(TestRunResult {
+                                    request: err.request.clone().unwrap(),
+                                    response: err.response.clone().unwrap(),
+                                    test_result: Default::default(),
+                                    collection_path: err.collection_path.clone(),
+                                    request_name: err.request_name.clone(),
+                                    testcase: Default::default(),
+                                });
+                            }
                         }
                     }
                 }
@@ -457,10 +466,22 @@ impl TestEditorPanel {
             .clicked()
         {
             if let Some(r) = &request_tree_request.result {
-                if let Ok(tr) = r {
-                    workspace_data.selected_test_run_result = Some(tr.clone())
-                }else{
-                    workspace_data.selected_test_run_result = None
+                match r {
+                    Ok(test_result) => {
+                        workspace_data.selected_test_run_result = Some(test_result.clone())
+                    }
+                    Err(err) => {
+                        if err.request.is_some()&&err.response.is_some() {
+                            workspace_data.selected_test_run_result = Some(TestRunResult {
+                                request: err.request.clone().unwrap(),
+                                response: err.response.clone().unwrap(),
+                                test_result: Default::default(),
+                                collection_path: err.collection_path.clone(),
+                                request_name: err.request_name.clone(),
+                                testcase: Default::default(),
+                            });
+                        }
+                    }
                 }
             }
         };
