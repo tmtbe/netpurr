@@ -308,21 +308,21 @@ impl CodeEditor {
                         self.popup(ui, text,&output);
                         if need_insert_text {
                             let prompt_state = CodeEditorPromptState::load(ui.ctx(),self._popup_id);
-                            let insert_text = prompt_state.prompts.get(prompt_state.index).unwrap().clone();
+                            let fill_text = self._prompt.map.get(prompt_state.select.as_str()).unwrap().fill.clone();
                             prompt_state.cursor_range.map(|c|{
                                 text.insert_text(
-                                    &insert_text[prompt_state.prompt.len()..].to_string(),
+                                    &fill_text[prompt_state.prompt.len()..].to_string(),
                                     c.primary.ccursor.index,
                                 );
                                 ui.memory_mut(|mem| mem.toggle_popup(self._popup_id));
                                 let mut tes = TextEditState::load(ui.ctx(), output.response.id).unwrap();
                                 tes.cursor.set_char_range(Some(CCursorRange {
                                     primary: CCursor {
-                                        index: c.primary.ccursor.index+insert_text.len()-prompt_state.prompt.len(),
+                                        index: c.primary.ccursor.index+fill_text.len()-prompt_state.prompt.len(),
                                         prefer_next_row: false,
                                     },
                                     secondary: CCursor {
-                                        index: c.primary.ccursor.index+insert_text.len()-prompt_state.prompt.len(),
+                                        index: c.primary.ccursor.index+fill_text.len()-prompt_state.prompt.len(),
                                         prefer_next_row: false,
                                     },
                                 }));

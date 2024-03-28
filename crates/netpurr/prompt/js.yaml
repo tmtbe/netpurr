@@ -8,57 +8,66 @@ map:
   netpurr.resp:
     fill: netpurr.resp()
     desc: netpurr.resp
+  netpurr.resp().json:
+    fill: netpurr.resp().json
+    desc: netpurr.resp().json
+  netpurr.resp().text:
+    fill: netpurr.resp().text
+    desc: netpurr.resp().text
   netpurr.test:
-    fill: netpurr.test
+    fill: |
+      netpurr.test("<name>",function(){
+          //assert body
+      });
     desc: netpurr.test
   netpurr.get_env:
-    fill: netpurr.get_env
+    fill: netpurr.get_env(<key>)
     desc: get_env
   netpurr.set_env:
-    fill: netpurr.set_env
+    fill: netpurr.set_env(<key>,<value>)
     desc: set_env
   netpurr.add_header:
-    fill: netpurr.add_header
+    fill: netpurr.add_header(<key>,<value>)
     desc: netpurr.add_header
   netpurr.add_params:
-    fill: netpurr.add_params
+    fill: netpurr.add_params(<key>,<value>)
     desc: netpurr.add_params
   netpurr.get_shared:
-    fill: netpurr.get_shared
+    fill: netpurr.get_shared(<key>)
     desc: netpurr.get_shared
   netpurr.wait_shared:
-    fill: netpurr.wait_shared
-    desc: netpurr.wait_shared
+    fill: netpurr.wait_shared(<key>)
+    desc: await netpurr.wait_shared("key")
   netpurr.set_shared:
-    fill: netpurr.set_shared
+    fill: netpurr.set_shared(<key>,<value>)
     desc: netpurr.set_shared
   console:
     fill: console
     desc: console
   console.log:
-    fill: console.log
+    fill: console.log(<item>)
     desc: console.log
   console.warn:
-    fill: console.warn
+    fill: console.warn(<item>)
     desc: console.warn
   console.error:
-    fill: console.error
+    fill: console.error(<item>)
     desc: console.error
   sleep:
-    fill: sleep
-    desc: sleep
+    fill: sleep(<ms>)
+    desc: await sleep(1000)
   await:
     fill: await
     desc: await
   assert:
-    fill: assert
+    fill: assert(<expect>,<actual>)
     desc: assert
   JSON:
     fill: JSON
     desc: JSON
   JSON.parse:
-    fill: JSON.parse
+    fill: JSON.parse(<value>)
     desc: JSON.parse
   JSON.stringify:
-    fill: JSON.stringify
+    fill: JSON.stringify(<value>)
     desc: JSON.stringify
