@@ -122,15 +122,15 @@ impl Runner {
                     pre_request_context.envs.clone(),
                 );
                 logger.add_info(
-                    "fetch".to_string(),
-                    format!("start fetch request: {:?}", build_request),
+                    "Fetch".to_string(),
+                    format!("start fetch request: \n{}", serde_yaml::to_string(&build_request).unwrap()),
                 );
                 match RestSender::reqwest_async_send(build_request, client).await {
                     Ok((after_request, response)) => {
                         let mut after_response = response;
                         logger.add_info(
-                            "fetch".to_string(),
-                            format!("get response: {:?}", after_response),
+                            "Fetch".to_string(),
+                            "get response".to_string(),
                         );
                         after_response.logger = logger;
                         let mut test_result: TestResult = Default::default();
