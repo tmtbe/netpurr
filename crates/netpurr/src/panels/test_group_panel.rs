@@ -94,6 +94,29 @@ impl TestGroupPanel {
         collection_name: String,
         folder: Rc<RefCell<CollectionFolder>>,
     ) {
+        let label = utils::select_value(
+            ui,
+            &mut self.selected_test_item_name,
+            folder.borrow().get_path(),
+            format!("../{}",folder.borrow().name.clone()),
+        );
+        if label.clicked() {
+            workspace_data.selected_test_item =
+                Some(TestItem::Folder(collection_name.clone(), folder.clone()));
+        }
+        if label.double_clicked() {
+            let path = folder.borrow().get_path();
+            let count = path.split("/").count();
+            if count>1 {
+                let parent_paths: Vec<&str> = path.split("/").take(count - 1).collect();
+                let parent_path = parent_paths.join("/");
+                let (_, parent_folder) = workspace_data.get_folder_with_path(parent_path);
+                parent_folder.map(|p| {
+                    self.selected_test_item =
+                        Some(TestItem::Folder(collection_name.clone(), p.clone()));
+                });
+            }
+        }
         for (name, cf_child) in folder.borrow().folders.iter() {
             let label = utils::select_value(
                 ui,

@@ -8,6 +8,8 @@ use eframe::epaint::{Color32, FontFamily, FontId};
 use egui::text::LayoutJob;
 use egui::{Align, FontSelection, Label, RichText, Sense, Style, Ui, Widget};
 use poll_promise::Promise;
+use strum::IntoEnumIterator;
+use strum_macros::{Display, EnumIter};
 
 use netpurr_core::data::collections::{CollectionFolder, Testcase};
 use netpurr_core::data::record::Record;
@@ -22,6 +24,7 @@ use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::utils;
 use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
+use crate::panels::rest_panel::RestPanel;
 
 #[derive(Default)]
 pub struct TestEditorPanel {
@@ -33,6 +36,20 @@ pub struct TestEditorPanel {
     collection_path: String,
     parent_testcase_list: Vec<Testcase>,
     parent_paths: Vec<String>,
+    open_panel_enum:Panel,
+}
+
+#[derive(EnumIter,Display,Clone,PartialEq)]
+enum Panel{
+    Runner,
+    Testcase,
+    PreRequestScript,
+    TestScript,
+}
+impl Default for Panel{
+    fn default() -> Self {
+        Panel::Runner
+    }
 }
 impl TestEditorPanel {
     pub fn render(
@@ -51,6 +68,58 @@ impl TestEditorPanel {
         }
         workspace_data.selected_test_item.clone().map(|test_item| {
             self.render_test_item_folder(operation, workspace_data, ui, test_item.clone());
+            ui.horizontal(|ui|{
+                for panel in Panel::iter() {
+                    ui.selectable_value(
+                        &mut self.open_panel_enum,
+                        panel.clone(),
+                        panel.to_string(),
+                    );
+                }
+            });
+            ui.separator();
+            match self.open_panel_enum {
+                Panel::Runner => {
+                    match &test_item {
+                        TestItem::Folder(collection_name, folder) => {
+                            self.render_select_testcase(workspace_data, ui);
+                            self.render_run_folder(
+                                operation,
+                                workspace_data,
+                                ui,
+                                collection_name.clone(),
+                                &folder,
+                            );
+                            self.render_result_tree(workspace_data, ui, folder.clone());
+                        }
+                        TestItem::Record(collection_name, folder,record_name) => {
+                            self.render_select_testcase(workspace_data, ui);
+                            let record = folder.borrow().requests[record_name].clone();
+                            self.render_run_record(
+                                operation,
+                                workspace_data,
+                                ui,
+                                collection_name.clone(),
+                                folder.clone(),
+                                record,
+                            );
+                        }
+                    }
+                }
+                Panel::Testcase => {
+                    self.render_manager_testcase(workspace_data, ui, test_item.clone());
+                }
+                Panel::PreRequestScript => {
+                    ui.strong("Pre-request Script:");
+                    self.request_pre_script_panel
+                        .set_and_render(ui, workspace_data, test_item.clone());
+                }
+                Panel::TestScript => {
+                    ui.strong("Test Script:");
+                    self.test_script_panel
+                        .set_and_render(ui, workspace_data, test_item.clone())
+                }
+            }
         });
     }
 
@@ -68,27 +137,6 @@ impl TestEditorPanel {
                 }
                 ui.heading(folder.borrow().get_path().clone());
                 ui.separator();
-                egui::ScrollArea::vertical()
-                    .id_source("testcase_item")
-                    .max_height(ui.available_height() - 30.0)
-                    .show(ui, |ui| {
-                        self.render_select_testcase(workspace_data, ui);
-                        ui.separator();
-                        self.render_run_folder(
-                            operation,
-                            workspace_data,
-                            ui,
-                            collection_name.clone(),
-                            &folder,
-                        );
-                        ui.separator();
-                        self.render_manager_testcase(workspace_data, ui, test_item.clone());
-                        ui.separator();
-                        self.render_result_tree(workspace_data, ui, folder.clone());
-                        ui.separator();
-                        self.render_script(workspace_data, operation, ui, test_item.clone());
-                        ui.separator();
-                    });
             }
             TestItem::Record(collection_name, folder, record_name) => {
                 let record_path = format!("{}/{}", folder.borrow().get_path(), record_name);
@@ -97,29 +145,6 @@ impl TestEditorPanel {
                 }
                 ui.heading(format!("{} : {}", folder.borrow().get_path(), record_name));
                 ui.separator();
-                egui::ScrollArea::vertical()
-                    .id_source("testcase_item")
-                    .max_height(ui.available_height() - 30.0)
-                    .show(ui, |ui| {
-                        self.render_select_testcase(workspace_data, ui);
-                        ui.separator();
-                        let record = folder.borrow().requests[record_name].clone();
-                        self.render_run_record(
-                            operation,
-                            workspace_data,
-                            ui,
-                            collection_name.clone(),
-                            folder.clone(),
-                            record,
-                        );
-                        ui.separator();
-                        self.render_manager_testcase(workspace_data, ui, test_item.clone());
-                        ui.separator();
-                        self.render_result_record(workspace_data, ui);
-                        ui.separator();
-                        self.render_script(workspace_data, operation, ui, test_item.clone());
-                        ui.separator();
-                    });
             }
         }
     }
@@ -218,22 +243,6 @@ impl TestEditorPanel {
                 );
             }
         });
-    }
-
-    fn render_script(
-        &mut self,
-        workspace_data: &mut WorkspaceData,
-        operation: &Operation,
-        ui: &mut Ui,
-        test_item: TestItem,
-    ) {
-        ui.strong("Pre-request Script:");
-        self.request_pre_script_panel
-            .set_and_render(ui, workspace_data, test_item.clone());
-        ui.separator();
-        ui.strong("Test Script:");
-        self.test_script_panel
-            .set_and_render(ui, workspace_data, test_item.clone())
     }
     fn render_manager_testcase(
         &mut self,
