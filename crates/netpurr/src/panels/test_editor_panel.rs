@@ -103,6 +103,7 @@ impl TestEditorPanel {
                                 folder.clone(),
                                 record,
                             );
+                            self.render_result_record(workspace_data, ui);
                         }
                     }
                 }
@@ -163,12 +164,30 @@ impl TestEditorPanel {
                     name.split("/").last().unwrap_or_default().to_string(),
                     status,
                 );
-                if Label::new(title).sense(Sense::click()).ui(ui).clicked() {
-                    match result {
+                let collapsing = utils::open_collapsing(ui,title,|ui|{
+                    match &result {
                         Ok(result) => {
-                            workspace_data.selected_test_run_result = Some(result.clone())
+                            for test_info in result.test_result.test_info_list.iter() {
+                                let test_info_title = self.render_test_title(
+                                    ui,
+                                    test_info.name.clone(), test_info.status.clone(),
+                                );
+                                ui.label(test_info_title);
+                            }
                         }
-                        Err(err) => {}
+                        Err(err) => {
+                            ui.label(err.error.clone());
+                        }
+                    }
+                });
+                if collapsing.header_response.clicked(){
+                    match &result {
+                        Ok(result) => {
+                            workspace_data.selected_test_run_result = Some(result.clone());
+                        }
+                        Err(err) => {
+                            workspace_data.selected_test_run_result = None;
+                        }
                     }
                 }
             }
@@ -440,6 +459,8 @@ impl TestEditorPanel {
             if let Some(r) = &request_tree_request.result {
                 if let Ok(tr) = r {
                     workspace_data.selected_test_run_result = Some(tr.clone())
+                }else{
+                    workspace_data.selected_test_run_result = None
                 }
             }
         };
