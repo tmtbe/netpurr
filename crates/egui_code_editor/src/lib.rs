@@ -314,21 +314,21 @@ impl CodeEditor {
                                     &insert_text[prompt_state.prompt.len()..].to_string(),
                                     c.primary.ccursor.index,
                                 );
+                                ui.memory_mut(|mem| mem.toggle_popup(self._popup_id));
+                                let mut tes = TextEditState::load(ui.ctx(), output.response.id).unwrap();
+                                tes.cursor.set_char_range(Some(CCursorRange {
+                                    primary: CCursor {
+                                        index: c.primary.ccursor.index+insert_text.len()-prompt_state.prompt.len(),
+                                        prefer_next_row: false,
+                                    },
+                                    secondary: CCursor {
+                                        index: c.primary.ccursor.index+insert_text.len()-prompt_state.prompt.len(),
+                                        prefer_next_row: false,
+                                    },
+                                }));
+                                tes.store(ui.ctx(), output.response.id);
+                                ui.ctx().request_repaint();
                             });
-                            ui.memory_mut(|mem| mem.toggle_popup(self._popup_id));
-                            let mut tes = TextEditState::load(ui.ctx(), output.response.id).unwrap();
-                            tes.cursor.set_char_range(Some(CCursorRange {
-                                primary: CCursor {
-                                    index: text.as_str().len(),
-                                    prefer_next_row: false,
-                                },
-                                secondary: CCursor {
-                                    index: text.as_str().len(),
-                                    prefer_next_row: false,
-                                },
-                            }));
-                            tes.store(ui.ctx(), output.response.id);
-                            ui.ctx().request_repaint();
                         }
                         text_edit_output = Some(output);
                     });
@@ -418,27 +418,6 @@ impl CodeEditor {
                             if index==prompt_state.index{
                                 label.scroll_to_me(Some(Align::Center));
                             }
-                            if label.double_clicked() {
-                                let insert_text = self._prompt.map.get(key).unwrap().fill.clone();
-                                text.insert_text(
-                                    &insert_text[prompt.len()..].to_string(),
-                                    c.primary.ccursor.index,
-                                );
-                                ui.memory_mut(|mem| mem.toggle_popup(self._popup_id));
-                                let mut tes = TextEditState::load(ui.ctx(), response.id).unwrap();
-                                tes.cursor.set_char_range(Some(CCursorRange {
-                                    primary: CCursor {
-                                        index: text.as_str().len(),
-                                        prefer_next_row: false,
-                                    },
-                                    secondary: CCursor {
-                                        index: text.as_str().len(),
-                                        prefer_next_row: false,
-                                    },
-                                }));
-                                tes.store(ui.ctx(), response.id);
-                                response.request_focus();
-                            }
                         }
                         let new_prompt_state = CodeEditorPromptState{
                             prompts:prompts.clone(),
@@ -489,6 +468,10 @@ impl CodeEditor {
     }
     fn find_prompt(&self,text:String)->(String,Vec<String>){
         let replace = text
+            .replace("{"," ")
+            .replace("}"," ")
+            .replace(";"," ")
+            .replace(","," ")
             .replace("\t"," ")
             .replace("\n"," ");
         let sentence = replace.split(" ").last().unwrap_or_default();

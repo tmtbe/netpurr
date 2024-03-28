@@ -53,3 +53,12 @@ map:
   assert:
     fill: assert
     desc: assert
+  JSON:
+    fill: JSON
+    desc: JSON
+  JSON.parse:
+    fill: JSON.parse
+    desc: JSON.parse
+  JSON.stringify:
+    fill: JSON.stringify
+    desc: JSON.stringify

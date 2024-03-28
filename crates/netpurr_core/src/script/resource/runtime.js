@@ -4,7 +4,7 @@
     function argsToMessage(...args) {
         return args.map((arg) => JSON.stringify(arg)).join(" ");
     }
-
+    
     globalThis.sleep = async function (time) {
         await core.ops.op_sleep(time);
     }
@@ -26,7 +26,7 @@
         }
     }
 
-    globalThis.testcase = function(){
+    globalThis.testcase = function () {
         return JSON.parse(core.ops.op_get_testcase());
     }
 
@@ -42,7 +42,7 @@
         },
     };
     globalThis.netpurr = {
-        get_testcase:() => {
+        get_testcase: () => {
             return JSON.parse(core.ops.op_get_testcase());
         },
         set_env: (key, value) => {
