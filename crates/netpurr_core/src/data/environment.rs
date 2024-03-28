@@ -197,7 +197,7 @@ pub struct EnvironmentStatus {
 
 pub const ENVIRONMENT_GLOBALS: &str = "__Globals__";
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone,Deserialize,Serialize)]
 pub struct EnvironmentItemValue {
     pub value: String,
     pub scope: String,

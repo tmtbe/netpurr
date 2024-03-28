@@ -103,6 +103,12 @@ impl Runner {
             shared_map,
             ..Default::default()
         };
+        default_context
+            .logger
+            .add_info("System".to_string(), format!("Testcase: \n{}",serde_yaml::to_string(&default_context.testcase).unwrap()));
+        default_context
+            .logger
+            .add_info("System".to_string(), format!("Envs: \n{}",serde_yaml::to_string(&default_context.envs).unwrap()));
         let mut pre_request_context_result = Ok(default_context.clone());
         if run_request_info.pre_request_scripts.len() > 0 {
             default_context
@@ -117,6 +123,7 @@ impl Runner {
                 for log in pre_request_context.logger.logs.iter() {
                     logger.logs.push(log.clone());
                 }
+                logger.add_info("System".to_string(),format!("Envs: \n{}",serde_yaml::to_string(&pre_request_context.envs).unwrap()));
                 let build_request = RestSender::build_request(
                     pre_request_context.request.clone(),
                     pre_request_context.envs.clone(),
