@@ -44,7 +44,7 @@ impl ManagerTestcasePanel {
             self.old_test_item_name = test_item_name;
         }
         egui::panel::SidePanel::left("manager_testcase_left")
-            .max_width(200.0)
+            .max_width(150.0)
             .show_inside(ui, |ui| {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {

@@ -136,7 +136,7 @@ impl TestEditorPanel {
                 if self.collection_path != folder.borrow().get_path() {
                     self.init(workspace_data, folder.borrow().get_path());
                 }
-                ui.heading(folder.borrow().get_path().clone());
+                ui.heading(format!("{}{}","FOLDER|",folder.borrow().get_path().clone()));
                 ui.separator();
             }
             TestItem::Record(collection_name, folder, record_name) => {
@@ -144,7 +144,7 @@ impl TestEditorPanel {
                 if self.collection_path != record_path {
                     self.init(workspace_data, record_path);
                 }
-                ui.heading(format!("{} : {}", folder.borrow().get_path(), record_name));
+                ui.heading(format!("{}{} : {}","RECORD|", folder.borrow().get_path(), record_name));
                 ui.separator();
             }
         }
