@@ -269,7 +269,6 @@ impl Runner {
                     let testcase = Testcase::default();
                     testcases.insert(testcase.name.clone(), testcase);
                 }
-                let mut jobs = vec![];
                 for (_, testcase) in testcases.iter() {
                     let mut root_testcase = testcase.clone();
                     if let Some(parent) = &parent_testcase {
@@ -277,7 +276,7 @@ impl Runner {
                     } else {
                         root_testcase.entry_name = folder_only_read.name.clone();
                     }
-                    jobs.push(Self::run_test_group_async(
+                    Self::run_test_group_async(
                         client.clone(),
                         envs.clone(),
                         script_tree.clone(),
@@ -285,9 +284,8 @@ impl Runner {
                         test_group_run_result.clone(),
                         collection_path.clone(),
                         folder_only_read.clone(),
-                    ));
+                    ).await;
                 }
-                join_all(jobs).await;
             })
         })
     }
@@ -407,11 +405,10 @@ impl Runner {
                 let mut testcase = Testcase::default();
                 child_testcases.insert(testcase.name.clone(), testcase);
             }
-            let mut jobs = vec![];
             for (name, child_testcase) in child_testcases.iter() {
                 let mut merge_testcase = child_testcase.clone();
                 merge_testcase.merge(folder.name.clone(), &testcase);
-                jobs.push(Self::run_test_group_async(
+                Self::run_test_group_async(
                     client.clone(),
                     envs.clone(),
                     script_tree.clone(),
@@ -419,9 +416,8 @@ impl Runner {
                     test_group_run_result.clone(),
                     collection_path.clone() + "/" + name,
                     folder.clone(),
-                ));
+                ).await;
             }
-            join_all(jobs).await;
         }
         for (name, record) in folder.requests.iter() {
             let mut record_testcases = record.testcase().clone();
