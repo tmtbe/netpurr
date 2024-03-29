@@ -465,14 +465,16 @@ impl Runner {
             let _client = client.clone();
             let _run_request_info = run_request_info.clone();
             let _shared_map = shared_map.clone();
-            jobs.push(Self::send_rest_with_script_async(
-                _run_request_info,
-                _client,
-                _shared_map,
-            ));
+            jobs.push(async{
+                let result = Self::send_rest_with_script_async(
+                    _run_request_info,
+                    _client,
+                    _shared_map,
+                ).await;
+                test_group_run_result.write().unwrap().add_result(result);
+            });
         }
-        let results = join_all(jobs).await;
-        test_group_run_result.write().unwrap().add_results(results);
+        join_all(jobs).await;
     }
 }
 #[derive(Default, Clone)]
