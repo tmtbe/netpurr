@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
+use anyhow::Error;
 
 use async_recursion::async_recursion;
 use deno_core::futures::future::join_all;
@@ -20,10 +21,10 @@ use crate::data::environment::EnvironmentItemValue;
 use crate::data::http::{Request, Response};
 use crate::data::logger::Logger;
 use crate::data::record::Record;
-use crate::data::test::TestResult;
+use crate::data::test::{TestResult, TestStatus};
 use crate::data::websocket::WebSocketSession;
 use crate::runner::websocket::WebSocketSender;
-use crate::script::{Context, JsResponse, ScriptRuntime, ScriptScope, ScriptTree, SharedMap};
+use crate::script::{Context, JsResponse, ScriptRuntime, ScriptScope, ScriptTree, SharedMap, SkipError};
 
 mod rest;
 pub mod test;
@@ -47,7 +48,7 @@ pub struct RunRequestInfo {
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct TestRunResult {
     pub request: Request,
-    pub response: Response,
+    pub response: Option<Response>,
     pub test_result: TestResult,
     pub collection_path: Option<String>,
     pub request_name: String,
@@ -55,7 +56,7 @@ pub struct TestRunResult {
 }
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct TestRunError {
-    pub request: Option<Request>,
+    pub request: Request,
     pub response: Option<Response>,
     pub collection_path: Option<String>,
     pub request_name: String,
@@ -162,20 +163,27 @@ impl Runner {
                                     test_result = test_context.test_result.clone();
                                 }
                                 Err(e) => {
-                                    return Err(TestRunError {
-                                        request: Some(after_request),
-                                        response: Some(after_response),
-                                        collection_path: run_request_info.collection_path.clone(),
-                                        request_name: run_request_info.request_name,
-                                        testcase: run_request_info.testcase.clone(),
-                                        error: e.to_string(),
-                                    });
+                                    if e.to_string().contains("TestSkip"){
+                                        test_result.status = TestStatus::SKIP;
+                                        for test_info in test_result.test_info_list.iter_mut() {
+                                            test_info.status = TestStatus::SKIP;
+                                        }
+                                    } else {
+                                        return Err(TestRunError {
+                                            request: after_request,
+                                            response: Some(after_response),
+                                            collection_path: run_request_info.collection_path.clone(),
+                                            request_name: run_request_info.request_name,
+                                            testcase: run_request_info.testcase.clone(),
+                                            error: e.to_string(),
+                                        });
+                                    }
                                 }
                             }
                         }
                         Ok(TestRunResult {
                             request: after_request,
-                            response: after_response,
+                            response: Some(after_response),
                             test_result,
                             collection_path: run_request_info.collection_path.clone(),
                             request_name: run_request_info.request_name.clone(),
@@ -183,7 +191,7 @@ impl Runner {
                         })
                     }
                     Err(e) => Err(TestRunError {
-                        request: None,
+                        request: run_request_info.request.clone(),
                         response: None,
                         collection_path: run_request_info.collection_path.clone(),
                         request_name: run_request_info.request_name,
@@ -192,14 +200,29 @@ impl Runner {
                     }),
                 }
             }
-            Err(e) => Err(TestRunError {
-                request: None,
-                response: None,
-                collection_path: run_request_info.collection_path.clone(),
-                request_name: run_request_info.request_name,
-                testcase: run_request_info.testcase.clone(),
-                error: e.to_string(),
-            }),
+            Err(e) => {
+                if e.to_string().contains("TestSkip"){
+                    let mut test_result = TestResult::default();
+                    test_result.status = TestStatus::SKIP;
+                    Ok(TestRunResult {
+                        request: run_request_info.request.clone(),
+                        response: None,
+                        test_result,
+                        collection_path: run_request_info.collection_path.clone(),
+                        request_name: run_request_info.request_name.clone(),
+                        testcase: run_request_info.testcase.clone(),
+                    })
+                } else {
+                    Err(TestRunError {
+                        request: run_request_info.request.clone(),
+                        response: None,
+                        collection_path: run_request_info.collection_path.clone(),
+                        request_name: run_request_info.request_name,
+                        testcase: run_request_info.testcase.clone(),
+                        error: e.to_string(),
+                    })
+                }
+            },
         }
     }
     pub fn send_rest_with_script_promise(

@@ -5,7 +5,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use netpurr_core::data::auth::{Auth, AuthType};
-use netpurr_core::data::http::{BodyType, HttpRecord, LockWith, Method};
+use netpurr_core::data::http::{BodyType, HttpRecord, LockWith, Method, Response};
 use netpurr_core::data::test::TestStatus;
 use netpurr_core::runner::{RunRequestInfo, TestRunError, TestRunResult};
 use netpurr_core::script::ScriptScope;
@@ -323,20 +323,30 @@ impl RestPanel {
                                     .headers
                                     .push(h.clone());
                             });
-                        crt.record.must_get_mut_rest().response = test_run_result.response.clone();
-                        crt.record.must_get_mut_rest().ready();
-                        operation.add_success_toast("Send request success");
-                        crt.test_result = test_run_result.test_result.clone();
-                        match test_run_result.test_result.status {
-                            TestStatus::None => {}
-                            TestStatus::PASS => {
-                                operation.add_success_toast("Test success.");
+                        match &test_run_result.response {
+                            None => {
+                                crt.record.must_get_mut_rest().error();
+                                operation.add_error_toast("Send request failed: Response is none".to_string());
                             }
-                            TestStatus::FAIL => {
-                                operation.add_error_toast("Test failed.");
+                            Some(response) => {
+                                crt.record.must_get_mut_rest().response = response.clone();
+                                crt.record.must_get_mut_rest().ready();
+                                operation.add_success_toast("Send request success");
+                                crt.test_result = test_run_result.test_result.clone();
+                                match test_run_result.test_result.status {
+                                    TestStatus::None => {}
+                                    TestStatus::PASS => {
+                                        operation.add_success_toast("Test success.");
+                                    }
+                                    TestStatus::FAIL => {
+                                        operation.add_error_toast("Test failed.");
+                                    }
+                                    TestStatus::Waiting => {}
+                                    TestStatus::SKIP => {}
+                                }
                             }
-                            TestStatus::Waiting => {}
                         }
+
                     }
                     Err(e) => {
                         crt.record.must_get_mut_rest().error();

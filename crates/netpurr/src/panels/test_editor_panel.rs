@@ -186,10 +186,10 @@ impl TestEditorPanel {
                             workspace_data.selected_test_run_result = Some(result.clone());
                         }
                         Err(err) => {
-                            if err.request.is_some()&&err.response.is_some() {
+                            if err.response.is_some() {
                                 workspace_data.selected_test_run_result = Some(TestRunResult {
-                                    request: err.request.clone().unwrap(),
-                                    response: err.response.clone().unwrap(),
+                                    request: err.request.clone(),
+                                    response: err.response.clone(),
                                     test_result: Default::default(),
                                     collection_path: err.collection_path.clone(),
                                     request_name: err.request_name.clone(),
@@ -471,10 +471,10 @@ impl TestEditorPanel {
                         workspace_data.selected_test_run_result = Some(test_result.clone())
                     }
                     Err(err) => {
-                        if err.request.is_some()&&err.response.is_some() {
+                        if err.response.is_some() {
                             workspace_data.selected_test_run_result = Some(TestRunResult {
-                                request: err.request.clone().unwrap(),
-                                response: err.response.clone().unwrap(),
+                                request: err.request.clone(),
+                                response: err.response.clone(),
                                 test_result: Default::default(),
                                 collection_path: err.collection_path.clone(),
                                 request_name: err.request_name.clone(),
@@ -503,6 +503,7 @@ impl TestEditorPanel {
             TestStatus::PASS => rich_text = rich_text.background_color(Color32::DARK_GREEN),
             TestStatus::FAIL => rich_text = rich_text.background_color(Color32::DARK_RED),
             TestStatus::Waiting => rich_text = rich_text.background_color(Color32::DARK_BLUE),
+            TestStatus::SKIP => rich_text = rich_text.background_color(Color32::GRAY),
         };
         rich_text.append_to(
             &mut request_test_result_name_layout_job,

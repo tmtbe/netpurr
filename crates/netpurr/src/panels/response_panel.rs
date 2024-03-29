@@ -5,7 +5,7 @@ use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use netpurr_core::data::cookies_manager::Cookie;
-use netpurr_core::data::http::{Response, ResponseStatus};
+use netpurr_core::data::http::{Request, Response, ResponseStatus};
 use netpurr_core::data::test::{TestResult, TestStatus};
 use netpurr_core::runner::TestRunResult;
 
@@ -93,15 +93,20 @@ impl ResponsePanel {
         workspace_data: &mut WorkspaceData,
         test_run_result: &TestRunResult,
     ) {
-        let cookies = workspace_data.get_url_cookies(test_run_result.request.get_url_with_schema());
+        match &test_run_result.response {
+            None => {}
+            Some(response) => {
+                let cookies = workspace_data.get_url_cookies(test_run_result.request.get_url_with_schema());
+                self.build_ready_panel(
+                    operation,
+                    ui,
+                    response,
+                    &test_run_result.test_result,
+                    cookies,
+                );
+            }
+        }
 
-        self.build_ready_panel(
-            operation,
-            ui,
-            &test_run_result.response,
-            &test_run_result.test_result,
-            cookies,
-        );
     }
 
     fn get_count(
@@ -138,6 +143,7 @@ impl ResponsePanel {
                     Color32::RED,
                 ),
                 TestStatus::Waiting => HighlightValue::None,
+                TestStatus::SKIP => HighlightValue::None
             },
         }
     }

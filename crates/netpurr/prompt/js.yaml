@@ -26,6 +26,9 @@ map:
           //assert body
       });
     desc: Write a test.
+  netpurr.test_skip:
+    fill: netpurr.test_skip()
+    desc: Skip test.
   netpurr.get_env:
     fill: netpurr.get_env(<key>)
     desc: Get environment variables.

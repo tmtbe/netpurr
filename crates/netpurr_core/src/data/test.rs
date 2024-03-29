@@ -70,6 +70,7 @@ pub enum TestStatus {
     Waiting,
     PASS,
     FAIL,
+    SKIP
 }
 
 impl Default for TestStatus {

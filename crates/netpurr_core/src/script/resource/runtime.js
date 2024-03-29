@@ -4,7 +4,7 @@
     function argsToMessage(...args) {
         return args.map((arg) => JSON.stringify(arg)).join(" ");
     }
-    
+
     globalThis.sleep = async function (time) {
         await core.ops.op_sleep(time);
     }
@@ -81,6 +81,9 @@
             core.ops.op_open_test(name);
             func();
             core.ops.op_close_test(name);
+        },
+        test_skip: () => {
+            core.ops.op_test_skip();
         }
     }
 

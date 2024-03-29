@@ -83,6 +83,7 @@ impl ResultTreeFolder {
                     TestStatus::Waiting => case_status = TestStatus::Waiting,
                     TestStatus::PASS => {}
                     TestStatus::FAIL => case_status = TestStatus::FAIL,
+                    TestStatus::SKIP => case_status = TestStatus::SKIP,
                 }
                 case_folders.insert(name.to_string(), child_folder);
             }
@@ -136,6 +137,7 @@ impl ResultTreeFolder {
                 TestStatus::Waiting => folder_status = TestStatus::Waiting,
                 TestStatus::PASS => {}
                 TestStatus::FAIL => folder_status = TestStatus::FAIL,
+                TestStatus::SKIP => folder_status = TestStatus::SKIP,
             }
         }
         new_result_tree_folder.status = folder_status.clone();

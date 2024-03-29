@@ -1,5 +1,7 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::error;
+use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::path::Path;
 use std::rc::Rc;
@@ -15,6 +17,7 @@ use poll_promise::Promise;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 use tokio::time::sleep;
 
 use crate::data::collections::Testcase;
@@ -113,6 +116,7 @@ impl ScriptRuntime {
                 op_append_assert::DECL,
                 op_sleep::DECL,
                 op_get_testcase::DECL,
+                op_test_skip::DECL
             ])
             .build();
         return JsRuntime::new(deno_core::RuntimeOptions {
@@ -463,6 +467,25 @@ fn op_append_assert(state: &mut OpState, result: bool, #[string] msg: String) {
         Some(c) => c.test_result.append(result, msg),
     }
 }
+
+#[op2(fast)]
+fn op_test_skip()-> anyhow::Result<()> {
+    Err(Error::from(SkipError {}))
+}
+
+#[derive(Debug)]
+pub struct SkipError {
+}
+
+impl Display for SkipError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}","TestSkip")
+    }
+}
+
+impl error::Error for SkipError {}
+
+
 impl ScriptTree {
     pub fn add_pre_request_parent_script_scope(&mut self, path: String, scopes: Vec<ScriptScope>) {
         self.pre_request_parent_script_scopes.insert(path, scopes);
