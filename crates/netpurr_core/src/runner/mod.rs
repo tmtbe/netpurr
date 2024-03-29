@@ -12,6 +12,7 @@ use deno_core::futures::future::join_all;
 use deno_core::futures::FutureExt;
 use log::info;
 use poll_promise::Promise;
+use rayon::{ThreadPool, ThreadPoolBuilder};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
@@ -363,30 +364,29 @@ impl Runner {
         test_group_run_result.write().unwrap().add_results(results);
     }
     pub fn run_test_group_jobs(client: Client,run_request_infos:Vec<RunRequestInfo>, test_group_run_result: Arc<RwLock<TestGroupRunResults>>){
-        let mut handles = Vec::new();
-        for run_request_info in run_request_infos {
-            let _client = client.clone();
-            let _run_request_info = run_request_info.clone();
-            let _shared_map = run_request_info.shared_map.clone();
-            let _test_group_run_result = test_group_run_result.clone();
-            handles.push(thread::spawn(move || {
-                let runtime = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .unwrap();
-                runtime.block_on(async {
-                    let result = Self::send_rest_with_script_async(
-                        _run_request_info,
-                        _client,
-                        _shared_map,
-                    ).await;
-                    _test_group_run_result.write().unwrap().add_result(result);
-                });
-            }));
-        }
-        for handle in handles {
-            handle.join().unwrap();
-        }
+        let pool = ThreadPoolBuilder::new().num_threads(20).build().unwrap();
+        pool.scope(|scope| {
+            for run_request_info in run_request_infos {
+                let _client = client.clone();
+                let _run_request_info = run_request_info.clone();
+                let _shared_map = run_request_info.shared_map.clone();
+                let _test_group_run_result = test_group_run_result.clone();
+                scope.spawn(move |_| {
+                    let runtime = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .unwrap();
+                    runtime.block_on(async {
+                        let result = Self::send_rest_with_script_async(
+                            _run_request_info,
+                            _client,
+                            _shared_map,
+                        ).await;
+                        _test_group_run_result.write().unwrap().add_result(result);
+                    });
+                })
+            }
+        });
     }
     pub fn get_test_group_jobs(
         envs: BTreeMap<String, EnvironmentItemValue>,
