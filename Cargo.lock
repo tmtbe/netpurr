@@ -2495,6 +2495,7 @@ dependencies = [
  "egui_extras",
  "egui_json_tree",
  "egui_plot",
+ "futures-util",
  "image 0.25.0",
  "log",
  "log4rs",
@@ -2550,6 +2551,7 @@ name = "netpurr_test_runner"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "futures-util",
  "netpurr_core",
  "reqwest",
  "serde",

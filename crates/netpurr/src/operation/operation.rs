@@ -121,6 +121,7 @@ impl Operation {
         test_scripts: Vec<ScriptScope>,
     ) -> WebSocketSession {
         self.runner.connect_websocket_with_script(RunRequestInfo {
+            shared_map: Default::default(),
             collection_path: None,
             request_name: "".to_string(),
             request: http_request,

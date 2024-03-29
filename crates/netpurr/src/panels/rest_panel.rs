@@ -158,6 +158,7 @@ impl RestPanel {
                             });
                             let send_response =
                                 operation.send_rest_with_script_promise(RunRequestInfo {
+                                    shared_map: Default::default(),
                                     collection_path: crt.collection_path.clone(),
                                     request_name: crt.get_tab_name(),
                                     request: crt.record.must_get_rest().request.clone(),

@@ -55,6 +55,8 @@ uuid.workspace = true
 chrono.workspace = true
 dirs.workspace = true
 poll-promise.workspace = true
+futures-util.workspace = true
+
 openapiv3 = "2.0.0"
 [profile.release]
 opt-level = 2 # fast and small wasm

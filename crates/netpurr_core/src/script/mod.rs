@@ -41,7 +41,7 @@ pub struct Context {
     pub test_result: TestResult,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone,Debug)]
 pub struct SharedMap {
     map: Arc<RwLock<BTreeMap<String, String>>>,
 }

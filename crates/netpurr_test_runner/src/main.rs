@@ -6,6 +6,7 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 use clap::Parser;
+use futures_util::future::join_all;
 use reqwest::Client;
 
 use netpurr_core::data::collections::{CollectionFolder, CollectionFolderOnlyRead, Testcase};
@@ -68,36 +69,14 @@ fn run_test_group(
         workspace_data.get_build_envs(workspace_data.get_collection(Some(collection_name.clone())));
     let script_tree = workspace_data.get_script_tree(collection_path.clone());
     let folder_only_read = CollectionFolderOnlyRead::from(folder.clone());
-
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    runtime.block_on(async {
-        let mut testcases = folder_only_read.testcases.clone();
-        if testcases.is_empty() {
-            let testcase = Testcase::default();
-            testcases.insert(testcase.name.clone(), testcase);
-        }
-        for (_, testcase) in testcases.iter() {
-            let mut root_testcase = testcase.clone();
-            if let Some(parent) = &parent_testcase {
-                root_testcase.merge(folder_only_read.name.clone(), parent);
-            } else {
-                root_testcase.entry_name = folder_only_read.name.clone();
-            }
-            runner::Runner::run_test_group_async(
-                client.clone(),
-                envs.clone(),
-                script_tree.clone(),
-                root_testcase,
-                test_group_run_result.clone(),
-                collection_path.clone(),
-                folder_only_read.clone(),
-            )
-            .await
-        }
-    });
+    let run_request_infos = runner::Runner::get_test_group_jobs(
+        envs.clone(),
+        script_tree.clone(),
+        collection_path.clone(),
+        parent_testcase,
+        folder_only_read.clone(),
+    );
+    runner::Runner::run_test_group_jobs(client,run_request_infos,test_group_run_result.clone());
     let result_tree = ResultTreeFolder::create(
         folder.clone(),
         vec![],
