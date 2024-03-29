@@ -17,6 +17,7 @@ use poll_promise::Promise;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client, Method};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use strum_macros::Display;
 use tokio::time::sleep;
 
@@ -116,7 +117,8 @@ impl ScriptRuntime {
                 op_append_assert::DECL,
                 op_sleep::DECL,
                 op_get_testcase::DECL,
-                op_test_skip::DECL
+                op_test_skip::DECL,
+                op_equal::DECL
             ])
             .build();
         return JsRuntime::new(deno_core::RuntimeOptions {
@@ -466,6 +468,11 @@ fn op_append_assert(state: &mut OpState, result: bool, #[string] msg: String) {
         None => {}
         Some(c) => c.test_result.append(result, msg),
     }
+}
+
+#[op2]
+fn op_equal(#[serde] a:serde_json::Value, #[serde] b:serde_json::Value) -> bool {
+    return a==b;
 }
 
 #[op2(fast)]

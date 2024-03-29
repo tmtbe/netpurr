@@ -19,7 +19,7 @@
     }
 
     globalThis.assert = function (expect, actual) {
-        if (expect === actual) {
+        if (core.ops.op_equal(expect, actual)) {
             core.ops.op_append_assert(true, `Expect equal actual is "${expect}"`);
         } else {
             core.ops.op_append_assert(false, `Expect is "${expect}" but actual is "${actual}"`);
