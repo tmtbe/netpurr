@@ -4,13 +4,14 @@ use egui::{Spinner, Ui, Widget};
 use poll_promise::Promise;
 use rustygit::Repository;
 
+use netpurr_core::data::workspace_data::WorkspaceData;
+
 use crate::data::config_data::ConfigData;
 use crate::data::workspace::Workspace;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::HORIZONTAL_GAP;
 use crate::utils;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct WorkspaceWindows {

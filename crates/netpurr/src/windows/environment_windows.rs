@@ -1,14 +1,14 @@
 use egui::{Align, Button, Checkbox, Layout, ScrollArea, TextEdit, Ui, Widget};
 use egui_extras::{Column, TableBuilder};
 
-use netpurr_core::data::environment::{EnvironmentConfig, EnvironmentItem, ENVIRONMENT_GLOBALS};
+use netpurr_core::data::environment::{ENVIRONMENT_GLOBALS, EnvironmentConfig, EnvironmentItem};
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct EnvironmentWindows {

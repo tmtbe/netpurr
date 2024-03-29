@@ -4,12 +4,12 @@ use eframe::emath::Align;
 use egui::{Button, Checkbox, Layout, TextEdit, Widget};
 use egui_extras::{Column, TableBody, TableBuilder};
 
+use netpurr_core::data::central_request_data::CentralRequestItem;
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::{Header, LockWith};
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
-use netpurr_core::data::central_request_data::CentralRequestItem;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct RequestHeadersPanel {

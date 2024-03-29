@@ -7,21 +7,21 @@ use url::Url;
 use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::http::HttpRecord;
 use netpurr_core::data::websocket::WebSocketStatus;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
+use crate::panels::HORIZONTAL_GAP;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::websocket_content_panel::WebsocketContentPanel;
 use crate::panels::websocket_event_panel::WebsocketEventPanel;
-use crate::panels::HORIZONTAL_GAP;
 use crate::utils;
 use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 use crate::windows::save_crt_windows::SaveCRTWindows;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct WebSocketPanel {
@@ -153,7 +153,6 @@ impl WebSocketPanel {
                     ui.add_enabled_ui(!lock, |ui| {
                         if !connect {
                             if ui.button("Connect").clicked() {
-                                println!("{}", crt.record.raw_url());
                                 match Url::parse(crt.record.raw_url().as_str()) {
                                     Ok(url) => {
                                         crt = workspace_data.must_get_mut_crt(

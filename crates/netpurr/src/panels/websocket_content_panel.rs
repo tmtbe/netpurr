@@ -2,11 +2,11 @@ use egui::{Ui, Widget};
 use strum::IntoEnumIterator;
 
 use netpurr_core::data::websocket::MessageType;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::operation::operation::Operation;
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct WebsocketContentPanel {}

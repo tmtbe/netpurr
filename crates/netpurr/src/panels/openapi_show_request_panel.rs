@@ -5,15 +5,15 @@ use std::rc::Rc;
 use egui::{CollapsingHeader, Response, Ui};
 use uuid::Uuid;
 
+use netpurr_core::data::central_request_data::CentralRequestItem;
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::record::Record;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::import::openapi::OpenApi;
 use crate::operation::operation::Operation;
 use crate::utils;
 use crate::utils::openapi_help::OpenApiHelp;
-use netpurr_core::data::central_request_data::CentralRequestItem;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct OpenApiShowRequestPanel {}

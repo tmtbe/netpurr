@@ -3,11 +3,11 @@ use std::collections::HashSet;
 
 use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
-use egui::text::TextWrapping;
 use egui::{
     Area, CollapsingHeader, CollapsingResponse, Color32, FontSelection, Frame, Id, InnerResponse,
     Key, Layout, Order, Response, RichText, Style, TextBuffer, Ui, WidgetText,
 };
+use egui::text::TextWrapping;
 
 use netpurr_core::data::record::Record;
 

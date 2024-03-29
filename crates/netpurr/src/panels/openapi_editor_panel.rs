@@ -1,7 +1,8 @@
 use egui::{TextEdit, Ui, Widget};
 
-use crate::data::config_data::ConfigData;
 use netpurr_core::data::workspace_data::WorkspaceData;
+
+use crate::data::config_data::ConfigData;
 
 #[derive(Default)]
 pub struct OpenApiEditorPanel {

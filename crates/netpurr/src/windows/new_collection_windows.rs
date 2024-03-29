@@ -1,5 +1,4 @@
 use std::cell::RefCell;
-use std::collections::BTreeMap;
 use std::default::Default;
 use std::rc::Rc;
 
@@ -10,21 +9,18 @@ use strum_macros::{Display, EnumIter, EnumString};
 
 use netpurr_core::data::auth::{Auth, AuthType};
 use netpurr_core::data::collections::{Collection, CollectionFolder};
-use netpurr_core::data::environment::{
-    EnvironmentItem, EnvironmentItemValue, EnvironmentValueType,
-};
-use netpurr_core::data::http::Request;
+use netpurr_core::data::environment::EnvironmentItem;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::auth_panel::AuthPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
-use crate::panels::test_script_panel::{CrtOrFolder, TestScriptPanel};
+use crate::panels::test_script_panel::TestScriptPanel;
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
 use crate::utils::HighlightValue;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct NewCollectionWindows {

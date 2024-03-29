@@ -10,15 +10,13 @@ use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
 use anyhow::Error;
-use deno_core::url::Url;
-use deno_core::{op2, ExtensionBuilder, FsModuleLoader, ModuleCodeString, Op, OpState};
+use deno_core::{ExtensionBuilder, FsModuleLoader, ModuleCodeString, Op, op2, OpState};
 use deno_core::{JsRuntime, PollEventLoopOptions};
+use deno_core::url::Url;
 use poll_promise::Promise;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client, Method};
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
-use strum_macros::Display;
 use tokio::time::sleep;
 
 use crate::data::collections::Testcase;
@@ -55,7 +53,7 @@ impl Deref for SharedMap {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone,Debug)]
 pub struct ScriptScope {
     pub script: String,
     pub scope: String,

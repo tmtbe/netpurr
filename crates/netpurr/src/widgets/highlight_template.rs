@@ -1,13 +1,13 @@
 use std::collections::BTreeMap;
 
 use eframe::emath::pos2;
+use egui::{
+    Context, EventFilter, Id, Key, Pos2, Response, RichText, TextBuffer, TextEdit, Ui,
+    Widget,
+};
 use egui::ahash::HashSet;
 use egui::text::{CCursor, CCursorRange, CursorRange};
 use egui::text_edit::TextEditState;
-use egui::{
-    Context, Event, EventFilter, Id, Key, Pos2, Response, RichText, TextBuffer, TextEdit, Ui,
-    Widget,
-};
 use serde::{Deserialize, Serialize};
 
 use netpurr_core::data::environment::EnvironmentItemValue;

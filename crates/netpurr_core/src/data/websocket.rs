@@ -1,9 +1,9 @@
 use std::ops::{Deref, DerefMut};
-use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Sender;
 
-use base64::engine::general_purpose;
 use base64::Engine;
+use base64::engine::general_purpose;
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter, EnumString};

@@ -4,11 +4,12 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
-use anyhow::Error;
 
+use anyhow::Error;
 use async_recursion::async_recursion;
 use deno_core::futures::future::join_all;
 use deno_core::futures::FutureExt;
+use log::info;
 use poll_promise::Promise;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -35,7 +36,7 @@ pub struct Runner {
     script_runtime: ScriptRuntime,
     client: Client,
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RunRequestInfo {
     pub collection_path: Option<String>,
     pub request_name: String,
@@ -95,6 +96,7 @@ impl Runner {
         client: Client,
         shared_map: SharedMap,
     ) -> Result<TestRunResult, TestRunError> {
+        info!("start send_rest_with_script_async:{:?}",run_request_info);
         let mut logger = Logger::default();
         let mut default_context = Context {
             scope_name: "".to_string(),
@@ -317,6 +319,7 @@ impl Runner {
             })
         })
     }
+    // 异步的方式，有点是单线程，但可能会比较慢，不太容易并发
     async fn run_test_record_async(
         client: Client,
         envs: BTreeMap<String, EnvironmentItemValue>,
@@ -383,6 +386,7 @@ impl Runner {
         let results = join_all(jobs).await;
         test_group_run_result.write().unwrap().add_results(results);
     }
+
     #[async_recursion(?Send)]
     pub async fn run_test_group_async(
         client: Client,
@@ -402,10 +406,11 @@ impl Runner {
                 let mut testcase = Testcase::default();
                 child_testcases.insert(testcase.name.clone(), testcase);
             }
+            let mut jobs = vec![];
             for (name, child_testcase) in child_testcases.iter() {
                 let mut merge_testcase = child_testcase.clone();
                 merge_testcase.merge(folder.name.clone(), &testcase);
-                Self::run_test_group_async(
+                jobs.push(Self::run_test_group_async(
                     client.clone(),
                     envs.clone(),
                     script_tree.clone(),
@@ -413,9 +418,9 @@ impl Runner {
                     test_group_run_result.clone(),
                     collection_path.clone() + "/" + name,
                     folder.clone(),
-                )
-                .await;
+                ));
             }
+            join_all(jobs).await;
         }
         for (name, record) in folder.requests.iter() {
             let mut record_testcases = record.testcase().clone();
@@ -482,12 +487,10 @@ impl TestGroupRunResults {
         match &result {
             Ok(r) => {
                 let key = r.testcase.get_testcase_path().join("/");
-                println!("{}", key);
                 self.results.insert(key, result.clone());
             }
             Err(e) => {
                 let key = e.testcase.get_testcase_path().join("/");
-                println!("{}", key);
                 self.results.insert(key, result.clone());
             }
         };

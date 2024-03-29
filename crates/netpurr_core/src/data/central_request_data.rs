@@ -1,12 +1,14 @@
+use std::collections::HashMap;
+use std::path::Path;
+
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
 use crate::data::record::Record;
 use crate::data::record::Record::{Rest, WebSocket};
 use crate::data::test::TestResult;
 use crate::data::websocket::WebSocketRecord;
 use crate::persistence::{get_persistence_path, Persistence, PersistenceItem};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::Path;
-use uuid::Uuid;
 
 #[derive(Default, Clone, Debug)]
 pub struct CentralRequestDataList {

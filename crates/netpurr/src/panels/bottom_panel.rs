@@ -1,11 +1,12 @@
 use egui::{Response, Ui, WidgetText};
 use poll_promise::Promise;
 
+use netpurr_core::data::workspace_data::WorkspaceData;
+
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct BottomPanel {

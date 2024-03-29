@@ -4,7 +4,7 @@ use std::str::FromStr;
 use regex::Regex;
 
 use crate::data::environment::{EnvironmentItemValue, EnvironmentValueType};
-use crate::data::environment_function::{get_env_result, EnvFunction};
+use crate::data::environment_function::{EnvFunction, get_env_result};
 
 pub fn replace_variable(content: String, envs: BTreeMap<String, EnvironmentItemValue>) -> String {
     let re = Regex::new(r"\{\{.*?}}").unwrap();

@@ -2,12 +2,13 @@ use egui::Ui;
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
 
+use netpurr_core::data::workspace_data::{EditorModel, WorkspaceData};
+
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
 use crate::windows::import_windows::ImportWindows;
-use netpurr_core::data::workspace_data::{EditorModel, WorkspaceData};
 
 #[derive(Default)]
 pub struct TopPanel {

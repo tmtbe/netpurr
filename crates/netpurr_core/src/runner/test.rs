@@ -1,7 +1,8 @@
-use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
+
+use serde::{Deserialize, Serialize};
 
 use crate::data::collections::{CollectionFolder, Testcase};
 use crate::data::test::TestStatus;

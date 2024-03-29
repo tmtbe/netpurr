@@ -1,4 +1,4 @@
-use eframe::emath::{pos2, vec2, Align2, Rect, Vec2};
+use eframe::emath::{Align2, pos2, Rect, vec2, Vec2};
 use eframe::epaint::Stroke;
 use egui::{Id, Response, Shape, Ui};
 

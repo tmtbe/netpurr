@@ -4,17 +4,17 @@ use strum::IntoEnumIterator;
 use uuid::Uuid;
 
 use netpurr_core::data::http::{BodyRawType, BodyType};
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::operation::operation::Operation;
+use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::panels::request_body_form_data_panel::RequestBodyFormDataPanel;
 use crate::panels::request_body_xxx_form_panel::RequestBodyXXXFormPanel;
-use crate::panels::{HORIZONTAL_GAP, VERTICAL_GAP};
 use crate::utils;
-use crate::utils::openapi_help::OpenApiHelp;
 use crate::utils::HighlightValue;
+use crate::utils::openapi_help::OpenApiHelp;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 use crate::windows::view_json_windows::ViewJsonWindows;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct RequestBodyPanel {

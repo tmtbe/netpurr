@@ -7,10 +7,12 @@ use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
+use netpurr_core::data::central_request_data::CentralRequestItem;
 use netpurr_core::data::cookies_manager::Cookie;
 use netpurr_core::data::http::Response;
 use netpurr_core::data::test::TestResult;
 use netpurr_core::data::websocket::{WebSocketMessage, WebSocketStatus};
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::operation::operation::Operation;
 use crate::panels::response_cookies_panel::ResponseCookiesPanel;
@@ -18,8 +20,6 @@ use crate::panels::response_headers_panel::ResponseHeadersPanel;
 use crate::panels::response_log_panel::ResponseLogPanel;
 use crate::utils;
 use crate::utils::HighlightValue;
-use netpurr_core::data::central_request_data::CentralRequestItem;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct WebsocketEventPanel {

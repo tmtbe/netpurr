@@ -11,7 +11,7 @@ use crate::data::auth::{Auth, AuthType};
 use crate::data::environment::{EnvironmentConfig, EnvironmentItemValue};
 use crate::data::record::Record;
 use crate::persistence::{
-    get_persistence_path, Persistence, PersistenceItem, PERSISTENCE_EXTENSION,
+    get_persistence_path, Persistence, PERSISTENCE_EXTENSION, PersistenceItem,
 };
 use crate::script::ScriptScope;
 

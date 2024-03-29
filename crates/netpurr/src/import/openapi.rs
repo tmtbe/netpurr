@@ -4,8 +4,8 @@ use std::rc::Rc;
 use std::string::ToString;
 
 use anyhow::anyhow;
-use base64::engine::general_purpose;
 use base64::Engine;
+use base64::engine::general_purpose;
 use openapiv3::{
     MediaType, OpenAPI, Operation, Parameter, ReferenceOr, RequestBody, SchemaKind, Server,
     StringFormat, Tag, Type, VariantOrUnknownOrEmpty,

@@ -5,10 +5,10 @@ use egui::{Context, Ui};
 
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::http::HttpRecord;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 pub trait Window {
     fn window_setting(&self) -> WindowSetting;

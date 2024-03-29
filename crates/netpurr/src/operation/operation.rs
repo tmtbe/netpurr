@@ -4,24 +4,24 @@ use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use egui::{emath, WidgetText};
-use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
 use poll_promise::Promise;
 
+use egui_toast::{Toast, ToastKind, ToastOptions, Toasts};
 use netpurr_core::data::collections::{CollectionFolder, Testcase};
 use netpurr_core::data::cookies_manager::CookiesManager;
 use netpurr_core::data::environment::EnvironmentItemValue;
 use netpurr_core::data::http::Request;
 use netpurr_core::data::record::Record;
 use netpurr_core::data::websocket::WebSocketSession;
+use netpurr_core::data::workspace_data::WorkspaceData;
 use netpurr_core::runner::{
-    RunRequestInfo, Runner, TestGroupRunResults, TestRunError, TestRunResult,
+    Runner, RunRequestInfo, TestGroupRunResults, TestRunError, TestRunResult,
 };
 use netpurr_core::script::{Context, ScriptScope, ScriptTree};
 
 use crate::data::config_data::ConfigData;
 use crate::operation::git::Git;
 use crate::operation::windows::{Window, Windows};
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Clone)]
 pub struct Operation {

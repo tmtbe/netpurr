@@ -2,6 +2,11 @@ use std::cell::RefCell;
 use std::collections::{BTreeMap, HashSet};
 use std::rc::Rc;
 
+use chrono::NaiveDate;
+use log::error;
+use strum_macros::{Display, EnumIter};
+use uuid::Uuid;
+
 use crate::data::auth::{Auth, AuthType};
 use crate::data::central_request_data::{CentralRequestDataList, CentralRequestItem};
 use crate::data::collections::{Collection, CollectionFolder, Collections};
@@ -12,10 +17,6 @@ use crate::data::record::Record;
 use crate::runner::TestRunResult;
 use crate::script::{ScriptScope, ScriptTree};
 use crate::utils;
-use chrono::NaiveDate;
-use log::error;
-use strum_macros::{Display, EnumIter};
-use uuid::Uuid;
 
 #[derive(Default, Clone, Debug)]
 pub struct WorkspaceData {

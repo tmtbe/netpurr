@@ -1,6 +1,9 @@
 use eframe::emath::Align;
 use egui::{Label, Layout, ScrollArea, Sense, Ui, Widget};
 
+use netpurr_core::data::environment::ENVIRONMENT_GLOBALS;
+use netpurr_core::data::workspace_data::{EditorModel, WorkspaceData};
+
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::panels::collection_panel::CollectionPanel;
@@ -11,8 +14,6 @@ use crate::panels::VERTICAL_GAP;
 use crate::windows::cookies_windows::CookiesWindows;
 use crate::windows::environment_windows::EnvironmentWindows;
 use crate::windows::new_collection_windows::NewCollectionWindows;
-use netpurr_core::data::environment::ENVIRONMENT_GLOBALS;
-use netpurr_core::data::workspace_data::{EditorModel, WorkspaceData};
 
 #[derive(PartialEq, Eq)]
 enum Panel {

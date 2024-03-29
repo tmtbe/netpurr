@@ -3,11 +3,12 @@ use std::io::Error;
 use std::path::Path;
 use std::str::FromStr;
 
-use crate::data::record::Record;
-use crate::persistence::{Persistence, PersistenceItem};
 use chrono::{DateTime, Local, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::data::record::Record;
+use crate::persistence::{Persistence, PersistenceItem};
 
 #[derive(Default, Clone, Debug)]
 pub struct HistoryDataList {

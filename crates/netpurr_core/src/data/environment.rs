@@ -9,7 +9,7 @@ use strum_macros::Display;
 use crate::data::collections::Collection;
 use crate::data::environment_function::EnvFunction;
 use crate::persistence::{
-    get_persistence_path, Persistence, PersistenceItem, PERSISTENCE_EXTENSION,
+    get_persistence_path, Persistence, PersistenceItem,
 };
 
 #[derive(Default, Clone, PartialEq, Eq, Debug)]
@@ -197,7 +197,7 @@ pub struct EnvironmentStatus {
 
 pub const ENVIRONMENT_GLOBALS: &str = "__Globals__";
 
-#[derive(Default, Clone,Deserialize,Serialize)]
+#[derive(Default, Clone,Deserialize,Serialize,Debug)]
 pub struct EnvironmentItemValue {
     pub value: String,
     pub scope: String,

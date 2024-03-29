@@ -1,10 +1,11 @@
 use std::collections::{BTreeMap, HashMap};
 
 use egui::{Color32, RichText, Ui};
-use egui_code_editor::{CodeEditor, ColorTheme};
 use serde_json::Value;
 
+use egui_code_editor::{CodeEditor, ColorTheme};
 use netpurr_core::data::collections::Testcase;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
@@ -12,7 +13,6 @@ use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::test_script_panel::CrtOrFolder;
 use crate::utils;
 use crate::widgets::syntax::js_syntax;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct ManagerTestcaseWindows {

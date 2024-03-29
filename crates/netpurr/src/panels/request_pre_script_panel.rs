@@ -1,18 +1,11 @@
-use std::collections::BTreeMap;
 use std::ops::Add;
-use egui::ahash::HashMap;
 
 use egui::Ui;
+
 use egui_code_editor::{CodeEditor, ColorTheme, Prompt};
-
-use netpurr_core::data::environment::EnvironmentItemValue;
-use netpurr_core::data::http::Request;
 use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
-use netpurr_core::script::{Context, ScriptScope};
 
-use crate::operation::operation::Operation;
 use crate::widgets::syntax::js_syntax;
-use crate::windows::test_script_windows::TestScriptWindows;
 
 #[derive(Default)]
 pub struct RequestPreScriptPanel {}

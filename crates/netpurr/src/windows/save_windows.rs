@@ -6,13 +6,13 @@ use egui::{Align, Button, Layout, ScrollArea, Ui};
 
 use netpurr_core::data::collections::{Collection, CollectionFolder};
 use netpurr_core::data::record::Record;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct SaveWindows {

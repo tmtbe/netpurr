@@ -1,29 +1,28 @@
-use egui::ahash::HashSet;
 use egui::{Button, Ui, Widget};
+use egui::ahash::HashSet;
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
 use netpurr_core::data::auth::{Auth, AuthType};
-use netpurr_core::data::http::{BodyType, HttpRecord, LockWith, Method, Response};
+use netpurr_core::data::http::{BodyType, HttpRecord, LockWith, Method};
 use netpurr_core::data::test::TestStatus;
+use netpurr_core::data::workspace_data::WorkspaceData;
 use netpurr_core::runner::{RunRequestInfo, TestRunError, TestRunResult};
-use netpurr_core::script::ScriptScope;
 
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::panels::auth_panel::AuthPanel;
+use crate::panels::HORIZONTAL_GAP;
 use crate::panels::request_body_panel::RequestBodyPanel;
 use crate::panels::request_headers_panel::RequestHeadersPanel;
 use crate::panels::request_params_panel::RequestParamsPanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
-use crate::panels::test_script_panel::{CrtOrFolder, TestScriptPanel};
-use crate::panels::HORIZONTAL_GAP;
+use crate::panels::test_script_panel::TestScriptPanel;
 use crate::utils;
 use crate::utils::HighlightValue;
 use crate::widgets::highlight_template::HighlightTemplateSinglelineBuilder;
 use crate::windows::save_crt_windows::SaveCRTWindows;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 #[derive(Default)]
 pub struct RestPanel {

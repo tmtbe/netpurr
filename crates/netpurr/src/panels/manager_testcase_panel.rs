@@ -1,13 +1,15 @@
-use crate::utils;
-use crate::widgets::syntax::js_syntax;
+use std::collections::{BTreeMap, HashMap};
+
 use eframe::epaint::Color32;
 use egui::{RichText, Ui};
+use serde_json::Value;
+
 use egui_code_editor::{CodeEditor, ColorTheme};
 use netpurr_core::data::collections::Testcase;
 use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
-use serde_json::Value;
-use std::collections::{BTreeMap, HashMap};
-use std::fmt::format;
+
+use crate::utils;
+use crate::widgets::syntax::js_syntax;
 
 #[derive(Default)]
 pub struct ManagerTestcasePanel {

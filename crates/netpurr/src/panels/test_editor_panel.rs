@@ -1,12 +1,11 @@
 use std::cell::RefCell;
-use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use eframe::epaint::{Color32, FontFamily, FontId};
+use egui::{Align, FontSelection, RichText, Style, Ui};
 use egui::text::LayoutJob;
-use egui::{Align, FontSelection, Label, RichText, Sense, Style, Ui, Widget};
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
@@ -14,17 +13,15 @@ use strum_macros::{Display, EnumIter};
 use netpurr_core::data::collections::{CollectionFolder, Testcase};
 use netpurr_core::data::record::Record;
 use netpurr_core::data::test::TestStatus;
+use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
+use netpurr_core::runner::{TestGroupRunResults, TestRunResult};
 use netpurr_core::runner::test::{ResultTreeCase, ResultTreeFolder, ResultTreeRequest};
-use netpurr_core::runner::{TestGroupRunResults, TestRunError, TestRunResult};
-use netpurr_core::script::ScriptScope;
 
 use crate::operation::operation::Operation;
 use crate::panels::manager_testcase_panel::ManagerTestcasePanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::utils;
-use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
-use crate::panels::rest_panel::RestPanel;
 
 #[derive(Default)]
 pub struct TestEditorPanel {

@@ -1,12 +1,14 @@
-use egui::{ScrollArea, Ui};
-use netpurr_core::data::collections::CollectionFolder;
 use std::cell::RefCell;
 use std::rc::Rc;
+
+use egui::{ScrollArea, Ui};
+
+use netpurr_core::data::collections::CollectionFolder;
+use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
 
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::utils;
-use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
 
 #[derive(Default)]
 pub struct TestGroupPanel {

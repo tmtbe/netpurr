@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 use log::error;
 use poll_promise::Promise;
-use rustygit::types::BranchName;
 use rustygit::Repository;
+use rustygit::types::BranchName;
 
 #[derive(Default, Clone)]
 pub struct Git {}

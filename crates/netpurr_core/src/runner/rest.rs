@@ -6,10 +6,10 @@ use std::time::Instant;
 
 use anyhow::anyhow;
 use log::info;
+use reqwest::{Body, Client, multipart};
 use reqwest::header::CONTENT_TYPE;
-use reqwest::multipart::Part;
 use reqwest::Method;
-use reqwest::{multipart, Body, Client};
+use reqwest::multipart::Part;
 use tokio::fs::File;
 use tokio_tungstenite::tungstenite::http::Uri;
 use tokio_util::codec::{BytesCodec, FramedRead};

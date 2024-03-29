@@ -1,6 +1,6 @@
 use eframe::epaint::FontFamily;
-use egui::text::LayoutJob;
 use egui::{Color32, FontId, TextFormat};
+use egui::text::LayoutJob;
 
 use netpurr_core::data::test::{TestResult, TestStatus};
 

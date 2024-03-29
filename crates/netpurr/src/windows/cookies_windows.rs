@@ -4,13 +4,13 @@ use eframe::emath::Align;
 use egui::{Button, Layout, ScrollArea, Ui};
 
 use netpurr_core::data::cookies_manager::Cookie;
+use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::data::config_data::ConfigData;
 use crate::operation::operation::Operation;
 use crate::operation::windows::{Window, WindowSetting};
 use crate::panels::VERTICAL_GAP;
 use crate::utils;
-use netpurr_core::data::workspace_data::WorkspaceData;
 
 pub struct CookiesWindows {
     cookies_windows_open: bool,
