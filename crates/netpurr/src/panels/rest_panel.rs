@@ -341,7 +341,7 @@ impl RestPanel {
                                     TestStatus::FAIL => {
                                         operation.add_error_toast("Test failed.");
                                     }
-                                    TestStatus::Waiting => {}
+                                    TestStatus::WAIT => {}
                                     TestStatus::SKIP => {}
                                 }
                             }

@@ -67,7 +67,7 @@ impl TestResult {
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize, Display)]
 pub enum TestStatus {
     None,
-    Waiting,
+    WAIT,
     PASS,
     FAIL,
     SKIP

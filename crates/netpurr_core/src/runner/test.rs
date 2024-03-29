@@ -52,7 +52,7 @@ impl ResultTreeFolder {
         testcase_paths: Vec<String>,
         results: TestGroupRunResults,
     ) -> Self {
-        let mut folder_status = TestStatus::Waiting;
+        let mut folder_status = TestStatus::WAIT;
         let mut testcases = folder.borrow().testcases.clone();
         let folder_name = folder.borrow().name.clone();
         if testcases.is_empty() {
@@ -66,7 +66,7 @@ impl ResultTreeFolder {
         };
         folder_status = TestStatus::PASS;
         for (folder_testcase_name, folder_testcase) in testcases.iter() {
-            let mut case_status = TestStatus::Waiting;
+            let mut case_status = TestStatus::WAIT;
             let mut case_folders = BTreeMap::new();
             let mut case_requests = vec![];
             case_status = TestStatus::PASS;
@@ -80,7 +80,7 @@ impl ResultTreeFolder {
                 );
                 match &child_folder.status {
                     TestStatus::None => {}
-                    TestStatus::Waiting => case_status = TestStatus::Waiting,
+                    TestStatus::WAIT => case_status = TestStatus::WAIT,
                     TestStatus::PASS => {}
                     TestStatus::FAIL => case_status = TestStatus::FAIL,
                     TestStatus::SKIP => case_status = TestStatus::SKIP,
@@ -98,10 +98,10 @@ impl ResultTreeFolder {
                     request_testcase_path
                         .push(format!("{}:{}", request_name, request_testcase_name));
                     let result = results.find(request_testcase_path);
-                    let mut request_status = TestStatus::Waiting;
+                    let mut request_status = TestStatus::WAIT;
                     match &result {
                         None => {
-                            case_status = TestStatus::Waiting;
+                            case_status = TestStatus::WAIT;
                         }
                         Some(rr) => match rr {
                             Ok(r) => {
@@ -134,7 +134,7 @@ impl ResultTreeFolder {
                 .insert(folder_testcase.name.to_string(), result_tree_case);
             match &case_status {
                 TestStatus::None => {}
-                TestStatus::Waiting => folder_status = TestStatus::Waiting,
+                TestStatus::WAIT => folder_status = TestStatus::WAIT,
                 TestStatus::PASS => {}
                 TestStatus::FAIL => folder_status = TestStatus::FAIL,
                 TestStatus::SKIP => folder_status = TestStatus::SKIP,

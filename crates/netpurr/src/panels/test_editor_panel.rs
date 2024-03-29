@@ -38,6 +38,13 @@ pub struct TestEditorPanel {
     parent_paths: Vec<String>,
     open_panel_enum:Panel,
 }
+#[derive(Display)]
+enum TitleType{
+    Testcase,
+    Request,
+    Assert,
+    Group
+}
 
 #[derive(EnumIter,Display,Clone,PartialEq)]
 enum Panel{
@@ -103,7 +110,7 @@ impl TestEditorPanel {
                                 folder.clone(),
                                 record,
                             );
-                            self.render_result_record(workspace_data, ui);
+                            self.render_result_record(workspace_data, ui,folder,record_name);
                         }
                     }
                 }
@@ -136,7 +143,7 @@ impl TestEditorPanel {
                 if self.collection_path != folder.borrow().get_path() {
                     self.init(workspace_data, folder.borrow().get_path());
                 }
-                ui.heading(format!("{}{}","FOLDER|",folder.borrow().get_path().clone()));
+                ui.heading(format!("{}{}","FOLDER | ",folder.borrow().get_path().clone()));
                 ui.separator();
             }
             TestItem::Record(collection_name, folder, record_name) => {
@@ -144,14 +151,17 @@ impl TestEditorPanel {
                 if self.collection_path != record_path {
                     self.init(workspace_data, record_path);
                 }
-                ui.heading(format!("{}{} : {}","RECORD|", folder.borrow().get_path(), record_name));
+                ui.heading(format!("{}{} : {}","RECORD | ", folder.borrow().get_path(), record_name));
                 ui.separator();
             }
         }
     }
-    fn render_result_record(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui) {
+    fn render_result_record(&mut self, workspace_data: &mut WorkspaceData, ui: &mut Ui,folder:&Rc<RefCell<CollectionFolder>>,record_name: &String) {
         if let Some(test_group_run_result) = self.test_group_run_result.clone() {
             for (name, result) in test_group_run_result.read().unwrap().results.iter() {
+                if !name.contains(record_name.as_str()){
+                    continue;
+                }
                 let mut status = TestStatus::PASS;
                 match result {
                     Ok(result) => status = result.test_result.status.clone(),
@@ -161,7 +171,8 @@ impl TestEditorPanel {
                 }
                 let title = self.render_test_title(
                     ui,
-                    name.split("/").last().unwrap_or_default().to_string(),
+                    TitleType::Request,
+                    name.to_string(),
                     status,
                 );
                 let collapsing = utils::open_collapsing(ui,title,|ui|{
@@ -170,6 +181,7 @@ impl TestEditorPanel {
                             for test_info in result.test_result.test_info_list.iter() {
                                 let test_info_title = self.render_test_title(
                                     ui,
+                                    TitleType::Assert,
                                     test_info.name.clone(), test_info.status.clone(),
                                 );
                                 ui.label(test_info_title);
@@ -378,6 +390,7 @@ impl TestEditorPanel {
     ) {
         let title = self.render_test_title(
             ui,
+            TitleType::Testcase,
             format!(
                 "{} ({}/{})",
                 result_tree_case.name.clone(),
@@ -403,6 +416,7 @@ impl TestEditorPanel {
     ) {
         let title = self.render_test_title(
             ui,
+            TitleType::Group,
             format!(
                 "{} ({}/{})",
                 result_tree_folder.name.clone(),
@@ -426,6 +440,7 @@ impl TestEditorPanel {
     ) {
         let request_title = self.render_test_title(
             ui,
+            TitleType::Request,
             request_tree_request.name.clone(),
             request_tree_request.status.clone(),
         );
@@ -438,6 +453,7 @@ impl TestEditorPanel {
                             for test_info in tr.test_result.test_info_list.iter() {
                                 let test_info_title = self.render_test_title(
                                     ui,
+                                    TitleType::Assert,
                                     test_info.name.clone(),
                                     test_info.status.clone(),
                                 );
@@ -445,6 +461,7 @@ impl TestEditorPanel {
                                     for tar in test_info.results.iter() {
                                         let test_assert_title = self.render_test_title(
                                             ui,
+                                            TitleType::Assert,
                                             tar.msg.clone(),
                                             tar.assert_result.clone(),
                                         );
@@ -456,6 +473,7 @@ impl TestEditorPanel {
                         Err(te) => {
                             let test_info_title = self.render_test_title(
                                 ui,
+                                TitleType::Assert,
                                 te.error.clone(),
                                 TestStatus::FAIL.clone(),
                             );
@@ -489,7 +507,7 @@ impl TestEditorPanel {
         };
     }
 
-    fn render_test_title(&self, ui: &mut Ui, name: String, status: TestStatus) -> LayoutJob {
+    fn render_test_title(&self, ui: &mut Ui,title_type:TitleType, name: String, status: TestStatus) -> LayoutJob {
         let style = Style::default();
         let mut request_test_result_name_layout_job = LayoutJob::default();
         let mut rich_text = RichText::new(status.clone().to_string())
@@ -504,7 +522,7 @@ impl TestEditorPanel {
             }
             TestStatus::PASS => rich_text = rich_text.background_color(Color32::DARK_GREEN),
             TestStatus::FAIL => rich_text = rich_text.background_color(Color32::DARK_RED),
-            TestStatus::Waiting => rich_text = rich_text.background_color(Color32::DARK_BLUE),
+            TestStatus::WAIT => rich_text = rich_text.background_color(Color32::DARK_BLUE),
             TestStatus::SKIP => rich_text = rich_text.background_color(Color32::GRAY),
         };
         rich_text.append_to(
@@ -513,7 +531,37 @@ impl TestEditorPanel {
             FontSelection::Default,
             Align::Center,
         );
-        RichText::new("  ".to_string() + name.as_str()).append_to(
+        RichText::new("  ").append_to(
+            &mut request_test_result_name_layout_job,
+            &style,
+            FontSelection::Default,
+            Align::Center,
+        );
+        let mut rich_text = RichText::new(title_type.to_string())
+            .color(Color32::WHITE)
+            .font(FontId {
+                size: 12.0,
+                family: FontFamily::Monospace,
+            });
+        match title_type {
+            TitleType::Testcase => rich_text = rich_text.background_color(Color32::DARK_GRAY),
+            TitleType::Request => rich_text = rich_text.background_color(Color32::GRAY),
+            TitleType::Assert => rich_text = rich_text.color(Color32::DARK_GRAY).background_color(Color32::LIGHT_GRAY),
+            TitleType::Group => rich_text = rich_text.background_color(Color32::BLACK),
+        }
+        rich_text.append_to(
+            &mut request_test_result_name_layout_job,
+            &style,
+            FontSelection::Default,
+            Align::Center,
+        );
+        RichText::new("  ").append_to(
+            &mut request_test_result_name_layout_job,
+            &style,
+            FontSelection::Default,
+            Align::Center,
+        );
+        RichText::new(name.as_str()).append_to(
             &mut request_test_result_name_layout_job,
             &style,
             FontSelection::Default,
