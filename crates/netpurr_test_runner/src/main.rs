@@ -25,7 +25,11 @@ struct Args {
 }
 
 fn main() {
-    let args = Args::parse();
+    //let args = Args::parse();
+    let args=Args{
+        workspace_name: "aiproject".to_string(),
+        collection_name: "百炼".to_string(),
+    };
     let client = Client::builder()
         .trust_dns(true)
         .tcp_nodelay(true)

@@ -356,7 +356,9 @@ impl CodeEditor {
                 .take(c.primary.ccursor.index)
                 .collect();
 
-            let after_cursor_text: String = text.as_str().chars().skip(c.primary.ccursor.index).collect();
+            let mut after_cursor_text: String = text.as_str().chars().skip(c.primary.ccursor.index).collect();
+            after_cursor_text = after_cursor_text.replace("\n"," ")
+                .replace("\t"," ").replace(";"," ");
             if !after_cursor_text.starts_with(" ")&&!after_cursor_text.is_empty(){
                 ui.memory_mut(|mem| {
                     if mem.is_popup_open(self._popup_id) {
