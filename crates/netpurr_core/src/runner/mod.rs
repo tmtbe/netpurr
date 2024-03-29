@@ -406,11 +406,10 @@ impl Runner {
                 let mut testcase = Testcase::default();
                 child_testcases.insert(testcase.name.clone(), testcase);
             }
-            let mut jobs = vec![];
             for (name, child_testcase) in child_testcases.iter() {
                 let mut merge_testcase = child_testcase.clone();
                 merge_testcase.merge(folder.name.clone(), &testcase);
-                jobs.push(Self::run_test_group_async(
+                Self::run_test_group_async(
                     client.clone(),
                     envs.clone(),
                     script_tree.clone(),
@@ -418,9 +417,8 @@ impl Runner {
                     test_group_run_result.clone(),
                     collection_path.clone() + "/" + name,
                     folder.clone(),
-                ));
+                ).await
             }
-            join_all(jobs).await;
         }
         for (name, record) in folder.requests.iter() {
             let mut record_testcases = record.testcase().clone();
