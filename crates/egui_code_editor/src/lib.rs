@@ -483,6 +483,8 @@ impl CodeEditor {
     fn find_prompt(&self,text:String)->(String,Vec<String>){
         let replace = text
             .replace("{"," ")
+            .replace(")"," ")
+            .replace("("," ")
             .replace("}"," ")
             .replace(";"," ")
             .replace(","," ")
