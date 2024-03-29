@@ -208,18 +208,20 @@ impl TestEditorPanel {
         ui: &mut Ui,
         folder: Rc<RefCell<CollectionFolder>>,
     ) {
-        if let Some(test_group_run_result) = self.test_group_run_result.clone() {
-            let mut testcase_paths = vec![];
-            if let Some(pt) = self.build_parent_testcase() {
-                testcase_paths = pt.get_testcase_path();
+        egui::ScrollArea::vertical().max_height(ui.available_height()-30.0).show(ui,|ui|{
+            if let Some(test_group_run_result) = self.test_group_run_result.clone() {
+                let mut testcase_paths = vec![];
+                if let Some(pt) = self.build_parent_testcase() {
+                    testcase_paths = pt.get_testcase_path();
+                }
+                let result_tree = ResultTreeFolder::create(
+                    folder.clone(),
+                    testcase_paths,
+                    test_group_run_result.read().unwrap().deref().clone(),
+                );
+                self.render_tree_folder(ui, workspace_data, &result_tree);
             }
-            let result_tree = ResultTreeFolder::create(
-                folder.clone(),
-                testcase_paths,
-                test_group_run_result.read().unwrap().deref().clone(),
-            );
-            self.render_tree_folder(ui, workspace_data, &result_tree);
-        }
+        });
     }
 
     fn render_run_folder(
@@ -281,7 +283,7 @@ impl TestEditorPanel {
         ui.strong("Edit Self Testcase:");
         egui::ScrollArea::neither()
             .id_source("manager_testcase_scroll")
-            .max_height(200.0)
+            .max_height(ui.available_height()-30.0)
             .show(ui, |ui| {
                 self.manager_testcase_panel
                     .render(ui, workspace_data, test_item)
