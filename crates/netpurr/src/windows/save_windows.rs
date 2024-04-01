@@ -26,6 +26,8 @@ pub struct SaveWindows {
     id: String,
     edit: bool,
     old_name: String,
+    record_name:String,
+    record_desc:String,
 }
 
 impl Window for SaveWindows {
@@ -55,10 +57,14 @@ impl Window for SaveWindows {
         ui.label("Requests in Netpurr are saved in collections (a group of requests).");
         ui.add_space(VERTICAL_GAP);
         ui.label("Request name");
-        utils::text_edit_singleline_filter_justify(ui, &mut self.record.name());
+        self.record_name = self.record.name();
+        self.record_desc = self.record.desc();
+        utils::text_edit_singleline_filter_justify(ui, &mut self.record_name);
+        self.record.set_name(self.record_name.clone());
         ui.add_space(VERTICAL_GAP);
         ui.label("Request description (Optional)");
-        utils::text_edit_multiline_justify(ui, &mut self.record.desc());
+        utils::text_edit_multiline_justify(ui, &mut self.record_desc);
+        self.record.set_desc(self.record_desc.clone());
         ui.add_space(VERTICAL_GAP);
         if !self.edit {
             ui.label("Select a collection or folder to save to:");
