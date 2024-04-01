@@ -382,11 +382,13 @@ impl Runner {
                             _client,
                             _shared_map,
                         ).await;
+                        info!("job finish:{:?}",result);
                         _test_group_run_result.write().unwrap().add_result(result);
                     });
                 })
             }
         });
+        info!("all test_jobs finish");
     }
     pub fn get_test_group_jobs(
         envs: BTreeMap<String, EnvironmentItemValue>,

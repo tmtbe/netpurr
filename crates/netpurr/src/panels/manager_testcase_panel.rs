@@ -87,7 +87,9 @@ impl ManagerTestcasePanel {
                             }
                             if editor.lost_focus(){
                                 if !self.edit_name.is_empty()&&!testcases.contains_key(self.edit_name.as_str()){
-                                    testcases.insert(self.edit_name.clone(),testcase.clone());
+                                    let mut new_testcase = testcase.clone();
+                                    new_testcase.name = self.edit_name.clone();
+                                    testcases.insert(self.edit_name.clone(),new_testcase);
                                     self.need_edit_name = None;
                                     remove_name_op = Some(name);
                                 }
