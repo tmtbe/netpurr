@@ -1,6 +1,7 @@
 use std::ops::Add;
 
 use egui::Ui;
+use prettify_js::prettyprint;
 
 use egui_code_editor::{CodeEditor, ColorTheme, Prompt};
 use netpurr_core::data::workspace_data::{TestItem, WorkspaceData};
@@ -114,7 +115,11 @@ console.log(response)"#)
                     } else {
                         code_editor = code_editor.with_theme(ColorTheme::GRUVBOX_LIGHT)
                     }
-                    code_editor.show(ui, &mut script);
+                    let response = code_editor.show(ui, &mut script).response;
+                    if response.lost_focus(){
+                        let (pretty, _) = prettyprint(script.as_str());
+                        script = pretty;
+                    }
                 });
         });
         if compare_script != script {

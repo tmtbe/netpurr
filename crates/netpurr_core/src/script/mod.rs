@@ -511,3 +511,4 @@ impl ScriptTree {
             .unwrap_or_default()
     }
 }
+

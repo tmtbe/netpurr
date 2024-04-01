@@ -358,6 +358,7 @@ impl CodeEditor {
 
             let mut after_cursor_text: String = text.as_str().chars().skip(c.primary.ccursor.index).collect();
             after_cursor_text = after_cursor_text.replace("\n"," ")
+                .replace(","," ")
                 .replace("\t"," ").replace(";"," ");
             if !after_cursor_text.starts_with(" ")&&!after_cursor_text.is_empty(){
                 ui.memory_mut(|mem| {
@@ -481,15 +482,16 @@ impl CodeEditor {
         sentence.chars().filter(|&c| c == dot).count()
     }
     fn find_prompt(&self,text:String)->(String,Vec<String>){
-        let replace = text
+        let mut replace = text
             .replace("{"," ")
-            .replace(")"," ")
-            .replace("("," ")
             .replace("}"," ")
             .replace(";"," ")
             .replace(","," ")
             .replace("\t"," ")
             .replace("\n"," ");
+        if text.ends_with("("){
+            replace = replace.replace("("," ");
+        }
         let sentence = replace.split(" ").last().unwrap_or_default();
         if sentence.is_empty(){
             return ("".to_string(),vec![])

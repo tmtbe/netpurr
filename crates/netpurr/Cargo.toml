@@ -56,7 +56,7 @@ chrono.workspace = true
 dirs.workspace = true
 poll-promise.workspace = true
 futures-util.workspace = true
-
+prettify-js.workspace = true
 openapiv3 = "2.0.0"
 [profile.release]
 opt-level = 2 # fast and small wasm
