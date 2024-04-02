@@ -22,6 +22,7 @@ use crate::panels::manager_testcase_panel::ManagerTestcasePanel;
 use crate::panels::request_pre_script_panel::RequestPreScriptPanel;
 use crate::panels::test_script_panel::TestScriptPanel;
 use crate::utils;
+use crate::utils::HighlightValue;
 
 #[derive(Default)]
 pub struct TestEditorPanel {
@@ -74,10 +75,11 @@ impl TestEditorPanel {
             self.render_test_item_folder(operation, workspace_data, ui, test_item.clone());
             ui.horizontal(|ui|{
                 for panel in Panel::iter() {
+                    let layout_job = self.build_panel_title(&panel,workspace_data,ui);
                     ui.selectable_value(
                         &mut self.open_panel_enum,
                         panel.clone(),
-                        panel.to_string(),
+                        layout_job
                     );
                 }
             });
@@ -128,6 +130,68 @@ impl TestEditorPanel {
         });
     }
 
+    fn build_panel_title(&self,panel:&Panel,workspace_data: &mut WorkspaceData,ui: &mut Ui)->LayoutJob{
+        return match &workspace_data.selected_test_item {
+            None => {
+                utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
+            }
+            Some(test_item) => {
+                match panel {
+                    Panel::Runner => {
+                        utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
+                    }
+                    Panel::Testcase => {
+                        match test_item {
+                            TestItem::Folder(_, f) => {
+                                utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Usize(f.borrow().testcases.len()), ui)
+                            }
+                            TestItem::Record(_, f, r) => {
+                                let size = f.borrow().requests.get(r).unwrap().testcase().len();
+                                utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Usize(size), ui)
+                            }
+                        }
+                    }
+                    Panel::PreRequestScript => {
+                        match test_item {
+                            TestItem::Folder(_, f) => {
+                                if f.borrow().pre_request_script.is_empty() {
+                                    utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
+                                } else {
+                                    utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Has, ui)
+                                }
+                            }
+                            TestItem::Record(_, f, r) => {
+                                if f.borrow().requests.get(r).unwrap().pre_request_script().is_empty() {
+                                    utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
+                                } else {
+                                    utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Has, ui)
+                                }
+                            }
+                        }
+                    }
+                    Panel::TestScript => {
+                        match test_item {
+                            TestItem::Folder(_, f) => {
+                                if f.borrow().test_script.is_empty() {
+                                    utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
+                                } else {
+                                    utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Has, ui)
+                                }
+                            }
+                            TestItem::Record(_, f, r) => {
+                                if f.borrow().requests.get(r).unwrap().test_script().is_empty() {
+                                    utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
+                                } else {
+                                    utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Has, ui)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
     fn render_test_item_folder(
         &mut self,
         operation: &Operation,
