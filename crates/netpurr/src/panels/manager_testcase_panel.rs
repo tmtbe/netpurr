@@ -92,6 +92,7 @@ impl ManagerTestcasePanel {
                                     testcases.insert(self.edit_name.clone(),new_testcase);
                                     self.need_edit_name = None;
                                     remove_name_op = Some(name);
+                                    is_change = true;
                                 }
                             }
                         }else {
@@ -109,6 +110,7 @@ impl ManagerTestcasePanel {
                                     self.need_edit_name = Some(name.to_string());
                                     self.edit_name = name.to_string();
                                     self.need_focus_edit = true;
+                                    ui.close_menu();
                                 }
                                 if ui.button("Remove").clicked() {
                                     remove_name_op = Some(name);

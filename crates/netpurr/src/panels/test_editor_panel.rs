@@ -155,14 +155,14 @@ impl TestEditorPanel {
                     Panel::PreRequestScript => {
                         match test_item {
                             TestItem::Folder(_, f) => {
-                                if f.borrow().pre_request_script.is_empty() {
+                                if f.borrow().pre_request_script.trim().is_empty() {
                                     utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
                                 } else {
                                     utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Has, ui)
                                 }
                             }
                             TestItem::Record(_, f, r) => {
-                                if f.borrow().requests.get(r).unwrap().pre_request_script().is_empty() {
+                                if f.borrow().requests.get(r).unwrap().pre_request_script().trim().is_empty() {
                                     utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
                                 } else {
                                     utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Has, ui)
@@ -173,14 +173,14 @@ impl TestEditorPanel {
                     Panel::TestScript => {
                         match test_item {
                             TestItem::Folder(_, f) => {
-                                if f.borrow().test_script.is_empty() {
+                                if f.borrow().test_script.trim().is_empty() {
                                     utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
                                 } else {
                                     utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Has, ui)
                                 }
                             }
                             TestItem::Record(_, f, r) => {
-                                if f.borrow().requests.get(r).unwrap().test_script().is_empty() {
+                                if f.borrow().requests.get(r).unwrap().test_script().trim().is_empty() {
                                     utils::build_with_count_ui_header(panel.to_string(), HighlightValue::None, ui)
                                 } else {
                                     utils::build_with_count_ui_header(panel.to_string(), HighlightValue::Has, ui)
@@ -588,8 +588,9 @@ impl TestEditorPanel {
             }
             TestStatus::PASS => rich_text = rich_text.background_color(Color32::DARK_GREEN),
             TestStatus::FAIL => rich_text = rich_text.background_color(Color32::DARK_RED),
-            TestStatus::WAIT => rich_text = rich_text.background_color(Color32::DARK_BLUE),
+            TestStatus::WAIT => rich_text = rich_text.background_color(Color32::DARK_GRAY),
             TestStatus::SKIP => rich_text = rich_text.background_color(Color32::GRAY),
+            TestStatus::RUNNING => rich_text = rich_text.background_color(Color32::DARK_BLUE),
         };
         rich_text.append_to(
             &mut request_test_result_name_layout_job,

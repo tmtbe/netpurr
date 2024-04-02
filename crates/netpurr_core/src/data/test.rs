@@ -68,6 +68,7 @@ impl TestResult {
 pub enum TestStatus {
     None,
     WAIT,
+    RUNNING,
     PASS,
     FAIL,
     SKIP

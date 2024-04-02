@@ -400,6 +400,16 @@ impl Runner {
                 .enable_all()
                 .build()
                 .unwrap();
+            let mut test_result =TestResult::default();
+            test_result.status = TestStatus::RUNNING;
+            test_group_run_result.write().unwrap().add_result(Ok(TestRunResult{
+                request: run_request_info.request.clone(),
+                response: None,
+                test_result,
+                collection_path: run_request_info.collection_path.clone(),
+                request_name: run_request_info.request_name.clone(),
+                testcase: run_request_info.testcase.clone(),
+            }));
             runtime.block_on(async {
                 let result = Self::send_rest_with_script_async(
                     run_request_info.clone(),

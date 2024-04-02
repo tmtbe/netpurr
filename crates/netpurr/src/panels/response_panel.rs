@@ -143,7 +143,8 @@ impl ResponsePanel {
                     Color32::RED,
                 ),
                 TestStatus::WAIT => HighlightValue::None,
-                TestStatus::SKIP => HighlightValue::None
+                TestStatus::SKIP => HighlightValue::None,
+                TestStatus::RUNNING => HighlightValue::None
             },
         }
     }

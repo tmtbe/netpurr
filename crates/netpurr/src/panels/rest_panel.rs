@@ -343,6 +343,7 @@ impl RestPanel {
                                     }
                                     TestStatus::WAIT => {}
                                     TestStatus::SKIP => {}
+                                    TestStatus::RUNNING => {}
                                 }
                             }
                         }
