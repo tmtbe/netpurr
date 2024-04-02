@@ -35,6 +35,7 @@ pub struct TestEditorPanel {
     parent_testcase_list: Vec<Testcase>,
     parent_paths: Vec<String>,
     open_panel_enum:Panel,
+    fast:bool,
 }
 #[derive(Display)]
 enum TitleType{
@@ -306,19 +307,23 @@ impl TestEditorPanel {
         folder: &Rc<RefCell<CollectionFolder>>,
     ) {
         ui.add_enabled_ui(self.run_promise.is_none(), |ui| {
-            if ui.button("Run Test").clicked() {
-                let test_group_run_result = Arc::new(RwLock::new(TestGroupRunResults::default()));
-                self.test_group_run_result = Some(test_group_run_result.clone());
-                self.run_test_group(
-                    workspace_data,
-                    operation,
-                    test_group_run_result,
-                    collection_name,
-                    folder.borrow().get_path(),
-                    self.build_parent_testcase(),
-                    folder.clone(),
-                );
-            }
+            ui.horizontal(|ui|{
+                ui.checkbox(&mut self.fast,"Parallel Test");
+                if ui.button("Run Test").clicked() {
+                    let test_group_run_result = Arc::new(RwLock::new(TestGroupRunResults::default()));
+                    self.test_group_run_result = Some(test_group_run_result.clone());
+                    self.run_test_group(
+                        self.fast,
+                        workspace_data,
+                        operation,
+                        test_group_run_result,
+                        collection_name,
+                        folder.borrow().get_path(),
+                        self.build_parent_testcase(),
+                        folder.clone(),
+                    );
+                }
+            });
         });
     }
 
@@ -633,6 +638,7 @@ impl TestEditorPanel {
 
     fn run_test_group(
         &mut self,
+        fast:bool,
         workspace_data: &mut WorkspaceData,
         operation: &Operation,
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
@@ -645,6 +651,7 @@ impl TestEditorPanel {
             .get_build_envs(workspace_data.get_collection(Some(collection_name.clone())));
         let script_tree = workspace_data.get_script_tree(collection_path.clone());
         self.run_promise = Some(operation.run_test_group_promise(
+            fast,
             envs,
             script_tree,
             test_group_run_result,

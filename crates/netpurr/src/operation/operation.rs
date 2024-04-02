@@ -77,6 +77,7 @@ impl Operation {
 
     pub fn run_test_group_promise(
         &self,
+        fast:bool,
         envs: BTreeMap<String, EnvironmentItemValue>,
         script_tree: ScriptTree,
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
@@ -85,6 +86,7 @@ impl Operation {
         folder: Rc<RefCell<CollectionFolder>>,
     ) -> Promise<()> {
         self.runner.run_test_group_promise(
+            fast,
             envs,
             script_tree,
             test_group_run_result,

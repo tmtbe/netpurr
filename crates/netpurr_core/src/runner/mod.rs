@@ -12,7 +12,7 @@ use deno_core::futures::future::join_all;
 use deno_core::futures::FutureExt;
 use log::info;
 use poll_promise::Promise;
-use rayon::{ThreadPool, ThreadPoolBuilder};
+use rayon::{Scope, ThreadPool, ThreadPoolBuilder};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
@@ -98,9 +98,9 @@ impl Runner {
     pub async fn send_rest_with_script_async(
         run_request_info: RunRequestInfo,
         client: Client,
-        shared_map: SharedMap,
     ) -> Result<TestRunResult, TestRunError> {
         info!("start send_rest_with_script_async:{:?}",run_request_info);
+        let shared_map = run_request_info.shared_map;
         let mut logger = Logger::default();
         let mut default_context = Context {
             scope_name: "".to_string(),
@@ -233,10 +233,10 @@ impl Runner {
     }
     pub fn send_rest_with_script_promise(
         &self,
-        run_request_info: RunRequestInfo,
+        mut run_request_info: RunRequestInfo,
     ) -> Promise<Result<TestRunResult, TestRunError>> {
         let client = self.client.clone();
-        let shared_map = SharedMap::default();
+        run_request_info.shared_map = SharedMap::default();
         Promise::spawn_thread("send_with_script", move || {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -244,14 +244,14 @@ impl Runner {
                 .unwrap();
             runtime.block_on(Self::send_rest_with_script_async(
                 run_request_info,
-                client,
-                shared_map,
+                client
             ))
         })
     }
 
     pub fn run_test_group_promise(
         &self,
+        fast:bool,
         envs: BTreeMap<String, EnvironmentItemValue>,
         script_tree: ScriptTree,
         test_group_run_result: Arc<RwLock<TestGroupRunResults>>,
@@ -263,7 +263,7 @@ impl Runner {
         let folder_only_read = CollectionFolderOnlyRead::from(folder);
         let run_request_infos = Self::get_test_group_jobs(envs,script_tree,collection_path,parent_testcase,folder_only_read);
         Promise::spawn_thread("send_with_script", move || {
-            Self::run_test_group_jobs(client,run_request_infos,test_group_run_result.clone());
+            Self::run_test_group_jobs(client,run_request_infos,test_group_run_result.clone(),fast);
         })
     }
     pub fn run_test_record_promise(
@@ -356,39 +356,59 @@ impl Runner {
             let _shared_map = shared_map.clone();
             jobs.push(Self::send_rest_with_script_async(
                 _run_request_info,
-                _client,
-                _shared_map,
+                _client
             ));
         }
         let results = join_all(jobs).await;
         test_group_run_result.write().unwrap().add_results(results);
     }
-    pub fn run_test_group_jobs(client: Client,run_request_infos:Vec<RunRequestInfo>, test_group_run_result: Arc<RwLock<TestGroupRunResults>>){
+    pub fn run_test_group_jobs(client: Client,run_request_infos:Vec<RunRequestInfo>, test_group_run_result: Arc<RwLock<TestGroupRunResults>>,fast:bool){
         let pool = ThreadPoolBuilder::new().num_threads(20).build().unwrap();
-        pool.scope(|scope| {
-            for run_request_info in run_request_infos {
-                let _client = client.clone();
-                let _run_request_info = run_request_info.clone();
-                let _shared_map = run_request_info.shared_map.clone();
-                let _test_group_run_result = test_group_run_result.clone();
-                scope.spawn(move |_| {
-                    let runtime = tokio::runtime::Builder::new_current_thread()
-                        .enable_all()
-                        .build()
-                        .unwrap();
-                    runtime.block_on(async {
-                        let result = Self::send_rest_with_script_async(
-                            _run_request_info,
-                            _client,
-                            _shared_map,
-                        ).await;
-                        info!("job finish:{:?}",result);
-                        _test_group_run_result.write().unwrap().add_result(result);
-                    });
-                })
-            }
-        });
+        if fast {
+            pool.scope(|scope| {
+                for run_request_info in run_request_infos {
+                    let _client = client.clone();
+                    let _test_group_run_result = test_group_run_result.clone();
+                    Self::run_one_job(_client, _test_group_run_result, scope, run_request_info.clone());
+                }
+            });
+        }else{
+            let mut groups:HashMap<String,Vec<RunRequestInfo>> = HashMap::new();
+            run_request_infos.iter().for_each(|r|{
+                let key = r.testcase.parent_path.join("/");
+                if !groups.contains_key(key.as_str()){
+                    groups.insert(key.clone(),vec![]);
+                }
+                groups.get_mut(key.as_str()).unwrap().push(r.clone());
+            });
+            groups.iter().for_each(|(_,rs)|{
+                pool.scope(|scope| {
+                    for run_request_info in rs {
+                        let _client = client.clone();
+                        let _test_group_run_result = test_group_run_result.clone();
+                        Self::run_one_job(_client, _test_group_run_result, scope, run_request_info.clone());
+                    }
+                });
+            })
+        }
         info!("all test_jobs finish");
+    }
+
+    fn run_one_job(client: Client, test_group_run_result: Arc<RwLock<TestGroupRunResults>>, scope: &Scope, run_request_info: RunRequestInfo) {
+        scope.spawn(move |_| {
+            let runtime = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            runtime.block_on(async {
+                let result = Self::send_rest_with_script_async(
+                    run_request_info.clone(),
+                    client
+                ).await;
+                info!("job finish:{:?}",result);
+                test_group_run_result.write().unwrap().add_result(result);
+            });
+        })
     }
     pub fn get_test_group_jobs(
         envs: BTreeMap<String, EnvironmentItemValue>,
