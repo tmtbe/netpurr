@@ -31,6 +31,7 @@ pub fn build_rest_ui_header(record: Record, max_char: Option<usize>, ui: &Ui) ->
         justify: false,
     };
     let style = Style::default();
+    RichText::new("📄").append_to(&mut lb, &style, FontSelection::Default, Align::Center);
     if record.base_url() != "" {
         RichText::new(record.method() + " ")
             .color(ui.visuals().warn_fg_color)
@@ -76,7 +77,7 @@ pub fn build_with_count_ui_header(
     ui: &Ui,
 ) -> LayoutJob {
     let mut lb = LayoutJob::default();
-    let mut color = ui.visuals().warn_fg_color;
+    let mut color = Color32::GREEN;
     let style = Style::default();
     RichText::new(name + " ")
         .color(ui.visuals().text_color())

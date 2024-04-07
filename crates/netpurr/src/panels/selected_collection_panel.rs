@@ -1,5 +1,5 @@
 use eframe::emath::Align;
-use egui::{FontSelection, Label, RichText, Style, Ui, Widget};
+use egui::{Color32, FontSelection, Label, RichText, Style, Ui, Widget};
 
 use netpurr_core::data::record::Record;
 use netpurr_core::data::workspace_data::{EditorModel, WorkspaceData};
@@ -150,7 +150,7 @@ impl SelectedCollectionPanel {
         ui: &mut Ui,
     ) {
         ui.vertical(|ui| {
-            self.central_request_table(workspace_data, operation, ui);
+            self.central_request_table(workspace_data,config_data, operation, ui);
         });
         ui.separator();
         match &workspace_data.get_crt_select_id() {
@@ -188,6 +188,7 @@ impl SelectedCollectionPanel {
     fn central_request_table(
         &mut self,
         workspace_data: &mut WorkspaceData,
+        config_data: &mut ConfigData,
         operation: &Operation,
         ui: &mut Ui,
     ) {
@@ -195,17 +196,33 @@ impl SelectedCollectionPanel {
             let data_list = workspace_data.get_crt_id_list();
             for request_id in data_list.iter() {
                 let request_data_option = workspace_data.get_crt_cloned(request_id.to_string());
-                match request_data_option {
+                match &request_data_option {
                     None => {
                         continue;
                     }
                     Some(request_data) => {
+                        match &request_data.collection_path{
+                            None => {}
+                            Some(cp) => {
+                                if let Some(cname) = config_data.select_collection(){
+                                    if !cp.starts_with(format!("{}/",cname).as_str()){
+                                        //不是这个collection的crt过滤下不显示了
+                                        continue;
+                                    }
+                                };
+                            }
+                        }
                         let mut lb =
                             utils::build_rest_ui_header(request_data.record.clone(), Some(15), ui);
+                        let style = Style::default();
+                        if request_data.collection_path.is_none(){
+                            RichText::new(" * ")
+                                .color(Color32::LIGHT_GRAY)
+                                .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+                        }
                         if request_data.is_modify() {
-                            let style = Style::default();
                             RichText::new(" ●")
-                                .color(ui.visuals().warn_fg_color)
+                                .color(Color32::RED)
                                 .append_to(&mut lb, &style, FontSelection::Default, Align::Center);
                         }
                         self.select_crt_id = workspace_data.get_crt_select_id();

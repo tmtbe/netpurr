@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ use crate::persistence::{get_persistence_path, Persistence, PersistenceItem};
 pub struct CentralRequestDataList {
     pub select_id: Option<String>,
     pub data_list: Vec<String>,
-    pub data_map: HashMap<String, CentralRequestItem>,
+    pub data_map: BTreeMap<String, CentralRequestItem>,
     persistence: Persistence,
 }
 
@@ -181,5 +181,5 @@ impl CentralRequestItem {
 #[serde(default)]
 struct CentralRequestDataListSaved {
     pub select_id: Option<String>,
-    pub data_map: HashMap<String, CentralRequestItem>,
+    pub data_map: BTreeMap<String, CentralRequestItem>,
 }

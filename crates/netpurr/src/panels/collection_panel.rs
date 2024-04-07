@@ -3,15 +3,18 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use egui::{CollapsingHeader, Response, Ui};
+use uuid::Uuid;
 
 use netpurr_core::data::central_request_data::CentralRequestItem;
 use netpurr_core::data::collections::{Collection, CollectionFolder};
+use netpurr_core::data::http::{HttpRecord, Request};
 use netpurr_core::data::record::Record;
 use netpurr_core::data::workspace_data::WorkspaceData;
 
 use crate::operation::operation::Operation;
 use crate::utils;
 use crate::windows::new_collection_windows::NewCollectionWindows;
+use crate::windows::save_crt_windows::SaveCRTWindows;
 use crate::windows::save_windows::SaveWindows;
 
 #[derive(Default)]
@@ -71,7 +74,7 @@ impl CollectionPanel {
         path: String,
     ) {
         let folder_name = folder.borrow().name.clone();
-        let response = CollapsingHeader::new(folder_name.clone())
+        let response = CollapsingHeader::new(format!("📁{}",folder_name))
             .default_open(false)
             .show(ui, |ui| {
                 let folders = folder.borrow().folders.clone();
@@ -134,6 +137,37 @@ impl CollectionPanel {
                     folder.clone(),
                     None,
                 )));
+                ui.close_menu();
+            }
+            if utils::select_label(ui, "Add Request").clicked() {
+                let crt = CentralRequestItem{
+                    id: Uuid::new_v4().to_string(),
+                    collection_path: None,
+                    record: Record::Rest(HttpRecord{
+                        name: "New Request".to_string(),
+                        desc: "".to_string(),
+                        request: Request{
+                            method: Default::default(),
+                            schema: Default::default(),
+                            raw_url: "http://www.httpbin.org/get".to_string(),
+                            base_url: "www.httpbin.org/get".to_string(),
+                            path_variables: vec![],
+                            params: vec![],
+                            headers: vec![],
+                            body: Default::default(),
+                            auth: Default::default(),
+                        },
+                        .. Default::default()
+                    }),
+                    test_result: Default::default(),
+                    modify_baseline: "".to_string(),
+                };
+                workspace_data.add_crt(crt.clone());
+                operation.add_window(Box::new(SaveCRTWindows::default().with(
+                    crt.id.clone(),
+                    Some(folder.borrow().get_path()),
+                )));
+                workspace_data.set_crt_select_id(Some(crt.id.clone()));
                 ui.close_menu();
             }
             if utils::select_label(ui, "Duplicate").clicked() {
