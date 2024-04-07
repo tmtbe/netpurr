@@ -76,7 +76,7 @@ fn run_test_group(
         parent_testcase,
         folder_only_read.clone(),
     );
-    runner::Runner::run_test_group_jobs(client,run_request_infos,test_group_run_result.clone());
+    runner::Runner::run_test_group_jobs(client,run_request_infos,test_group_run_result.clone(),true);
     let result_tree = ResultTreeFolder::create(
         folder.clone(),
         vec![],
