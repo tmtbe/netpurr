@@ -68,6 +68,7 @@ impl MatrixLabel {
                             });
                         });
                         if response.clicked() {
+                            workspace_data.selected_test_item=None;
                             config_data.set_select_collection(Some(collection_name.clone()));
                         }
                     }

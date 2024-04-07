@@ -24,6 +24,9 @@ impl TestGroupPanel {
         config_data: &mut ConfigData,
         ui: &mut Ui,
     ) {
+        if workspace_data.selected_test_item.is_none(){
+            self.selected_test_item = None;
+        }
         if self.selected_test_item.is_none() {
             self.selected_test_item = workspace_data.selected_test_item.clone();
         }
