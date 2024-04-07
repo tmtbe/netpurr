@@ -78,48 +78,53 @@ impl ManagerTestcasePanel {
                     });
                     let mut remove_name_op = None;
                     let testcases_clone = testcases.clone();
-                    for (name, testcase) in testcases_clone.iter() {
-                        if self.need_edit_name == Some(name.to_string()){
-                            let editor = ui.text_edit_singleline(&mut self.edit_name);
-                            if self.need_focus_edit{
-                                editor.request_focus();
-                                self.need_focus_edit = false;
+                    egui::scroll_area::ScrollArea::vertical()
+                        .max_height(ui.available_height())
+                        .show(ui,|ui|{
+                        for (name, testcase) in testcases_clone.iter() {
+                            if self.need_edit_name == Some(name.to_string()){
+                                let editor = ui.text_edit_singleline(&mut self.edit_name);
+                                if self.need_focus_edit{
+                                    editor.request_focus();
+                                    self.need_focus_edit = false;
+                                }
+                                if editor.lost_focus(){
+                                    if !self.edit_name.is_empty()&&!testcases.contains_key(self.edit_name.as_str()){
+                                        let mut new_testcase = testcase.clone();
+                                        new_testcase.name = self.edit_name.clone();
+                                        testcases.insert(self.edit_name.clone(),new_testcase);
+                                        self.need_edit_name = None;
+                                        remove_name_op = Some(name);
+                                        is_change = true;
+                                    }
+                                }
+                            }else {
+                                let select_value = utils::select_value(
+                                    ui,
+                                    &mut self.select,
+                                    Some(name.clone()),
+                                    name.clone(),
+                                );
+                                if select_value.clicked() {
+                                    self.source = serde_json::to_string_pretty(&testcase.value).unwrap();
+                                };
+                                select_value.context_menu(|ui| {
+                                    if ui.button("Rename").clicked() {
+                                        self.need_edit_name = Some(name.to_string());
+                                        self.edit_name = name.to_string();
+                                        self.need_focus_edit = true;
+                                        ui.close_menu();
+                                    }
+                                    if ui.button("Remove").clicked() {
+                                        remove_name_op = Some(name);
+                                        ui.close_menu();
+                                        is_change = true;
+                                    }
+                                });
                             }
-                            if editor.lost_focus(){
-                                if !self.edit_name.is_empty()&&!testcases.contains_key(self.edit_name.as_str()){
-                                    let mut new_testcase = testcase.clone();
-                                    new_testcase.name = self.edit_name.clone();
-                                    testcases.insert(self.edit_name.clone(),new_testcase);
-                                    self.need_edit_name = None;
-                                    remove_name_op = Some(name);
-                                    is_change = true;
-                                }
-                            }
-                        }else {
-                            let select_value = utils::select_value(
-                                ui,
-                                &mut self.select,
-                                Some(name.clone()),
-                                name.clone(),
-                            );
-                            if select_value.clicked() {
-                                self.source = serde_json::to_string_pretty(&testcase.value).unwrap();
-                            };
-                            select_value.context_menu(|ui| {
-                                if ui.button("Rename").clicked() {
-                                    self.need_edit_name = Some(name.to_string());
-                                    self.edit_name = name.to_string();
-                                    self.need_focus_edit = true;
-                                    ui.close_menu();
-                                }
-                                if ui.button("Remove").clicked() {
-                                    remove_name_op = Some(name);
-                                    ui.close_menu();
-                                    is_change = true;
-                                }
-                            });
                         }
-                    }
+                    });
+
                     if let Some(remove_name) = remove_name_op {
                         testcases.remove(remove_name);
                     };
