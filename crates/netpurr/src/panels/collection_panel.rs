@@ -74,7 +74,7 @@ impl CollectionPanel {
         path: String,
     ) {
         let folder_name = folder.borrow().name.clone();
-        let response = CollapsingHeader::new(format!("📁{}",folder_name))
+        let response = CollapsingHeader::new(format!("{} {}",egui_phosphor::regular::FOLDER,folder_name))
             .default_open(false)
             .show(ui, |ui| {
                 let folders = folder.borrow().folders.clone();

@@ -1211,6 +1211,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui-phosphor"
+version = "0.4.0"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "egui-toast"
 version = "0.12.1"
 dependencies = [
@@ -2509,6 +2516,7 @@ dependencies = [
  "dirs",
  "eframe",
  "egui",
+ "egui-phosphor",
  "egui-toast",
  "egui_code_editor",
  "egui_extras",

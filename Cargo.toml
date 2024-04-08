@@ -6,6 +6,9 @@ members = [
     "crates/reqwest_cookie_store",
     "crates/netpurr_core",
     "crates/netpurr_test_runner",
+    "crates/egui_code_editor",
+    "crates/egui-phosphor",
+    "crates/egui_json_tree",
 ]
 
 [workspace.package]

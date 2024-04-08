@@ -1,5 +1,6 @@
 use std::cmp::min;
 use std::collections::HashSet;
+use chrono::format;
 
 use eframe::emath::{Align, Pos2};
 use eframe::epaint::text::LayoutJob;
@@ -31,7 +32,7 @@ pub fn build_rest_ui_header(record: Record, max_char: Option<usize>, ui: &Ui) ->
         justify: false,
     };
     let style = Style::default();
-    RichText::new("📄").append_to(&mut lb, &style, FontSelection::Default, Align::Center);
+    RichText::new(format!("{} ", egui_phosphor::regular::FILE_TEXT)).append_to(&mut lb, &style, FontSelection::Default, Align::Center);
     if record.base_url() != "" {
         RichText::new(record.method() + " ")
             .color(ui.visuals().warn_fg_color)

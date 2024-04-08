@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
+use chrono::format::format;
 
 use egui::{Align, Button, Layout, ScrollArea, Ui};
 
@@ -89,7 +90,7 @@ impl SaveCRTWindows {
                     });
                 }
                 Some(name) => {
-                    if ui.link("◀ ".to_string() + name.as_str()).clicked() {
+                    if ui.link(format!("{} {}",egui_phosphor::regular::ARROW_LEFT, name)).clicked() {
                         self.add_folder = false;
                         self.add_collection = false;
                         let paths: Vec<&str> = name.split("/").collect();

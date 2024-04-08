@@ -58,7 +58,7 @@ impl TestGroupPanel {
                     },
                 }
                 ui.label("Select Test Group");
-                if ui.link(format!("< 📁{}", name)).clicked() {
+                if ui.link(format!("{} {} {}",egui_phosphor::regular::ARROW_LEFT,egui_phosphor::regular::FOLDER, name)).clicked() {
                     let paths: Vec<&str> = name.split("/").collect();
                     if paths.len() > 1 {
                         let new_paths = &paths[0..paths.len() - 1];
@@ -104,7 +104,7 @@ impl TestGroupPanel {
             ui,
             &mut self.selected_test_item_name,
             folder.borrow().get_path(),
-            format!("📁../{}",folder.borrow().name.clone()),
+            format!("{} ../{}",egui_phosphor::regular::FOLDER,folder.borrow().name.clone()),
         );
         if label.clicked() {
             workspace_data.selected_test_item =
@@ -128,7 +128,7 @@ impl TestGroupPanel {
                 ui,
                 &mut self.selected_test_item_name,
                 cf_child.borrow().get_path(),
-                format!("📁{}",name.clone()),
+                format!("{} {}",egui_phosphor::regular::FOLDER,name.clone()),
             );
             if label.clicked() {
                 workspace_data.selected_test_item =

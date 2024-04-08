@@ -28,6 +28,7 @@ image = { version = "0.25.0", optional = true, default-features = false, feature
     "jpeg",
     "png",
 ] }
+egui-phosphor = { path = "./../egui-phosphor" }
 egui_json_tree = { path = "./../egui_json_tree" }
 egui_code_editor = { path = "./../egui_code_editor", features = ["egui"] }
 egui-toast = { path = "./../egui-toast" }

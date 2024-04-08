@@ -77,13 +77,8 @@ impl App {
             .families
             .get_mut(&font_family)?
             .push(font_name.clone());
-
+        egui_phosphor::add_to_fonts(&mut font_def, egui_phosphor::Variant::Regular);
         ctx.set_fonts(font_def);
-        let mut visuals = Visuals::default();
-        visuals.window_highlight_topmost = false;
-        ctx.style_mut(|s| {
-            s.visuals = visuals;
-        });
         Some(())
     }
 

@@ -1,5 +1,5 @@
 use eframe::emath::Align;
-use egui::{Label, Layout, ScrollArea, Sense, Ui, Widget};
+use egui::{Label, Layout, Link, RichText, ScrollArea, Sense, Ui, Widget};
 
 use netpurr_core::data::environment::ENVIRONMENT_GLOBALS;
 use netpurr_core::data::workspace_data::{EditorModel, WorkspaceData};
@@ -54,13 +54,11 @@ impl MyLeftPanel {
             .resizable(false)
             .show_inside(ui, |ui| {
                 ui.horizontal(|ui| {
-                    if Label::new("◀").sense(Sense::click()).ui(ui).clicked() {
+                    if Label::new(RichText::new(egui_phosphor::regular::ARROW_LEFT).heading()).sense(Sense::click()).ui(ui).clicked() {
                         config_data.set_select_collection(None);
                     }
                     ui.separator();
-                    if ui
-                        .link(config_data.select_collection().unwrap_or_default())
-                        .clicked()
+                    if Link::new(RichText::new(format!("{} {}",egui_phosphor::regular::ARCHIVE_BOX,config_data.select_collection().unwrap_or_default())).heading()).ui(ui).clicked()
                     {
                         operation.add_window(Box::new(
                             NewCollectionWindows::default().with_open_collection(collection),
