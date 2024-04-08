@@ -7,7 +7,7 @@ With Netpurr you can:
 
 * **Debug APIs** using the most popular protocols and formats.
 * **Test APIs** using `JavaScript`.
-* **Build CI/CD** pipelines using the native `Netpurr` CLI for linting and testing.(Coming soon)
+* **Build CI/CD** pipelines using the native `Netpurr` CLI for linting and testing
 * **Support OpenAPI and Postman import** .
 * **Design APIs** using the native OpenAPI editor and visual preview.(Planned support)
 * **Mock APIs** (Planned support)
