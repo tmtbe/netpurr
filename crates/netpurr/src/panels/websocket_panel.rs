@@ -342,9 +342,7 @@ impl WebSocketPanel {
                 });
             },
             |ui| {
-                ui.horizontal(|ui| {
-                    ui.link("Code");
-                });
+
             },
         );
     }

@@ -179,9 +179,7 @@ impl ResponsePanel {
                     .strong(),
             );
         });
-        ui.horizontal(|ui| {
-            ui.link("Code");
-        });
+
         ui.horizontal(|ui| {
             for response_panel_enum in ResponsePanelEnum::iter() {
                 ui.selectable_value(

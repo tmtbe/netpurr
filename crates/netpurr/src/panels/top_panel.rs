@@ -48,7 +48,6 @@ impl TopPanel {
                     ui.vertical(|ui| {
                         ui.add_space(VERTICAL_GAP);
                         ui.horizontal(|ui| {
-                            if ui.button("New").clicked() {}
                             ui.add_space(HORIZONTAL_GAP);
                             if ui.button("Import").clicked() {
                                 operation.add_window(Box::new(ImportWindows::default()))
