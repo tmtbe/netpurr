@@ -306,9 +306,9 @@ impl TestEditorPanel {
         collection_name: String,
         folder: &Rc<RefCell<CollectionFolder>>,
     ) {
-        ui.add_enabled_ui(self.run_promise.is_none(), |ui| {
-            ui.horizontal(|ui|{
-                ui.checkbox(&mut self.fast,"Parallel Test");
+        ui.horizontal(|ui|{
+            ui.checkbox(&mut self.fast,"Parallel Test");
+            if self.run_promise.is_none() {
                 if ui.button("Run Test").clicked() {
                     let test_group_run_result = Arc::new(RwLock::new(TestGroupRunResults::default()));
                     self.test_group_run_result = Some(test_group_run_result.clone());
@@ -317,13 +317,23 @@ impl TestEditorPanel {
                         workspace_data,
                         operation,
                         test_group_run_result,
-                        collection_name,
+                        collection_name.clone(),
                         folder.borrow().get_path(),
                         self.build_parent_testcase(),
                         folder.clone(),
                     );
                 }
-            });
+            }else{
+                if ui.button("Stop Test").clicked() {
+                    match &self.test_group_run_result {
+                        None => {}
+                        Some(r) => {
+                            r.write().unwrap().stop();
+                        }
+                    }
+                    self.run_promise.take().unwrap().abort();
+                }
+            }
         });
     }
 

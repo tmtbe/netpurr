@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::Debug;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -395,6 +396,9 @@ impl Runner {
     }
 
     fn run_one_job(client: Client, test_group_run_result: Arc<RwLock<TestGroupRunResults>>, scope: &Scope, run_request_info: RunRequestInfo) {
+        if test_group_run_result.read().unwrap().stop_flag{
+            return;
+        }
         scope.spawn(move |_| {
             let runtime = tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -526,10 +530,17 @@ impl Runner {
 }
 #[derive(Default, Clone)]
 pub struct TestGroupRunResults {
+    pub stop_flag:bool,
     pub results: HashMap<String, Result<TestRunResult, TestRunError>>,
 }
 
 impl TestGroupRunResults {
+    pub fn stop(&mut self){
+        self.stop_flag = true;
+    }
+    pub fn restart(&mut self){
+        self.stop_flag = false;
+    }
     pub fn add_result(&mut self, result: Result<TestRunResult, TestRunError>) {
         match &result {
             Ok(r) => {
