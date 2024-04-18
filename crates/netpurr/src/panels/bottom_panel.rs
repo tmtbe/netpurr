@@ -10,7 +10,6 @@ use crate::utils;
 
 #[derive(Default)]
 pub struct BottomPanel {
-    current_workspace: String,
     sync_promise: Option<Promise<rustygit::types::Result<()>>>,
 }
 
@@ -25,7 +24,6 @@ impl BottomPanel {
         ui.add_enabled_ui(!operation.get_ui_lock(), |ui| {
             ui.add_space(VERTICAL_GAP);
             ui.horizontal(|ui| {
-                // self.current_workspace = config_data.select_workspace().to_string();
                 // egui::ComboBox::from_id_source("workspace")
                 //     .selected_text("Workspace: ".to_string() + self.current_workspace.as_str())
                 //     .show_ui(ui, |ui| {
@@ -46,39 +44,43 @@ impl BottomPanel {
                 //             );
                 //         }
                 //     });
-                // let select_workspace = config_data.select_workspace().to_string();
-                // if let Some(workspace) = config_data
-                //     .mut_workspaces()
-                //     .get_mut(select_workspace.as_str())
-                // {
-                //     if workspace.if_enable_git() && workspace.if_enable_git() {
-                //         if self.sync_promise.is_some() {
-                //             ui.add_enabled_ui(false, |ui| ui.button("🔄"));
-                //         } else {
-                //             if ui.button("🔄").clicked() {
-                //                 self.sync_promise =
-                //                     Some(operation.git().git_sync_promise(workspace.path.clone()));
-                //             }
-                //         }
-                //     }
-                // }
-                // match &self.sync_promise {
-                //     None => {}
-                //     Some(result) => match result.ready() {
-                //         None => {
-                //             ui.ctx().request_repaint();
-                //         }
-                //         Some(result) => {
-                //             if result.is_ok() {
-                //                 operation.add_success_toast("Sync Success!")
-                //             } else {
-                //                 operation.add_error_toast("Sync Failed!")
-                //             }
-                //             self.sync_promise = None;
-                //             workspace_data.reload_data(self.current_workspace.clone());
-                //         }
-                //     },
-                // }
+                config_data.select_workspace().map(|select_workspace|{
+                    if let Some(workspace) = config_data
+                        .mut_workspaces()
+                        .get_mut(select_workspace.as_str())
+                    {
+                        if workspace.if_enable_git() {
+                            ui.label("Git");
+                            ui.separator();
+                            if self.sync_promise.is_some() {
+                                ui.add_enabled_ui(false, |ui| ui.button(egui_phosphor::regular::ARROW_CLOCKWISE));
+                            } else {
+                                if ui.button(egui_phosphor::regular::ARROW_CLOCKWISE).clicked() {
+                                    self.sync_promise =
+                                        Some(operation.git().git_sync_promise(workspace.path.clone()));
+                                }
+                            }
+                        }
+                    }
+                    match &self.sync_promise {
+                        None => {}
+                        Some(result) => match result.ready() {
+                            None => {
+                                ui.ctx().request_repaint();
+                            }
+                            Some(result) => {
+                                if result.is_ok() {
+                                    operation.add_success_toast("Sync Success!")
+                                } else {
+                                    operation.add_error_toast("Sync Failed!")
+                                }
+                                self.sync_promise = None;
+                                workspace_data.reload_data(select_workspace.clone());
+                            }
+                        },
+                    }
+                });
+
                 // if self.current_workspace != config_data.select_workspace() {
                 //     config_data.set_select_workspace(self.current_workspace.clone());
                 //     workspace_data.load_all(self.current_workspace.clone());
