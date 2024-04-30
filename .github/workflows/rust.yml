@@ -43,7 +43,7 @@ jobs:
 
       - name: Build Win
         if: "${{ matrix.os == 'windows-latest' }}"
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo +nightly build --release --target ${{ matrix.target }}
 
       - name: Add mac target
         if: "${{ matrix.os == 'macos-latest' }}"
@@ -56,7 +56,7 @@ jobs:
       - name: Build Mac
         if: "${{ matrix.os == 'macos-latest' }}"
         working-directory: ./crates/netpurr
-        run: cargo bundle --release --target ${{ matrix.target }}
+        run: cargo +nightly bundle --release --target ${{ matrix.target }}
 
       - name: Build archive
         shell: bash
