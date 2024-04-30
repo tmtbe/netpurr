@@ -1,5 +1,8 @@
+use std::fs::File;
+use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
+use futures_util::AsyncWriteExt;
 
 use log::error;
 use poll_promise::Promise;
@@ -20,6 +23,12 @@ impl Git {
         let repo = Repository::init(repo_path);
         if repo.is_err() {
             error!("init git repo failed, path: {:?}", repo_path);
+        }
+        let gitignore_content = ".DS_Store\nrequests/";
+        let gitignore_path = repo_path.join("./.gitignore");
+        let mut file = File::create(gitignore_path);
+        if file.is_ok() {
+            file.unwrap().write_all(gitignore_content.as_bytes());
         }
     }
     pub fn create_branch(
@@ -53,21 +62,15 @@ impl Git {
             let repo = Repository::new(repo_path);
             if let Ok(head) = repo.cmd_out(["branch", "--show-current"]) {
                 if let Some(branch_name) = head.get(0) {
-                    repo.cmd(["fetch"]);
                     repo.cmd([
                         "branch",
                         format!("--set-upstream-to=origin/{}", &branch_name).as_str(),
                     ])?;
                     repo.cmd(["add", "."])?;
-                    repo.cmd(["stash", "clear"])?;
-                    repo.cmd(["stash"])?;
+                    repo.cmd(["rm", "-rf", "--ignore-unmatch","--cached", "requests/*"])?;
+                    repo.commit_all("auto commit")?;
                     repo.cmd(["pull", "--rebase"])?;
-                    repo.cmd(["stash", "pop"]);
-                    if repo.commit_all("auto commit").is_ok() {
-                        repo.cmd(["push", "--set-upstream", "origin", &branch_name])
-                    } else {
-                        Ok(())
-                    }
+                    repo.cmd(["push", "--set-upstream", "origin", &branch_name])
                 } else {
                     Ok(())
                 }
