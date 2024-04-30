@@ -68,7 +68,7 @@ impl Git {
                     ])?;
                     repo.cmd(["add", "."])?;
                     repo.cmd(["rm", "-rf", "--ignore-unmatch","--cached", "requests/*"])?;
-                    repo.commit_all("auto commit")?;
+                    repo.commit_all("auto commit");
                     repo.cmd(["pull", "--rebase"])?;
                     repo.cmd(["push", "--set-upstream", "origin", &branch_name])
                 } else {
