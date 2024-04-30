@@ -1,5 +1,6 @@
 use std::cell::RefCell;
-use std::collections::BTreeMap;
+use std::cmp::max;
+use std::collections::{BTreeMap, HashMap};
 use std::error;
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
@@ -13,6 +14,7 @@ use anyhow::Error;
 use deno_core::{ExtensionBuilder, FsModuleLoader, ModuleCodeString, Op, op2, OpState};
 use deno_core::{JsRuntime, PollEventLoopOptions};
 use deno_core::url::Url;
+use jieba_rs::{Jieba, Keyword, KeywordExtract, TextRank, TfIdf};
 use poll_promise::Promise;
 use reqwest::{Client, Method};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -116,7 +118,11 @@ impl ScriptRuntime {
                 op_sleep::DECL,
                 op_get_testcase::DECL,
                 op_test_skip::DECL,
-                op_equal::DECL
+                op_equal::DECL,
+                op_nlp_keywords::DECL,
+                op_nlp_tags::DECL,
+                op_nlp_tag_filter::DECL,
+                op_nlp_similarity::DECL
             ])
             .build();
         return JsRuntime::new(deno_core::RuntimeOptions {
@@ -478,6 +484,85 @@ fn op_test_skip()-> anyhow::Result<()> {
     Err(Error::from(SkipError {}))
 }
 
+#[op2]
+#[serde]
+fn op_nlp_keywords(#[string] source:String, #[bigint] k:usize) -> Vec<String> {
+    _nlp_keywords(source,k)
+}
+fn _nlp_keywords(source:String, k:usize) -> Vec<String> {
+    let jieba = Jieba::new();
+    let keyword_extractor = TfIdf::default();
+    keyword_extractor.extract_keywords(
+        &jieba,
+        source.as_str(),
+        k,
+        vec![String::from("ns"),String::from("nz"), String::from("n"), String::from("vn"), String::from("v"),String::from("m")],
+    ).iter().map(|k|{
+        k.keyword.clone()
+    }).collect()
+}
+#[op2]
+#[serde]
+fn op_nlp_tags(#[string] source:String)->Vec<JSTag>{
+    let jieba = Jieba::new();
+    jieba.tag(source.as_str(), true).iter().map(|t|{
+        JSTag{
+            word:t.word.to_string(),
+            tag:t.tag.to_string()
+        }
+    }).collect()
+}
+
+#[op2]
+#[serde]
+fn op_nlp_tag_filter(#[string] source:String,#[serde] tags:Vec<String>)->Vec<String>{
+    _nlp_tag_filter(source,tags)
+}
+fn _nlp_tag_filter(source:String,tags:Vec<String>)->Vec<String>{
+    let jieba = Jieba::new();
+    jieba.tag(source.as_str(), true).iter().map(|t|{
+        JSTag{
+            word:t.word.to_string(),
+            tag:t.tag.to_string()
+        }
+    }).filter(|t|{
+        tags.contains(&t.tag)
+    }).map(|t|{
+        t.word
+    }).collect()
+}
+#[op2(fast)]
+fn op_nlp_similarity(#[string]word1:String, #[string]word2:String)->f32{
+    let word1 = _nlp_keywords(word1,10);
+    let word2 = _nlp_keywords(word2,10);
+    _op_nlp_similarity(word1,word2)
+}
+fn _op_nlp_similarity(words1:Vec<String>, words2:Vec<String>)->f32{
+    // 建立倒排索引
+    let mut index = HashMap::new();
+    for word in words1.iter() {
+        index.entry(word).or_insert(vec![]).push(1);
+    }
+    for word in words2.iter() {
+        index.entry(word).or_insert(vec![]).push(1);
+    }
+    // 统计共有关键词数量
+    let mut count = 0;
+    for (word, docs) in index {
+        if docs.len()>=2 {
+            count += 1;
+        }
+    }
+    (count as f32) / (words1.len().min(words2.len()) as f32)
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash,Serialize,Deserialize)]
+pub struct JSTag {
+    /// Word
+    pub word: String,
+    /// Word tag
+    pub tag: String,
+}
 #[derive(Debug)]
 pub struct SkipError {
 }

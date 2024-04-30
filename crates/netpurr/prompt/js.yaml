@@ -71,6 +71,9 @@ map:
   assert:
     fill: assert(<expect>,<actual>)
     desc: assert
+  assert_nlp:
+    fill: assert_nlp(<expect>,<actual>,0.7)
+    desc: assert nlp
   JSON:
     fill: JSON
     desc: JSON
@@ -80,3 +83,15 @@ map:
   JSON.stringify:
     fill: JSON.stringify(<value>)
     desc: JSON.stringify
+  nlp.keywords:
+    fill: nlp.keywords(<value>,key_count)
+    desc: get keywords
+  nlp.tags:
+    fill: nlp.tags(<value>)
+    desc: get tags
+  nlp.tag_filter:
+    fill: nlp.tag_filter(<value>,<[tags]>)
+    desc: get tags with filter
+  nlp.similarity:
+    fill: nlp.similarity(<value>,<value>)
+    desc: similarity

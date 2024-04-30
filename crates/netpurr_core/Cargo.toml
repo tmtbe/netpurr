@@ -9,7 +9,7 @@ version.workspace = true
 [dependencies]
 reqwest_cookie_store = { path = "./../reqwest_cookie_store" }
 cookie_store = { path = "./../cookie_store" }
-
+jieba-rs = { version = "0.7", features = ["tfidf", "textrank"] }
 serde.workspace = true
 serde_json.workspace = true
 serde_yaml.workspace = true

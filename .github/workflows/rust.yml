@@ -10,6 +10,8 @@ permissions:
 
 jobs:
   build-and-upload:
+    env:
+      RUST_TOOLCHAIN: nightly
     name: Build and upload
     runs-on: ${{ matrix.os }}
 

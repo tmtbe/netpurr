@@ -25,6 +25,14 @@
             core.ops.op_append_assert(false, `Expect is "${expect}" but actual is "${actual}"`);
         }
     }
+    globalThis.assert_nlp = function (expect, actual, expect_similarity) {
+        let actual_similarity = core.ops.op_nlp_similarity(expect, actual);
+        if (actual_similarity > expect_similarity) {
+            core.ops.op_append_assert(true, `NLP similarity is "${actual_similarity}"`);
+        } else {
+            core.ops.op_append_assert(false, `NLP similarity is "${actual_similarity}" less than "${expect_similarity}"`);
+        }
+    }
 
     globalThis.testcase = function () {
         return JSON.parse(core.ops.op_get_testcase());
@@ -41,6 +49,20 @@
             core.ops.op_error(argsToMessage(...args));
         },
     };
+    globalThis.nlp = {
+        keywords: (str, k) => {
+            return core.ops.op_nlp_keywords(str, k)
+        },
+        tags: (str) => {
+            return core.ops.op_nlp_tags(str)
+        },
+        tag_filter: (str, tags) => {
+            return core.ops.op_nlp_tag_filter(str, tags)
+        },
+        similarity: (a, b) => {
+            return core.ops.op_nlp_similarity(a, b)
+        }
+    }
     globalThis.netpurr = {
         get_testcase: () => {
             return JSON.parse(core.ops.op_get_testcase());
