@@ -26,6 +26,7 @@ pub struct HighlightTemplate<'t> {
     popup_id: String,
     multiline: bool,
     filter: HashSet<String>,
+    quick_render: bool,
 }
 
 impl HighlightTemplate<'_> {
@@ -65,6 +66,10 @@ impl HighlightTemplate<'_> {
                     .chars()
                     .take(c.primary.ccursor.index)
                     .collect();
+                let after_cursor_text:&String = &self.content.as_str().chars().skip(c.primary.ccursor.index).collect();
+                if !(after_cursor_text.starts_with(" ")||after_cursor_text.starts_with("\n")){
+                    return;
+                }
                 let prompt_option = self.find_prompt(before_cursor_text.to_string());
                 if prompt_option.is_some() && self.envs.clone().len() > 0 {
                     let prompt = prompt_option.unwrap_or_default();
@@ -210,7 +215,7 @@ impl Widget for HighlightTemplate<'_> {
             self.content.as_str().to_string(),
             self.envs.clone(),
         );
-        if response.hovered() && text.len() > 0 && text != self.content.as_str() {
+        if response.hovered() && text.len() > 0 && text != self.content.as_str() &&self.quick_render {
             response = response.on_hover_text(text);
         }
         output.cursor_range.map(|c| {
@@ -242,6 +247,7 @@ pub struct HighlightTemplateSinglelineBuilder {
     all_space: bool,
     size: f32,
     multiline: bool,
+    quick_render: bool,
     filter: HashSet<String>,
     envs: BTreeMap<String, EnvironmentItemValue>,
 }
@@ -253,6 +259,7 @@ impl Default for HighlightTemplateSinglelineBuilder {
             all_space: true,
             size: 12.0,
             multiline: false,
+            quick_render: true,
             filter: Default::default(),
             envs: BTreeMap::default(),
         }
@@ -284,6 +291,10 @@ impl HighlightTemplateSinglelineBuilder {
         self.multiline = true;
         self
     }
+    pub fn quick_render(&mut self, render:bool) -> &mut HighlightTemplateSinglelineBuilder {
+        self.quick_render = render;
+        self
+    }
 
     pub fn filter(&mut self, filter: HashSet<String>) -> &mut HighlightTemplateSinglelineBuilder {
         self.filter = filter;
@@ -297,6 +308,7 @@ impl HighlightTemplateSinglelineBuilder {
             envs: self.envs.clone(),
             content,
             popup_id: id,
+            quick_render: self.quick_render,
             multiline: self.multiline,
             filter: self.filter.clone(),
         }

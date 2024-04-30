@@ -96,6 +96,11 @@ impl RequestBodyPanel {
                             Err(_) => {}
                         }
                     }
+                    let render_text = netpurr_core::utils::replace_variable(
+                        crt.record.must_get_rest().request.body.body_str.clone(),
+                        envs.clone(),
+                    );
+                    ui.button("Render").on_hover_text(render_text);
                 }
                 if let Some(operation_id) = crt.record.must_get_rest().operation_id.clone() {
                     if ui.button("Generate Schema").clicked() {
@@ -145,6 +150,7 @@ impl RequestBodyPanel {
                                 crt = workspace_data.must_get_mut_crt(crt_id.clone(), |crt| {
                                     HighlightTemplateSinglelineBuilder::default()
                                         .multiline()
+                                        .quick_render(false)
                                         .envs(envs)
                                         .all_space(true)
                                         .build(
