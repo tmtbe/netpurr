@@ -21,11 +21,9 @@ jobs:
           - build: macos
             os: macos-latest
             target: x86_64-apple-darwin
-            toolchain: aarch64-apple-darwin
           - build: windows-msvc
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            toolchain: x86_64-pc-windows-msvc
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -38,7 +36,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: nightly-2024-04-29
-          targets: ${{ matrix.toolchain }}
+          targets: ${{ matrix.target }}
 
       - name: Add win target
         if: "${{ matrix.os == 'windows-latest' }}"
@@ -46,7 +44,7 @@ jobs:
 
       - name: Build Win
         if: "${{ matrix.os == 'windows-latest' }}"
-        run: cargo +nightly build --release --target ${{ matrix.target }}
+        run: cargo +nightly-2024-04-29 build --release --target ${{ matrix.target }}
 
       - name: Add mac target
         if: "${{ matrix.os == 'macos-latest' }}"
@@ -54,14 +52,12 @@ jobs:
 
       - name: Add Bundle
         if: "${{ matrix.os == 'macos-latest' }}"
-        run: |
-          rustup toolchain install nightly-2024-04-29-aarch64-apple-darwin
-          cargo install cargo-bundle
+        run: cargo install cargo-bundle
 
       - name: Build Mac
         if: "${{ matrix.os == 'macos-latest' }}"
         working-directory: ./crates/netpurr
-        run: cargo +nightly bundle --release --target ${{ matrix.target }}
+        run: cargo +nightly-2024-04-29 bundle --release --target ${{ matrix.target }}
 
       - name: Build archive
         shell: bash
