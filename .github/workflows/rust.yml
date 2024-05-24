@@ -59,7 +59,7 @@ jobs:
       - name: Build Mac
         if: "${{ matrix.os == 'macos-latest' }}"
         working-directory: ./crates/netpurr
-        run: cargo +nightly bundle --release --target ${{ matrix.target }}
+        run: rustup toolchain install nightly-2024-04-29-aarch64-apple-darwin && cargo +nightly bundle --release --target ${{ matrix.target }}
 
       - name: Build archive
         shell: bash
