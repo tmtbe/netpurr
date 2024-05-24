@@ -80,6 +80,7 @@ impl Runner {
         Runner {
             script_runtime: Default::default(),
             client: Client::builder()
+                .danger_accept_invalid_certs(true)
                 .cookie_provider(cookie_store)
                 .trust_dns(true)
                 .tcp_nodelay(true)
