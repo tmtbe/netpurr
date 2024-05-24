@@ -21,9 +21,11 @@ jobs:
           - build: macos
             os: macos-latest
             target: x86_64-apple-darwin
+            toolchain: aarch64-apple-darwin
           - build: windows-msvc
             os: windows-latest
             target: x86_64-pc-windows-msvc
+            toolchain: x86_64-pc-windows-msvc
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -36,7 +38,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: nightly-2024-04-29
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.toolchain }}
 
       - name: Add win target
         if: "${{ matrix.os == 'windows-latest' }}"
