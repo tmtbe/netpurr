@@ -1,6 +1,9 @@
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Debug;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -9,9 +12,10 @@ use std::time::Duration;
 
 use anyhow::Error;
 use async_recursion::async_recursion;
+use chrono::Local;
 use deno_core::futures::future::join_all;
 use deno_core::futures::FutureExt;
-use log::info;
+use log::{info, log};
 use poll_promise::Promise;
 use rayon::{Scope, ThreadPool, ThreadPoolBuilder};
 use reqwest::Client;
@@ -28,12 +32,14 @@ use crate::data::record::Record;
 use crate::data::test::{TestResult, TestStatus};
 use crate::data::websocket::WebSocketSession;
 use crate::runner;
+use crate::runner::html_report::{HtmlReport, HtmlReportTestResult};
 use crate::runner::websocket::WebSocketSender;
 use crate::script::{Context, JsResponse, ScriptRuntime, ScriptScope, ScriptTree, SharedMap, SkipError};
 
 mod rest;
 pub mod test;
 mod websocket;
+mod html_report;
 
 #[derive(Clone)]
 pub struct Runner {
@@ -562,5 +568,90 @@ impl TestGroupRunResults {
     pub fn find(&self, testcase_path: Vec<String>) -> Option<Result<TestRunResult, TestRunError>> {
         let key = testcase_path.join("/");
         return self.results.get(key.as_str()).cloned();
+    }
+
+    pub fn get_test_count(&self,status:TestStatus)->usize{
+        self.results.iter()
+            .filter(|(_,r)|{
+                return match r {
+                    Ok(t) => {
+                        t.test_result.status == status
+                    }
+                    Err(_) => {
+                        false
+                    }
+                }
+            }).count()
+    }
+
+    pub fn export(&self,path:PathBuf){
+        info!("{}",self.results.len());
+        let report_template = include_str!("../../report/template");
+        let report = HtmlReport{
+            test_pass: self.get_test_count(TestStatus::PASS),
+            test_skip: self.get_test_count(TestStatus::SKIP),
+            total_time: "".to_string(),
+            test_all: self.results.len(),
+            begin_time: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            test_result: self.results.iter().map(|(name,r)|{
+                HtmlReportTestResult{
+                    log:  match r {
+                        Ok(t) => {
+                            t.test_result.test_info_list.iter().map(|i|{
+                                serde_json::to_string(i).unwrap()
+                            }).collect()
+                        }
+                        Err(e) => {
+                            vec![e.error.clone()]
+                        }
+                    },
+                    method_name: match r {
+                        Ok(t) => {
+                            t.testcase.name.clone()
+                        }
+                        Err(e) => {
+                            e.testcase.name.clone()
+                        }
+                    },
+                    description: name.clone(),
+                    class_name:  match r {
+                        Ok(t) => {
+                            t.testcase.parent_path.join("/")
+                        }
+                        Err(e) => {
+                            e.testcase.parent_path.join("/")
+                        }
+                    },
+                    spend_time: match r {
+                        Ok(t) => {
+                            match &t.response {
+                                None => {"-".to_string()}
+                                Some(r) => {format!("{}ms",r.elapsed_time)}
+                            }
+                        }
+                        Err(e) => {
+                            match &e.response {
+                                None => {"-".to_string()}
+                                Some(r) => {format!("{}ms",r.elapsed_time)}
+                            }
+                        }
+                    } ,
+                    status:match r {
+                        Ok(t) => {
+                            t.test_result.status.to_string()
+                        }
+                        Err(e) => {
+                            TestStatus::FAIL.to_string()
+                        }
+                    } ,
+                }
+            }).collect(),
+            test_fail: self.get_test_count(TestStatus::FAIL),
+            test_name: "Test".to_string(),
+        };
+        let json = serde_json::to_string(&report).unwrap();
+        let html = report_template.replace("${resultData}",&json);
+        let mut file = File::create(path).unwrap();
+        file.write_all(html.as_bytes()).unwrap();
     }
 }

@@ -1,14 +1,17 @@
 use std::cell::RefCell;
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use eframe::epaint::{Color32, FontFamily, FontId};
 use egui::{Align, FontSelection, RichText, Style, Ui};
 use egui::text::LayoutJob;
+use log::info;
 use poll_promise::Promise;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
+use egui_toast::Toast;
 
 use netpurr_core::data::collections::{CollectionFolder, Testcase};
 use netpurr_core::data::record::Record;
@@ -66,6 +69,8 @@ impl TestEditorPanel {
     ) {
         if let Some(p) = &self.run_promise {
             if p.ready().is_some() {
+                //这里应该是测试完毕了
+                operation.add_success_toast("Test all right");
                 self.run_promise = None
             }
         }
@@ -192,6 +197,11 @@ impl TestEditorPanel {
             }
         }
 
+    }
+    fn export_report(&self,path:PathBuf){
+        self.test_group_run_result.clone().map(|result|{
+            result.read().unwrap().export(path);
+        });
     }
     fn render_test_item_folder(
         &mut self,
@@ -323,6 +333,19 @@ impl TestEditorPanel {
                         folder.clone(),
                     );
                 }
+                ui.add_enabled_ui(self.test_group_run_result.is_some(),|ui|{
+                    if ui.button("Export Report").clicked(){
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("html",&["html"])
+                            .set_title("Export Report")
+                            .set_file_name("report")
+                            .save_file() {
+                            info!("export report path: {:?}",path);
+                            self.export_report(path);
+                        }
+                    }
+                });
+
             }else{
                 if ui.button("Stop Test").clicked() {
                     match &self.test_group_run_result {
